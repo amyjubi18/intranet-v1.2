@@ -22,11 +22,24 @@ class SSOController extends Controller
         ];
 
         if (!array_key_exists($module, $urls)) {
-            abort(404, 'Módulo no válido');
+            return redirect('/inicio');
         }
 
-        $targetBaseUrl = rtrim($urls[$module], '/');
+        $rawTarget = trim($urls[$module]);
+        $targetUrl = preg_match('#^https?://#', $rawTarget) ? $rawTarget : 'http://' . $rawTarget;
+        $targetBaseUrl = rtrim($targetUrl, '/');
+        $targetHost = parse_url($targetBaseUrl, PHP_URL_HOST);
+
+        // Si ya estamos en el mismo contenedor, ir a /inicio directamente sin bucles
+        if ($targetHost === $request->getHost()) {
+            return redirect('/inicio');
+        }
+
         $userId = Auth::id();
+        if (!$userId) {
+            return redirect('/login');
+        }
+
         $expires = now()->addSeconds(60)->timestamp;
 
         // Crear firma HMAC usando el APP_KEY compartido
@@ -45,9 +58,14 @@ class SSOController extends Controller
         $expires = (int) $request->query('expires');
         $signature = $request->query('signature');
 
+        // Si ya está autenticado como este mismo usuario, ir a /inicio directamente
+        if (Auth::check() && Auth::id() == $userId) {
+            return redirect('/inicio');
+        }
+
         // Validar expiración (máximo 60 segundos)
         if (!$userId || !$expires || !$signature || now()->timestamp > $expires) {
-            return redirect()->route('login')->withErrors(['sso' => 'El enlace de inicio de sesión ha expirado.']);
+            return redirect('/login')->withErrors(['sso' => 'El enlace de inicio de sesión ha expirado.']);
         }
 
         // Verificar la firma criptográfica con el APP_KEY compartido
@@ -55,13 +73,13 @@ class SSOController extends Controller
         $expectedSignature = hash_hmac('sha256', $payload, config('app.key'));
 
         if (!hash_equals($expectedSignature, $signature)) {
-            return redirect()->route('login')->withErrors(['sso' => 'Firma de autenticación no válida.']);
+            return redirect('/login')->withErrors(['sso' => 'Firma de autenticación no válida.']);
         }
 
         // Autenticar al usuario en este contenedor
         $user = User::find($userId);
         if (!$user) {
-            return redirect()->route('login')->withErrors(['sso' => 'Usuario no encontrado.']);
+            return redirect('/login')->withErrors(['sso' => 'Usuario no encontrado.']);
         }
 
         Auth::login($user);
@@ -73,6 +91,6 @@ class SSOController extends Controller
             $user->save();
         }
 
-        return redirect()->route('inicio');
+        return redirect('/inicio');
     }
 }
