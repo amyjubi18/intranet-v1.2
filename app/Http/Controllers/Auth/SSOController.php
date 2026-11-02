@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Schema;
 
 class SSOController extends Controller
 {
@@ -65,8 +66,13 @@ class SSOController extends Controller
 
         Auth::login($user);
         $request->session()->regenerate();
+        $request->session()->put('last_activity', time());
+
+        if (Schema::hasColumn('users', 'session_token')) {
+            $user->session_token = $request->session()->getId();
+            $user->save();
+        }
 
         return redirect()->route('inicio');
     }
 }
-

@@ -373,3 +373,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/noticias/publish-all', [NoticiaController::class, 'publishAll'])->name('noticias.publishAll');
 });
 
+// Rutas de Single Sign-On (SSO) inter-módulos
+Route::get('/sso/go/{module}', [App\Http\Controllers\Auth\SSOController::class, 'go'])->name('sso.go')->middleware('auth');
+Route::get('/sso/verify', [App\Http\Controllers\Auth\SSOController::class, 'verify'])->name('sso.verify');
+
+

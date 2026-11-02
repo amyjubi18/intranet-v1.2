@@ -37,11 +37,11 @@
             <span>Inicio</span>
         </a>
 
-        <!-- Selector de Módulos -->
+        <!-- Selector de Módulos con SSO -->
         <div class="px-4 py-3 my-2 mx-3 bg-blue-950/60 rounded-xl border border-blue-500/30">
             <span class="text-xs uppercase tracking-wider text-blue-300 font-semibold block mb-2">Entornos / Módulos:</span>
             <div class="flex flex-col gap-1.5 text-sm">
-                <a href="{{ config('modules.admin_url') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ request()->getHost() == parse_url(config('modules.admin_url'), PHP_URL_HOST) ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
+                <a href="{{ request()->getHost() == parse_url(config('modules.admin_url'), PHP_URL_HOST) ? route('inicio') : route('sso.go', 'admin') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ request()->getHost() == parse_url(config('modules.admin_url'), PHP_URL_HOST) ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
                     <span class="flex items-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 7V3h12v4M9 10h1M14 10h1M9 14h1M14 14h1M9 18h1M14 18h1"/></svg>
                         <span>Administración</span>
@@ -50,7 +50,7 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
                     @endif
                 </a>
-                <a href="{{ config('modules.gh_url') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ request()->getHost() == parse_url(config('modules.gh_url'), PHP_URL_HOST) ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
+                <a href="{{ request()->getHost() == parse_url(config('modules.gh_url'), PHP_URL_HOST) ? route('inicio') : route('sso.go', 'gh') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ request()->getHost() == parse_url(config('modules.gh_url'), PHP_URL_HOST) ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
                     <span class="flex items-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         <span>Gestión Humana</span>
@@ -59,7 +59,7 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
                     @endif
                 </a>
-                <a href="{{ config('modules.gtic_url') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ request()->getHost() == parse_url(config('modules.gtic_url'), PHP_URL_HOST) ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
+                <a href="{{ request()->getHost() == parse_url(config('modules.gtic_url'), PHP_URL_HOST) ? route('inicio') : route('sso.go', 'gtic') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ request()->getHost() == parse_url(config('modules.gtic_url'), PHP_URL_HOST) ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
                     <span class="flex items-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="9" x2="9" y2="15"/><line x1="15" y1="9" x2="15" y2="15"/></svg>
                         <span>GTIC</span>
@@ -68,6 +68,8 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
                     @endif
                 </a>
+            </div>
+        </div>
             </div>
         </div>
 
