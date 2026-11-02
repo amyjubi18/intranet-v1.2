@@ -21,17 +21,10 @@ class DocsEditRequest extends FormRequest
      */
     public function rules()
     {
-        $user = $this->route('user');
         return [
-            'name' => ['required','unique:users,name,' . $user->id],
-            // Logic for findOrFail
-            // 'username' => 'unique:users,username,'.$this->user.'|required',
-
-/*             'username' => ['required', 'min:3', 'unique:users,username,' . $user->id],
- */            'email' => [
-                'required', 'unique:users,email,' . request()->route('user')->id
-            ],
-            'password' => 'sometimes'
+            'name' => 'required|string|max:500',
+            'description' => 'required|string|max:500',
+            'documento'=> 'required|file|max:2000|'
         ];
     }
 }

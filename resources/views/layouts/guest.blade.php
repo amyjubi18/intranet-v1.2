@@ -1,3 +1,5 @@
+
+
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
     <head>
@@ -14,12 +16,12 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans antialiased text-gray-900 ">
-        <section class="flex flex-col items-center h-screen border-4 border-blue-900 rounded md:flex-row ">
+        <section class="flex flex-col items-center h-screen  rounded md:flex-row ">
             <div class="hidden h-screen bg-blue-600 lg:block md:w-1/2 xl:w-2/3">
-                <img src="../img/fondo-intranet.jpg" class="object-cover w-full h-full" alt="">
+                 <img src="../img/fondo-intranet.jpg" class="object-cover w-full h-full" alt="">
             </div>
 
-            <div class="w-full px-6 py-4 mt-6 overflow-hidden bg-white sm:max-w-md sm:rounded-lg">
+            <div class="w-full mx-auto  px-10 py-4 mt-6 overflow-hidden bg-white sm:max-w-lg sm:rounded-lg" >
 {{--                 <h1 class="my-1 text-5xl font-bold text-center text-blue-900" style="padding-top: -10px">Intranet</h1>
  --}}
                 {{ $slot }}

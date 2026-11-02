@@ -36,12 +36,15 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\CheckUserStatus::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ],
 
         'api' => [
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\SecurityHeaders::class,
         ],
     ];
 
@@ -60,8 +63,14 @@ class Kernel extends HttpKernel
         'can' => \Illuminate\Auth\Middleware\Authorize::class,
         'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
         'password.confirm' => \Illuminate\Auth\Middleware\RequirePassword::class,
+        'session.timeout' => \App\Http\Middleware\CheckSessionTimeout::class,
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
+        'user.status' => \App\Http\Middleware\CheckUserStatus::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+        // Security Middlewares
+        'security.headers' => \App\Http\Middleware\SecurityHeaders::class,
+        'account.lockout' => \App\Http\Middleware\AccountLockout::class,
+        // 'prevent.concurrent' => // // \App\Http\Middleware\PreventConcurrentSessions::class,
     ];
 }

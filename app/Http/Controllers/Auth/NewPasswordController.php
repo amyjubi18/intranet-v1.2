@@ -11,6 +11,8 @@ use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Illuminate\View\View;
+use App\Rules\PasswordStrength;
+use App\Models\User;
 
 class NewPasswordController extends Controller
 {
@@ -32,7 +34,7 @@ class NewPasswordController extends Controller
         $request->validate([
             'token' => ['required'],
             'email' => ['required', 'email'],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'password' => ['required', 'confirmed', new PasswordStrength()],
         ]);
 
         // Here we will attempt to reset the user's password. If it is successful we
@@ -44,6 +46,8 @@ class NewPasswordController extends Controller
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
+                    'password_changed_at' => now(),
+                    'password_expires_at' => now()->addDays(config('security.password.expiration_days', 90)),
                 ])->save();
 
                 event(new PasswordReset($user));
@@ -54,7 +58,7 @@ class NewPasswordController extends Controller
         // the application's home authenticated view. If there is an error we can
         // redirect them back to where they came from with their error message.
         return $status == Password::PASSWORD_RESET
-                    ? redirect()->route('login')->with('status', __($status))
+                    ? redirect()->route('Inicio')->with('status', __($status))
                     : back()->withInput($request->only('email'))
                             ->withErrors(['email' => __($status)]);
     }

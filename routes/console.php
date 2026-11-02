@@ -17,3 +17,13 @@ use Illuminate\Support\Facades\Artisan;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+// Security Commands
+Artisan::command('security:check-expired-passwords', function () {
+    $this->call('security:check-expired-passwords', ['--notify' => true]);
+})->purpose('Check for users with expired passwords');
+
+// Password expiration notification command
+Artisan::command('security:notify-password-expiration', function () {
+    $this->info('Notificando usuarios con contraseña por expirar...');
+})->purpose('Notify users with password about to expire');

@@ -9,97 +9,293 @@ use App\Exports\UsersExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Storage;
 use Spatie\Permission\Models\Role;
 
 class UserController extends Controller
 {
     public function index(Request $request)
     {
-     abort_if(Gate::denies('user_index'), 403);
-       $users = User::query()->with('roles')->when(request('search'), function($query){
-    return $query->where('name', 'LIKE','%'.request('search').'%')->orWhere('email', 'LIKE','%'.request('search').'%')->orWhereHas('roles', function($q){
-        $q->where('name','LIKE','%'.request('search').'%');
-       });
-    })->latest()->paginate(5);
-        return view('users.index', compact('users'));
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        }
+
+        abort_if(Gate::denies('user_index'), 403);
+
+        $users = User::query()->with('roles');
+
+        // Filtro avanzado por tipo de campo
+        if ($request->filled('filterType') && $request->filled('secondFilter') && $request->secondFilter != '') {
+            $filterType = $request->filterType;
+            $secondFilter = $request->secondFilter;
+
+            if ($filterType === 'rol') {
+                $users->whereHas('roles', function($q) use ($secondFilter) {
+                    $q->where('id', $secondFilter);
+                });
+            } elseif ($filterType === 'status') {
+                $users->where('status', $secondFilter);
+            }
+        }
+
+        // Búsqueda general en múltiples campos
+        if ($request->filled('busqueda')) {
+            $busqueda = $request->busqueda;
+            $users->where(function($query) use ($busqueda) {
+                $query->where('name', 'LIKE', '%' . $busqueda . '%')
+                      ->orWhere('lastname', 'LIKE', '%' . $busqueda . '%')
+                      ->orWhere('cedula', 'LIKE', '%' . $busqueda . '%')
+                      ->orWhere('email', 'LIKE', '%' . $busqueda . '%')
+                      ->orWhere('username', 'LIKE', '%' . $busqueda . '%')
+                      ->orWhere('departamento', 'LIKE', '%' . $busqueda . '%')
+                      ->orWhereHas('roles', function($q) use ($busqueda) {
+                          $q->where('name', 'LIKE', '%' . $busqueda . '%');
+                      });
+            });
+        }
+
+        // Filtros individuales por campo
+        if ($request->filled('nombre')) {
+            $users->where(function($query) use ($request) {
+                $query->where('name', 'LIKE', '%' . $request->nombre . '%')
+                      ->orWhere('lastname', 'LIKE', '%' . $request->nombre . '%');
+            });
+        }
+
+        if ($request->filled('cedula')) {
+            $users->where('cedula', 'LIKE', '%' . $request->cedula . '%');
+        }
+
+        if ($request->filled('correo')) {
+            $users->where('email', 'LIKE', '%' . $request->correo . '%');
+        }
+
+        if ($request->filled('username')) {
+            $users->where('username', 'LIKE', '%' . $request->username . '%');
+        }
+
+        if ($request->filled('departamento')) {
+            $users->where('departamento', 'LIKE', '%' . $request->departamento . '%');
+        }
+
+        // Búsqueda simple (mantiene compatibilidad hacia atrás)
+        if ($request->filled('search') && !$request->filled('busqueda') && !$request->filled('filterType')) {
+            $search = $request->search;
+            $users->where(function($query) use ($search) {
+                $query->where('name', 'LIKE', '%' . $search . '%')
+                      ->orWhere('lastname', 'LIKE', '%' . $search . '%')
+                      ->orWhere('cedula', 'LIKE', '%' . $search . '%')
+                      ->orWhere('email', 'LIKE', '%' . $search . '%')
+                      ->orWhere('username', 'LIKE', '%' . $search . '%')
+                      ->orWhere('departamento', 'LIKE', '%' . $search . '%')
+                      ->orWhereHas('roles', function($q) use ($search) {
+                          $q->where('name', 'LIKE', '%' . $search . '%');
+                      });
+            });
+        }
+
+        $users = $users->latest()->paginate(10);
+
+        // Obtener roles para el filtro
+        $roles = Role::all()->pluck('name', 'id');
+
+        return view('users.index', [
+            'users' => $users,
+            'roles' => $roles
+        ]);
     }
 
     public function create()
     {
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        }
+
         abort_if(Gate::denies('user_create'), 403);
         $roles = Role::all()->pluck('name', 'id');
-        return view('users.create', compact('roles'));
+
+        // Lista de departamentos para el formulario
+        $departamentos = [
+            'GTIC' => 'GTIC',
+            'OGH' => 'OGH',
+            'OAC' => 'OAC',
+            'Consultoria Juridica' => 'Consultoria Juridica',
+            'GEDP' => 'GEDP',
+            'OPP' => 'Operaciones',
+            'OGA' => 'OGA',
+            'Presidencia' => 'Presidencia',
+            'Auditoría Interna' => 'Auditoría Interna',
+        ];
+
+        return view('users.create', compact('roles', 'departamentos'));
     }
 
     public function store(UserCreateRequest $request)
     {
-        // $request->validate([
-        //     'name' => 'required|min:3|max:5',
-        //     'username' => 'required',
-        //     'email' => 'required|email|unique:users',
-        //     'password' => 'required'
-        // ]);
-        $user = User::create($request->only('name', 'username', 'email')
-            + [
-                'password' => bcrypt($request->input('password')),
-            ]);
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        }
 
+        // Crear usuario con todos los campos
+        $user = User::create([
+            'name' => $request->name,
+            'lastname' => $request->lastname,
+            'username' => $request->username,
+            'email' => $request->email,
+            'password' => bcrypt($request->password),
+            'cedula' => $request->cedula,
+            'fecha_nacimiento' => $request->fecha_nacimiento,
+            'departamento' => $request->departamento,
+            'status' => $request->status ?? true,
+            'is_active' => $request->status ?? true,
+        ]);
+
+        // Asignar roles - sincronizar por nombre, no por ID
         $roles = $request->input('roles', []);
-        $user->syncRoles($roles);
-        return redirect()->route('users.index', $user->id)->with('success', 'Usuario creado correctamente');
+        if (!empty($roles)) {
+            // Convertir ID a nombre de rol
+            $roleNames = [];
+            foreach ((array) $roles as $roleId) {
+                $role = Role::findById($roleId, 'web');
+                if ($role) {
+                    $roleNames[] = $role->name;
+                }
+            }
+            $user->syncRoles($roleNames);
+        }
+
+        // Manejar foto de perfil si se subió
+        if ($request->hasFile('profile_photo')) {
+            $file = $request->file('profile_photo');
+            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('archivos/avatars'), $filename);
+            $user->profile_photo = $filename;
+            $user->save();
+        }
+
+        return redirect()->route('users.index')->with('success', 'Usuario creado correctamente');
     }
 
     public function show(User $user)
     {
-        //abort_if(Gate::denies('user_show'), 403);
-        // $user = User::findOrFail($id);
-        // dd($user);
         $user->load('roles');
         return view('users.show', compact('user'));
+
     }
 
     public function edit(User $user)
     {
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        }
+
         abort_if(Gate::denies('user_edit'), 403);
         $roles = Role::all()->pluck('name', 'id');
         $user->load('roles');
-        
-        return view('users.edit', compact('user', 'roles'));
+
+        // Lista de departamentos para el formulario
+        $departamentos = [
+            'GTIC' => 'GTIC',
+            'OGH' => 'OGH',
+            'OAC' => 'OAC',
+            'Consultoria Juridica' => 'Consultoria Juridica',
+            'GEDP' => 'GEDP',
+            'OPP' => 'Operaciones',
+            'OGA' => 'OGA',
+            'Presidencia' => 'Presidencia',
+            'Auditoría Interna' => 'Auditoría Interna',
+        ];
+
+        return view('users.edit', compact('user', 'roles', 'departamentos'));
     }
 
     public function update(UserEditRequest $request, User $user)
     {
-        // $user=User::findOrFail($id);
-        $data = $request->only('name', 'username', 'email');
-        $password=$request->input('password');
-        if($password)
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        }
+
+        // Actualizar datos del usuario
+        $data = [
+            'name' => $request->name,
+            'lastname' => $request->lastname,
+            'username' => $request->username,
+            'email' => $request->email,
+            'cedula' => $request->cedula,
+            'fecha_nacimiento' => $request->fecha_nacimiento,
+            'departamento' => $request->departamento,
+            'status' => $request->status ?? true,
+            'is_active' => $request->status ?? true,
+        ];
+
+        // Actualizar contraseña solo si se proporciona
+        $password = $request->input('password');
+        if ($password) {
             $data['password'] = bcrypt($password);
-        // if(trim($request->password)=='')
-        // {
-        //     $data=$request->except('password');
-        // }
-        // else{
-        //     $data=$request->all();
-        //     $data['password']=bcrypt($request->password);
-        // }
+        }
 
         $user->update($data);
 
+        // Actualizar roles - convertir IDs a nombres de rol
         $roles = $request->input('roles', []);
-        $user->syncRoles($roles);
-        return redirect()->route('users.index', $user->id)->with('success', 'Usuario actualizado correctamente');
+        if (!empty($roles)) {
+            // Convertir ID a nombre de rol
+            $roleNames = [];
+            foreach ((array) $roles as $roleId) {
+                $role = Role::findById($roleId, 'web');
+                if ($role) {
+                    $roleNames[] = $role->name;
+                }
+            }
+            $user->syncRoles($roleNames);
+        } else {
+            $user->syncRoles([]);
+        }
+
+        // Manejar foto de perfil si se subió
+        if ($request->hasFile('profile_photo')) {
+            // Eliminar foto anterior si existe
+            if ($user->profile_photo && file_exists(public_path('archivos/avatars/' . $user->profile_photo))) {
+                unlink(public_path('archivos/avatars/' . $user->profile_photo));
+            }
+            $file = $request->file('profile_photo');
+            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $file->move(public_path('archivos/avatars'), $filename);
+            $user->profile_photo = $filename;
+            $user->save();
+        }
+
+        return redirect()->route('users.index')->with('success', 'Usuario actualizado correctamente');
     }
 
     public function destroy(User $user)
     {
+        if (!auth()->check()) {
+            return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        }
+
         abort_if(Gate::denies('user_destroy'), 403);
 
         if (auth()->user()->id == $user->id) {
-            return redirect()->route('users.index');
+            return redirect()->route('users.index')->with('error', 'No puedes eliminar tu propia cuenta');
         }
 
-        $user->delete();
-        return back()->with('succes', 'Usuario eliminado correctamente');
+        try {
+            // Eliminar foto de perfil si existe
+            if ($user->profile_photo && file_exists(public_path('archivos/avatars/' . $user->profile_photo))) {
+                unlink(public_path('archivos/avatars/' . $user->profile_photo));
+            }
+
+            // Eliminar relaciones con almacenamiento_impresoras (establecer user_id a null)
+            \App\Models\AlmacenamientoImpresora::where('user_id', $user->id)->update(['user_id' => null]);
+
+            // Eliminar el usuario
+            $user->delete();
+
+            return back()->with('success', 'Usuario eliminado correctamente');
+        } catch (\Exception $e) {
+            return back()->with('error', 'No se puede eliminar el usuario porque tiene registros asociados');
+        }
     }
     public function export(){
         return Excel::download(new UsersExport, 'users.xlsx');

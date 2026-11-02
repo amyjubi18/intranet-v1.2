@@ -26,13 +26,15 @@ class UserEditRequest extends FormRequest
         $user = $this->route('user');
         return [
             'name' => ['required','unique:users,name,' . $user->id],
-            // Logic for findOrFail
-            // 'username' => 'unique:users,username,'.$this->user.'|required',
-
-/*             'username' => ['required', 'min:3', 'unique:users,username,' . $user->id],
- */            'email' => [
-                'required', 'unique:users,email,' . request()->route('user')->id
+            'lastname' => 'required',
+            'cedula' => 'required',
+            'username' => 'required|min:3|unique:users,username,' . $user->id,
+            'email' => [
+                'required', 'unique:users,email,' . $user->id
             ],
+            'fecha_nacimiento' => 'sometimes|nullable|date',
+            'departamento' => 'required',
+            'roles' => 'required',
             'password' => 'sometimes'
         ];
     }

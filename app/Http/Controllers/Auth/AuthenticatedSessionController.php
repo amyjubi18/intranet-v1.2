@@ -15,9 +15,10 @@ class AuthenticatedSessionController extends Controller
     /**
      * Display the login view.
      */
+    //esta funcion muestra la vista de login
     public function create(): View
     {
-        return view('auth.login');
+        return view('inicio');
     }
 
     /**
@@ -27,7 +28,22 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        // Verificar si el usuario está activo
+        $user = Auth::user();
+        if (!$user || $user->status != 1) {
+            Auth::guard('web')->logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return redirect()->route('login')
+                ->withErrors(['email' => 'Tu cuenta está inactiva. Contacta al administrador para más información.'])
+                ->onlyInput('email');
+        }
+
         $request->session()->regenerate();
+
+        // Establecer la última actividad al iniciar sesión
+        $request->session()->put('last_activity', time());
 
         return redirect()->intended(RouteServiceProvider::HOME);
     }

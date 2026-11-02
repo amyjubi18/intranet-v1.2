@@ -16,7 +16,8 @@ class RoleSeeder extends Seeder
             'Admin',
             'GTIC',
             'Gerente-Admin',
-            'Administración'
+            'Administración',
+            'Bienes-Publicos'
         ];
         foreach ($roles as $role) {
             Role::create([

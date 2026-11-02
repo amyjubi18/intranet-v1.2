@@ -7,6 +7,7 @@
 
             <th class='px-6 py-4 text-center border-4 border-blue-900 '>SEDE</th>
             <th class='px-6 py-4 text-center border-4 border-blue-900 '>UNIDAD ADMINISTRATIVA</th>
+            <th class='px-6 py-4 text-center border-4 border-blue-900 '>N° INTERNO DEL BIEN</th>
             <th class='px-6 py-4 text-center border-4 border-blue-900 '>DESCRIPCIÓN</th>
             <th class='px-6 py-4 text-center border-4 border-blue-900 '>FORMA DE ADQUISICIÓN</th>
             <th class='px-6 py-4 text-center border-4 border-blue-900 '>FECHA DE ADQUISICIÓN</th>

@@ -11,6 +11,6 @@ class FormaAdquisicion extends Model
     protected $fillable =['forma_adquisicion'];
     public function bienes()
     {
-        return $this->hasMany(Bienes::class, 'id');
+        return $this->hasMany(Biene::class, 'forma_adquisicion_id');
     }
 }

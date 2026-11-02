@@ -1,68 +1,388 @@
-<title>{{ 'Roles' }}</title>
-@vite('resources/css/app.css')
+@section('title', 'Roles')
+@section('subtitle', 'Gestión de roles y permisos')
 <x-app-layout>
-    <body>
-        <x-slot name="header">
-            <h2 class="text-4xl font-semibold leading-tight text-center text-blue-800">
-                {{ __('Roles') }}
-            </h2>
-        </x-slot>
-        <div class="p-4 px-20 m-6">
 
-            <div>
-                <a class="inline-flex items-center px-4 py-2 mb-4 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:bg-blue-500 focus:bg-blue-500 active:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" href="{{route('gtic.roles.create')}}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"></path></svg>Añadir nuevo Rol</a>
-            </div>
-            <form action="{{route('gtic.roles.index')}}" method="GET" class="flex">
-                <input type="search" name="search" placeholder="Buscar" value="{{request('search')}}"
-                class="w-1/2 px-4 py-2 border border-gray-200 rounded">
-                <button class="py-2.5 px-4 text-white bg-blue-900 rounded-lg ml-2 inline-flex hover:bg-blue-500" type="submit">Buscar<svg xmlns="http://www.w3.org/2000/svg" class="ml-2" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"></path><path d="M11.412 8.586c.379.38.588.882.588 1.414h2a3.977 3.977 0 0 0-1.174-2.828c-1.514-1.512-4.139-1.512-5.652 0l1.412 1.416c.76-.758 2.07-.756 2.826-.002z"></path></svg></button>
-                <a href="{{route('gtic.roles.index')}}" class="py-2.5 px-4 ml-2 text-white bg-blue-900 rounded-lg hover:bg-blue-500">Actualizar<svg xmlns="http://www.w3.org/2000/svg" class="inline-flex ml-2" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M10 11H7.101l.001-.009a4.956 4.956 0 0 1 .752-1.787 5.054 5.054 0 0 1 2.2-1.811c.302-.128.617-.226.938-.291a5.078 5.078 0 0 1 2.018 0 4.978 4.978 0 0 1 2.525 1.361l1.416-1.412a7.036 7.036 0 0 0-2.224-1.501 6.921 6.921 0 0 0-1.315-.408 7.079 7.079 0 0 0-2.819 0 6.94 6.94 0 0 0-1.316.409 7.04 7.04 0 0 0-3.08 2.534 6.978 6.978 0 0 0-1.054 2.505c-.028.135-.043.273-.063.41H2l4 4 4-4zm4 2h2.899l-.001.008a4.976 4.976 0 0 1-2.103 3.138 4.943 4.943 0 0 1-1.787.752 5.073 5.073 0 0 1-2.017 0 4.956 4.956 0 0 1-1.787-.752 5.072 5.072 0 0 1-.74-.61L7.05 16.95a7.032 7.032 0 0 0 2.225 1.5c.424.18.867.317 1.315.408a7.07 7.07 0 0 0 2.818 0 7.031 7.031 0 0 0 4.395-2.945 6.974 6.974 0 0 0 1.053-2.503c.027-.135.043-.273.063-.41H22l-4-4-4 4z"></path></svg></a>
+    <x-slot name="scripts">
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    </x-slot>
 
-            </form>
-            <table class="table w-full text-black sm:p-4">
+    <style>
+        :root{
+            --color-primary:#1e3a8a; --color-secondary:#22C55E; --color-accent:#F59E0B;
+            --bg-from:#f0f9ff; --bg-to:#dbeafe;
+            --text:#1e3a8a;
+            --card-bg:rgba(255,255,255,0.8); --card-border:rgba(59,130,246,0.15);
+            --link-hover-bg: rgba(59,130,246,0.08);
+            --muted:#64748b;
+        }
 
+        body{
+            font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+            background: linear-gradient(135deg, #f0f9ff 0%, #dbeafe 25%, #bfdbfe 50%, #93c5fd 75%, #60a5fa 100%);
+            color:var(--text);
+            min-height: 100%;
+        }
 
+        .glass{ background:var(--card-bg); border:1px solid var(--card-border); backdrop-filter:blur(8px) }
+        .btn{ display:inline-flex; align-items:center; justify-content:center; gap:.5rem; border-radius:.75rem; padding:.5rem .75rem; font-weight:600; transition:.2s; border:1px solid var(--card-border); cursor: pointer; font-size: 0.75rem; }
+        .btn:active{ transform:translateY(1px) }
+        .btn-primary{ background:var(--color-primary); color:#fff; border-color: var(--color-primary); }
+        .btn-primary:hover{ background:#1e40af; }
+        .btn-secondary{ background:rgba(15,23,42,0.06); }
+        .btn-secondary:hover{ background:rgba(15,23,42,0.1); }
+        .btn-success{ background:var(--color-secondary); color:#fff; border-color: var(--color-secondary); }
+        .btn-success:hover{ background:#16a34a; }
+        .btn-danger{ background:#dc2626; color:#fff; border-color: #dc2626; }
+        .btn-danger:hover{ background:#b91c1c; }
 
-                <thead class='text-sm font-semibold text-white uppercase bg-blue-900 border-4 border-white '>
-                    <tr class="border-4 border-blue-900 ">
-                        <th class='px-6 py-4 text-center border-4 border-blue-900 '>ID</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>ROL</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>PERMISOS</th>
+        .fade-in{
+            animation:fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn{
+            from{ opacity:0; transform:translateY(10px); }
+            to{ opacity:1; transform:translateY(0); }
+        }
 
-                   <th colspan="2" class='py-4 text-center border-4 border-blue-900 w-fit '>OPCIÓN</th>
-                </thead >
-                <tbody class='py-4 text-center border-4 border-blue-900'>
-                    @forelse ($roles as $role)
-                        <tr class='px-6 py-2 my-4 font-semibold text-black border-4 border-blue-900 '>
-                            <td class='py-2 text-center border-4 border-blue-900'> {{$role->id}}</td>
-                            <td class='px-10 py-2 font-semibold text-center border-4 border-blue-900 '>{{$role->name}}</td>
-                            <td class='px-10 py-2 text-center border-4 border-blue-900 '>
-                                @forelse ($role->permissions as $permission)
-                                <span class="block p-2 font-semibold tracking-tight text-white bg-cyan-500">{{$permission->name}}</span>
-                                @empty
-                                <span class="p-2 text-white bg-red-700">No tiene permisos</span>
-                                @endforelse
+        .form-input {
+            width: 100%;
+            padding: 0.5rem 0.75rem;
+            border: 1px solid var(--card-border);
+            border-radius: 0.5rem;
+            background: var(--card-bg);
+            backdrop-filter: blur(8px);
+            transition: all 0.2s ease;
+            font-size: 0.75rem;
+        }
 
-                            </td>
+        .form-input:focus {
+            outline: none;
+            border-color: var(--color-primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
 
-                            <td class='flex items-center justify-center py-12 text-center '><a href="{{route('gtic.roles.edit', $role->id)}}" target="blank_" class="w-fit inline-flex flex justify-around px-4 py-2.5 mr-2  text-white bg-green-700 rounded-lg transition duration-150 ease-in-out  hover:text-white hover:bg-green-500 focus:outline-none">Editar<svg xmlns="http://www.w3.org/2000/svg" class="ml-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="m16 2.012 3 3L16.713 7.3l-3-3zM4 14v3h3l8.299-8.287-3-3zm0 6h16v2H4z"></path></svg></a>
-                        <form action="{{ route('gtic.roles.destroy', $role->id) }}" method="POST" onsubmit="return confirm('¿Seguro que quiere eliminar el permiso?')">
-                                    @csrf
-                                    @method('DELETE')
-                                <button class="inline-flex px-4 py-2.5 mt-3 items-center rounded-lg font-semibold text-center text-white bg-red-600  transition duration-150 ease-in-out  hover:text-white hover:bg-red-500 focus:outline-none" type="submit">Eliminar<svg xmlns="http://www.w3.org/2000/svg" class="ml-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"></path></svg></button>
-                        </form></td>
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(12px);
+            border-radius: 0.75rem;
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            z-index: 200;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateX(100%);
+            transition: all 0.3s ease;
+        }
 
-                         @empty
-                         No hay ningun rol registrado
-                         </tr>
+        .toast.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateX(0);
+        }
 
-                    @endforelse
-                </tbody>
+        .toast.success {
+            border-color: var(--color-secondary);
+        }
 
-            </table>
-            <div >
-                {{$roles->links()}}
+        .toast.error {
+            border-color: #dc2626;
+        }
+
+        /* Role Card */
+        .role-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            backdrop-filter: blur(8px);
+            border-radius: 1rem;
+            padding: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .role-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(30, 58, 138, 0.15);
+        }
+
+        .role-id {
+            background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
+            color: white;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 0.5rem;
+        }
+
+        .role-name {
+            font-size: 1rem;
+            font-weight: 700;
+            color: #1e3a8a;
+            word-break: break-word;
+        }
+
+        .permissions-label {
+            font-size: 0.7rem;
+            color: var(--muted);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .permissions-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .permissions-list::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .permissions-list::-webkit-scrollbar-track {
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 2px;
+        }
+
+        .permissions-list::-webkit-scrollbar-thumb {
+            background: rgba(59, 130, 246, 0.3);
+            border-radius: 2px;
+        }
+
+        .permission-badge {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1e40af;
+            padding: 0.2rem 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.65rem;
+            font-weight: 500;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .card-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid var(--card-border);
+        }
+
+        .card-actions .btn {
+            flex: 1;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: 1.5rem;
+            padding: 1rem;
+        }
+
+        .pagination a,
+        .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 2rem;
+            height: 2rem;
+            padding: 0 0.5rem;
+            border-radius: 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            color: var(--text);
+            text-decoration: none;
+        }
+
+        .pagination a:hover {
+            background: rgba(59, 130, 246, 0.1);
+            border-color: var(--color-primary);
+        }
+
+        .pagination .active span {
+            background: var(--color-primary);
+            color: white;
+            border-color: var(--color-primary);
+        }
+
+        .pagination .disabled {
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        /* Grid */
+        .roles-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1rem;
+        }
+    </style>
+
+    <!-- Main Content -->
+
+    <!-- Filtros Avanzados -->
+    <form method="GET" action="{{ route('gtic.roles.index') }}" id="filterForm">
+        <div class="px-4 sm:px-6 pb-4">
+            <div class="glass rounded-xl p-4 mb-4 sm:mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <!-- Búsqueda rápida -->
+                        <div class="relative">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400">
+                                <circle cx="10" cy="10" r="7"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                            </svg>
+                            <input type="search" name="search" placeholder="Buscar rol..." value="{{ request('search') }}" class="form-input pl-8 text-xs" style="width: 200px;">
+                        </div>
+                        <button type="submit" class="btn btn-primary text-xs">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="10" cy="10" r="7"/>
+                                <path d="M21 21l-4.35-4.35"/>
+                            </svg>
+                        </button>
+
+                       
+
+                        <!-- Botón para limpiar filtros -->
+                        <a href="{{ route('gtic.roles.index') }}" class="btn btn-secondary text-xs">
+                            🗑️ Limpiar
+                        </a>
+                    </div>
+
+                    <!-- Botón Añadir Rol -->
+                    <a href="{{ route('gtic.roles.create') }}" class="btn bg-blue-900 text-white hover:bg-blue-700 text-xs">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/>
+                        </svg>
+                        Añadir
+                    </a>
+                </div>
             </div>
         </div>
-    </body>
+    </form>
+
+    <!-- Roles Cards -->
+    <div class="px-4 sm:px-6 pb-8">
+        @if($roles->count() > 0)
+            <div class="roles-grid">
+                @foreach($roles as $role)
+                    <div class="role-card fade-in">
+                        <!-- Header de la tarjeta -->
+                        <div>
+                            <div class="role-id">ID: {{ $role->id }}</div>
+                            <div class="role-name">{{ $role->name }}</div>
+                        </div>
+
+                        <!-- Permisos -->
+                        <div class="permissions-label">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                                <path d="M9 12l2 2 4-4"/>
+                            </svg>
+                            Permisos ({{ $role->permissions->count() }})
+                        </div>
+                        <div class="permissions-list">
+                            @forelse($role->permissions as $permission)
+                                <span class="permission-badge">{{ $permission->name }}</span>
+                            @empty
+                                <span class="permission-badge" style="background: rgba(220, 38, 38, 0.1); color: #dc2626; border-color: rgba(220, 38, 38, 0.2);">Sin permisos</span>
+                            @endforelse
+                        </div>
+
+                        <!-- Botones de acción -->
+                        <div class="card-actions">
+                            <a href="{{ route('gtic.roles.edit', $role->id) }}" class="btn btn-success">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="m16 2.012 3 3L16.713 7.3l-3-3zM4 14v3h3l8.299-8.287-3-3zm0 6h16v2H4z"/>
+                                </svg>
+                                Editar
+                            </a>
+                            <form action="{{ route('gtic.roles.destroy', $role->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro que quieres eliminar el rol {{ $role->name }}?')">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-danger">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"/>
+                                    </svg>
+                                    Eliminar
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+
+            <!-- Pagination -->
+            @if($roles->hasPages())
+            <div class="px-6 mt-8">
+                <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-4">
+                    {!! $roles->appends(request()->query())->links() !!}
+                </div>
+            </div>
+            @endif
+        @else
+            <!-- Empty State -->
+            <div class="glass rounded-xl p-8 text-center">
+                <div class="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center mx-auto mb-3">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
+                <h3 class="text-sm font-semibold text-slate-600 mb-1">No hay roles registrados</h3>
+                <p class="text-xs text-slate-400 mb-3">Comienza creando un nuevo rol</p>
+                <a href="{{ route('gtic.roles.create') }}" class="btn btn-primary inline-flex">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"/>
+                    </svg>
+                    Añadir Rol
+                </a>
+            </div>
+        @endif
+    </div>
+
+    <!-- Toast -->
+    @if(session('success'))
+    <div id="toast" class="toast show success">
+        <div id="toastIcon">✅</div>
+        <div id="toastMessage">{{ session('success') }}</div>
+    </div>
+    @endif
+
+    @if(session('error'))
+    <div id="toast" class="toast show error">
+        <div id="toastIcon">❌</div>
+        <div id="toastMessage">{{ session('error') }}</div>
+    </div>
+    @endif
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const toast = document.getElementById('toast');
+            if (toast && toast.classList.contains('show')) {
+                setTimeout(() => {
+                    toast.classList.remove('show');
+                }, 3000);
+            }
+        });
+    </script>
 </x-app-layout>
+

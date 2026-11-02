@@ -12,15 +12,41 @@ class RoleController extends Controller
      * Display a listing of the resource.
      */
     public function index(Request $request)
-
     {
-        abort_if(Gate::denies('role_index'), 403);
-        $roles = Role::query()->with('permissions')->when(request('search'), function($query){
-           return $query->where('name', 'LIKE','%'.request('search').'%')->orWhereHas('permissions', function($q){
-            $q->where('name','LIKE','%'.request('search').'%');
-           });
-        })->latest()->paginate(5);
-        return view('gtic.roles.index', compact('roles'));
+        /*  abort_if(Gate::denies('role_index'), 403);  */
+        $search = $request->get('search');
+        $query = Role::query()->with('permissions');
+
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('name', 'LIKE', '%' . $search . '%')
+                  ->orWhereHas('permissions', function($subq) use ($search) {
+                      $subq->where('name', 'LIKE', '%' . $search . '%');
+                  });
+            });
+        }
+
+        // Ordenamiento
+        $sort = $request->get('sort', 'newest');
+        switch ($sort) {
+            case 'name_asc':
+                $query->orderBy('name', 'asc');
+                break;
+            case 'name_desc':
+                $query->orderBy('name', 'desc');
+                break;
+            case 'newest':
+            default:
+                $query->latest();
+                break;
+        }
+
+        $roles = $query->paginate(12)->appends($request->query());
+
+        /* return view('gtic.roles.index', compact('roles')); */
+        return view('gtic.roles.index', [
+            'roles' => $roles
+        ]);
     }
 
     /**
@@ -28,10 +54,9 @@ class RoleController extends Controller
      */
     public function create()
     {
-        abort_if(Gate::denies('role_create'), 403);
+         /* abort_if(Gate::denies('role_create'), 403);  */
         $permissions = Permission::all()->pluck('name', 'id');
-/*         dd($permisos);
- */        return view('gtic.roles.create', compact('permissions'));
+        return view('gtic.roles.create', compact('permissions'));
     }
 
     /**
@@ -39,9 +64,14 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
-        $role= Role::create($request->only('name'));
-        $role->syncPermissions($request->input('permissions',[]));
-        return redirect()->route('gtic.roles.index');
+        $role = Role::create($request->only('name'));
+        $role->permissions()->sync($request->input('permissions', []));
+
+        if ($request->action === 'save_and_new') {
+            return redirect()->route('gtic.roles.create')->with('success', 'Rol creado exitosamente. Puede crear otro.');
+        }
+
+        return redirect()->route('gtic.roles.index')->with('success', 'Rol guardado exitosamente.');
     }
 
     /**
@@ -58,7 +88,7 @@ class RoleController extends Controller
      */
     public function edit(Role $role)
     {
-        abort_if(Gate::denies('role_edit'), 403);
+        /* abort_if(Gate::denies('role_edit'), 403);  */
         $permissions= Permission::all()->pluck('name','id');
         $role->load('permissions');
         return view('gtic.roles.edit', compact('role', 'permissions'));
@@ -70,7 +100,7 @@ class RoleController extends Controller
     public function update(Request $request, Role $role)
     {
         $role->update($request->only('name'));
-        $role->syncPermissions($request->input('permissions',[]));
+        $role->permissions()->sync($request->input('permissions',[]));
         return redirect()->route('gtic.roles.index');
     }
 
@@ -84,3 +114,4 @@ class RoleController extends Controller
         return redirect()->route('gtic.roles.index')->with('Rol eliminado');
     }
 }
+

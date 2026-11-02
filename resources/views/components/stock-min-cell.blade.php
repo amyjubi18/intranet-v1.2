@@ -1,0 +1,3 @@
+<span style="background-color: red; color: white; text-align: center; padding: 20px;">
+    {{ $value }}
+</span>

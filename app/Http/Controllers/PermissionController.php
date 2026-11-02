@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use Spatie\Permission\Models\Permission;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\DB;
+
 use Illuminate\Http\Request;
 
 class PermissionController extends Controller
@@ -14,10 +16,15 @@ class PermissionController extends Controller
     {
 
         abort_if(Gate::denies('permission_index'), 403);
-        $search = $request->search;
-        $permissions = Permission::where('name','LIKE',"%{$search}%")->with('permissions')->latest()->paginate(5);
-/*         $permissions = Permission::paginate(5);
- */        return view('gtic.permisos.index' ,['permissions'=>$permissions]);
+
+       /*  $search = $request->search;
+        $permissions = Permission::where('name','LIKE','%'.$search.'%')->first()->orderBy('name','asc')->paginate(10); */
+
+        $search =trim($request->get('search'));
+        $permissions = DB::table('permissions')->select('id', 'name')->where('name', 'LIKE', '%'.$search.'%')->orderBy('name', 'asc')->paginate(15);
+        return view('gtic.permisos.index', compact('permissions', 'search'));
+
+        /* return view('gtic.permisos.index' ,['permissions'=>$permissions]); */
     }
 
     /**
@@ -62,7 +69,7 @@ class PermissionController extends Controller
      */
     public function update(Request $request, Permission $permission)
     {
-       $permission->update($request->only('name')); 
+       $permission->update($request->only('name'));
         return redirect()->route('gtic.permisos.index');
     }
 

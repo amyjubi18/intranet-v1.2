@@ -1,103 +1,535 @@
 @can('bienes_index')
-<title>{{ 'Bienes Públicos' }}</title>
-@vite('resources/css/app.css')
 <x-app-layout>
-    <body>
-        <x-slot name="header">
-            <h2 class="text-4xl font-semibold leading-tight text-center text-blue-800">
-                {{ __('Bienes Públicos') }}
-            </h2>
-        </x-slot>
-        <div class="p-4 pb-2 m-4 mb-2">
-            <div>
-                <a class="inline-flex items-center px-4 py-2 mb-4 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:bg-blue-500 focus:bg-blue-500 active:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" href="{{route('administracion.bienes_publicos.create')}}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"></path></svg>Formulario</a>
+    @section('title', 'Bienes Públicos')
+    @section('subtitle', 'Bienes Nacionales ')
+    <style>
+        .swal2-popup .swal2-actions { display: flex !important; opacity: 1 !important; }
+        .swal2-popup .swal2-confirm { opacity: 1 !important; visibility: visible !important; background-color: #F52727 !important; color: white !important; }
+        .swal2-popup .swal2-cancel { opacity: 1 !important; visibility: visible !important; background-color: #2780F5 !important; color: white !important; }
+    </style>
 
-
-                <a class="inline-flex items-center px-4 py-2 mb-4 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:bg-blue-500 focus:bg-blue-500 active:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" href="{{route('export')}}"><svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M11 16h2V7h3l-4-5-4 5h3z"></path><path d="M5 22h14c1.103 0 2-.897 2-2v-9c0-1.103-.897-2-2-2h-4v2h4v9H5v-9h4V9H5c-1.103 0-2 .897-2 2v9c0 1.103.897 2 2 2z"></path></svg>Exportar</a>
+    <!-- Tarjetas superiores de estadísticas -->
+    <div class="px-6 mb-8">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
+            <!-- Total de Bienes -->
+            <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl grid place-items-center bg-blue-500/20">
+                        <span class="text-blue-500" style="font-size: 24px;">📦</span>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold mb-1">{{ $totalBienes ?? 0 }}</h3>
+                <p class="text-sm text-blue-900 font-semibold">Total de Bienes</p>
             </div>
-            <form action="{{route('administracion.bienes_publicos.index')}}" method="GET" class="flex-grow">
-                <input type="search" name="search" placeholder="Buscar" value="{{request('search')}}"
-                class="w-1/2 px-4 py-2 border border-gray-200 rounded">
-                <button class="py-2.5 px-4 text-white bg-blue-900 rounded-lg ml-2 inline-flex hover:bg-blue-500" type="submit">Buscar<svg xmlns="http://www.w3.org/2000/svg" class="ml-2" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"></path><path d="M11.412 8.586c.379.38.588.882.588 1.414h2a3.977 3.977 0 0 0-1.174-2.828c-1.514-1.512-4.139-1.512-5.652 0l1.412 1.416c.76-.758 2.07-.756 2.826-.002z"></path></svg></button>
-                    <a href="{{route('administracion.bienes_publicos.index')}}" class="px-4 py-3 ml-2 text-white bg-blue-900 rounded-lg hover:bg-blue-500">Actualizar<svg xmlns="http://www.w3.org/2000/svg" class="inline-flex ml-2" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M10 11H7.101l.001-.009a4.956 4.956 0 0 1 .752-1.787 5.054 5.054 0 0 1 2.2-1.811c.302-.128.617-.226.938-.291a5.078 5.078 0 0 1 2.018 0 4.978 4.978 0 0 1 2.525 1.361l1.416-1.412a7.036 7.036 0 0 0-2.224-1.501 6.921 6.921 0 0 0-1.315-.408 7.079 7.079 0 0 0-2.819 0 6.94 6.94 0 0 0-1.316.409 7.04 7.04 0 0 0-3.08 2.534 6.978 6.978 0 0 0-1.054 2.505c-.028.135-.043.273-.063.41H2l4 4 4-4zm4 2h2.899l-.001.008a4.976 4.976 0 0 1-2.103 3.138 4.943 4.943 0 0 1-1.787.752 5.073 5.073 0 0 1-2.017 0 4.956 4.956 0 0 1-1.787-.752 5.072 5.072 0 0 1-.74-.61L7.05 16.95a7.032 7.032 0 0 0 2.225 1.5c.424.18.867.317 1.315.408a7.07 7.07 0 0 0 2.818 0 7.031 7.031 0 0 0 4.395-2.945 6.974 6.974 0 0 0 1.053-2.503c.027-.135.043-.273.063-.41H22l-4-4-4 4z"></path></svg></a>
-            </form>
-        </div>
-        <div>
-            <table class="block w-full overflow-x-scroll text-black table-auto sm:p-4">
 
+            <!-- Última Fecha de Adquisición -->
+            <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl grid place-items-center bg-green-500/20">
+                        <span class="text-green-500" style="font-size: 24px;">📅</span>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold mb-1">{{ $ultimoBien ? \Carbon\Carbon::parse($ultimoBien->fecha_adquisicion)->format('d/m/Y') : 'N/A' }}</h3>
+                <p class="text-sm text-blue-900 font-semibold">Última Fecha de Adquisición</p>
+            </div>
 
-
-                <thead class='w-full text-sm font-semibold text-white uppercase bg-blue-900 border-4 border-white'>
-                    <tr class="border-4 border-blue-900 ">
-                        <th class='px-6 py-4 text-center border-4 border-blue-900 '></th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>SEDE</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>UNIDAD ADMINISTRATIVA</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>N° INTERNO DEL BIEN</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>DESCRIPCIÓN</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>FORMA DE ADQUISICIÓN</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>FECHA DE ADQUISICIÓN</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>N° DE FACTURA</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>VALOR DE FACTURA</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>MONEDA</th>
-                    <th class='w-auto px-6 py-4 text-center border-4 border-blue-900 '>ESTADO DEL USO DEL BIEN</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>CONDICIÓN FÍSICA</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>MARCA</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>MODELO</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>SERIAL</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>CATEGORÍA GENERAL</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>SUBCATEGORÍA</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>CATEGORÍA ESPECÍFICA</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>CÓDIGO CONTABLE</th>
-
-
-                    <th colspan="2" class='px-10 py-4 text-center border-4 border-blue-900 '>OPCIÓN</th>
-                </thead >
-                 <tbody class='py-4 text-center border-4 border-blue-900'>
-                    @forelse ($bienes as $dato)
-                        <tr class='px-6 py-4 my-4 text-black border-4 border-blue-900'>
-                            <td>
-                                <input type="checkbox" wire:model="selectedBienes.{{$dato->id}}" name="" id="{{$dato->id}}" value="{{$dato->id}}">
-                            </td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->sede}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'> {{$dato->unidad_administrativas->unidad_administrativa}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->n_interno_bien}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->descripcion}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->forma_adquisicions->forma_adquisicion}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->fecha_adquisicion}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->n_factura}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->valor_factura}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->moneda}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->estado_del_usos->estado_del_uso}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->condicion_fisica}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->marca}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->modelo}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->serial}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->categoria_generals->categoria_general}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->sub_categorias->sub_categoria}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->categoria_especificas->categoria_especifica}}</td>
-                            <td class='py-4 text-center border-4 border-blue-900'>{{$dato->codigo_contable}}</td>
-                             <td class='px-3 py-4 text-center border-4 border-blue-900 justify-items-center '>
-                                <a href="{{route('administracion.bienes_publicos.edit', $dato->id)}}" target="blank_" class="w-fit inline-flex flex justify-around px-4 py-2.5 font-semibold text-white bg-green-700 rounded-lg transition duration-150 ease-in-out  hover:text-white hover:bg-green-500 focus:outline-non">Editar<svg xmlns="http://www.w3.org/2000/svg" class="ml-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="m16 2.012 3 3L16.713 7.3l-3-3zM4 14v3h3l8.299-8.287-3-3zm0 6h16v2H4z"></path></svg></a></td>
-                                <td class='px-3 py-4 text-center border-4 border-blue-900'>
-                                    <form action="{{ route('administracion.bienes_publicos.destroy', $dato->id) }}" method="POST" onsubmit="return confirm('¿Seguro que quiere eliminar esta fila?')">
-                                       @csrf
-                                       @method('DELETE')
-                                       <button class="inline-flex px-4 py-2.5 mt-3 items-center rounded-lg font-semibold text-center text-white bg-red-600  transition duration-150 ease-in-out  hover:text-white hover:bg-red-500 focus:outline-none" type="submit">Eliminar<svg xmlns="http://www.w3.org/2000/svg" class="ml-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"></path></svg></button>
-                                   </form>
-                            </td>
-
-                     @empty
-                            No hay ningun permiso registrado
-                         </tr>
-                    @endforelse
-                </tbody>
-
-            </table>
-        </div>
-             <div class="px-10 pb-10 m-6">
-                {{$bienes->links()}}
+            <!-- Bienes en Uso -->
+            <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="w-12 h-12 rounded-xl grid place-items-center bg-yellow-500/20">
+                        <span class="text-yellow-500" style="font-size: 24px;">✅</span>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-bold mb-1">{{ $bienesEnUso ?? 0 }}</h3>
+                <p class="text-sm text-blue-900 font-semibold">Bienes en Uso</p>
             </div>
         </div>
-    </body>
-    </x-app-layout>
-    @endcan
+    </div>
+
+    <!-- Filtros y controles -->
+    <form method="GET" action="{{ route('administracion.bienes_publicos.index') }}" id="filterForm">
+        <div class="px-6 mb-6">
+            <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="flex flex-wrap items-center gap-4">
+                        <button type="button" onclick="toggleAdvancedFilters()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
+                            Filtros Avanzados
+                        </button>
+                        <button type="button" onclick="startQrScanner()" class="bg-green-600 hover:bg-green-700 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50">
+                            📷 Escanear QR
+                        </button>
+                        <select id="filterType" name="filterType" onchange="updateSecondFilter()" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm" style="display:none;">
+                            <option value="">Seleccionar filtro</option>
+                            <option value="n_interno_bien" {{ request('filterType') == 'n_interno_bien' ? 'selected' : '' }}>N° Interno</option>
+                            <option value="descripcion" {{ request('filterType') == 'descripcion' ? 'selected' : '' }}>Descripción</option>
+                            <option value="unidad_administrativa_id" {{ request('filterType') == 'unidad_administrativa_id' ? 'selected' : '' }}>Unidad Administrativa</option>
+                            <option value="usuario_de_uso_id" {{ request('filterType') == 'usuario_de_uso_id' ? 'selected' : '' }}>Usuario de Uso</option>
+                            <option value="usuario_administrativo_id" {{ request('filterType') == 'usuario_administrativo_id' ? 'selected' : '' }}>Usuario Administrativo</option>
+                            <option value="estado_del_uso_id" {{ request('filterType') == 'estado_del_uso_id' ? 'selected' : '' }}>Estado del Uso</option>
+                            <option value="forma_adquisicion_id" {{ request('filterType') == 'forma_adquisicion_id' ? 'selected' : '' }}>Forma de Adquisición</option>
+                            <option value="marca" {{ request('filterType') == 'marca' ? 'selected' : '' }}>Marca</option>
+                            <option value="modelo" {{ request('filterType') == 'modelo' ? 'selected' : '' }}>Modelo</option>
+                            <option value="condicion_id" {{ request('filterType') == 'condicion_id' ? 'selected' : '' }}>Condición</option>
+                            <option value="color_id" {{ request('filterType') == 'color_id' ? 'selected' : '' }}>Color</option>
+                            <option value="serial" {{ request('filterType') == 'serial' ? 'selected' : '' }}>Serial</option>
+                            <option value="codigo_qr" {{ request('filterType') == 'codigo_qr' ? 'selected' : '' }}>Código QR</option>
+                            <option value="fecha" {{ request('filterType') == 'fecha' ? 'selected' : '' }}>Fecha de Adquisición</option>
+                            <option value="busqueda" {{ request('filterType') == 'busqueda' ? 'selected' : '' }}>Búsqueda General</option>
+                        </select>
+                        <div id="secondFilterContainer">
+                            <select id="secondFilter" onchange="applySelectFilter()" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm" {{ request('filterType') ? '' : 'disabled' }}>
+                                <option value="">-----</option>
+                                @if(request('filterType') == 'n_interno_bien')
+                                    @foreach($n_internos ?? [] as $n_interno)
+                                        <option value="{{ $n_interno }}" {{ request('secondFilter') == $n_interno ? 'selected' : '' }}>{{ $n_interno }}</option>
+                                    @endforeach
+                                @endif
+                            </select>
+                        </div>
+                        <div id="dateRangeFilter" style="{{ request('filterType') == 'fecha' ? '' : 'display:none;' }}">
+                            <input type="text" id="dateRangePicker" name="fecha_rango" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm" placeholder="Seleccionar rango">
+                            <input type="hidden" name="fecha_desde" id="fecha_desde" value="{{ request('fecha_desde') }}">
+                            <input type="hidden" name="fecha_hasta" id="fecha_hasta" value="{{ request('fecha_hasta') }}">
+                        </div>
+                        <input type="text" id="generalSearch" name="busqueda" placeholder="Buscar..." class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm" value="{{ request('busqueda') }}" style="{{ request('filterType') == 'busqueda' ? '' : 'display:none;' }}">
+                        <input type="text" id="textFilter" name="secondFilter" placeholder="Ingresa el valor..." class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm" value="{{ request('secondFilter') }}" style="{{ (request('filterType') == 'serial' || request('filterType') == 'codigo_qr') ? '' : 'display:none;' }}">
+                        <a href="{{ route('administracion.bienes_publicos.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
+                            🗑️ Limpiar
+                        </a>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
+                            <option value="">📤 Exportar</option>
+                            <option value="{{ route('administracion.bienes_publicos.export.excel', request()->all()) }}">Excel</option>
+                            <option value="{{ route('administracion.bienes_publicos.export.pdf', request()->all()) }}">PDF</option>
+                        </select>
+                        @can('bienes_create')
+                        <a href="/administracion/bienes_publicos/create" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
+                            <span>➕</span>
+                            Nuevo
+                        </a>
+                        @endcan
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+
+    <!-- Listado de bienes -->
+    <div class="px-6 mb-8">
+        <div class="space-y-4">
+            @forelse($bienes ?? [] as $item)
+                <!-- Card de bien -->
+                <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
+                    <div class="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+                        <!-- Icono/Imagen del bien -->
+                        <div class="flex items-center justify-center flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-to-br from-blue-500 to-blue-900">
+                            <span class="text-3xl">{{ $item->getIconForDescription() }}</span>
+                        </div>
+
+                        <!-- Información principal -->
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <p class="text-xs text-blue-900 font-semibold mb-1">Sede</p>
+                                <p class="font-semibold">{{ $item->sede }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Descripción</p>
+                                <p class="font-bold truncate text-md">{{ $item->descripcion }}</p>
+                            </div>
+                            <div>
+
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-900 font-semibold mb-1">N° Interno</p>
+                                <p class="font-mono text-sm">{{ $item->n_interno_bien }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Unidad Admin.</p>
+                                <p class="text-sm font-semibold">{{ $item->unidad_administrativas ? $item->unidad_administrativas->name : 'N/A' }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mb-1">Usuario Uso</p>
+                                <p class="text-sm">{{ $item->usuario_de_usos ? $item->usuario_de_usos->usuario_de_uso : 'N/A' }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mb-1">Usuario Admin</p>
+                                <p class="text-sm">{{ $item->usuario_administrativos ? $item->usuario_administrativos->usuario_administrativo : 'N/A' }}</p>
+                            </div>
+
+                            <div>
+
+                            </div>
+                        </div>
+
+                        <!-- Información secundaria -->
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div>
+                                <p class="text-xs text-blue-900 font-semibold mb-1">Estado</p>
+                                @php $estadoColorClass = $item->estado_del_uso_id == 6 ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'; @endphp
+                                <span class="inline-flex items-center p-3 rounded-md text-xs font-medium border {{ $estadoColorClass }}">{{ $item->estado_del_usos ? $item->estado_del_usos->estado_del_uso : 'N/A' }}</span>
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Condición</p>
+                                <p class="text-sm">{{ $item->condicions ? $item->condicions->condicion : 'N/A' }}</p>
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-900 font-semibold mb-1">Marca / Modelo</p>
+                                <p class="text-sm">{{ $item->marca }} / {{ $item->modelo }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Serial</p>
+                                <p class="font-mono text-sm">{{ $item->serial }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Color</p>
+                                <p class="flex items-center gap-2 text-sm">
+                                    <span class="w-4 h-4 border border-gray-300 rounded-full" style="background-color: {{ $item->color_css ?? '#cccccc' }}"></span>
+                                    {{ $item->colors ? $item->colors->color : 'N/A' }}
+                                </p>
+                            </div>
+                            <div>
+                                
+                            </div>
+                            <div>
+                                <p class="text-xs text-blue-900 font-semibold mb-1">Código QR</p>
+                                @php
+                                    // Verificar si qr_code es una imagen guardada (base64/Data URL) o una URL
+                                    $qrCode = $item->qr_code ?? '';
+                                    $isBase64 = !empty($qrCode) && (str_starts_with($qrCode, 'data:image') || str_starts_with($qrCode, '/9j/'));
+
+                                    if ($isBase64) {
+                                        // Usar la imagen QR guardada
+                                        $qrImageUrl = $qrCode;
+                                        $qrModalUrl = $qrCode; // Para el modal usar la misma imagen
+                                    } elseif (!empty($item->n_interno_bien)) {
+                                        // Generar QR automático desde n_interno_bien
+                                        $qrImageUrl = 'https://quickchart.io/chart?cht=qr&chs=150x150&chl=' . urlencode(url('/bienes/qr/' . $item->n_interno_bien));
+                                        $qrModalUrl = 'https://quickchart.io/chart?cht=qr&chs=300x300&chl=' . urlencode(url('/bienes/qr/' . $item->n_interno_bien));
+                                    } else {
+                                        // Fallback usando el ID
+                                        $qrImageUrl = 'https://quickchart.io/chart?cht=qr&chs=150x150&chl=' . urlencode(url('/bienes/qr/bien-' . $item->id));
+                                        $qrModalUrl = 'https://quickchart.io/chart?cht=qr&chs=300x300&chl=' . urlencode(url('/bienes/qr/bien-' . $item->id));
+                                    }
+                                @endphp
+                                <img src="{{ $qrImageUrl }}" alt="QR" class="w-16 h-16 border border-gray-300 rounded-lg cursor-pointer hover:scale-110 transition-transform" onclick="openQrModal('{{ $qrModalUrl }}', '{{ $item->n_interno_bien ?? $item->id }}')">
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Fecha Adq.</p>
+                                <p class="text-sm">{{ $item->fecha_adquisicion ? \Carbon\Carbon::parse($item->fecha_adquisicion)->format('d/m/Y') : 'N/A' }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Valor (Bs.)</p>
+                                <p class="text-sm font-bold text-green-600">{{ number_format((float) $item->valor_factura, 2) }}</p>
+                            </div>
+                        </div>
+
+                        <!-- Acciones -->
+                        <div class="flex flex-col items-center md:items-end gap-2 w-full md:w-auto">
+                            <div class="flex flex-wrap justify-center gap-2 md:justify-end">
+                                @can('bienes_edit')
+                                <a href="{{ route('administracion.bienes_publicos.edit', $item->id) }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 text-white hover:bg-green-700 active:translate-y-0.5 text-xs">
+                                    <span>✏️</span>
+                                    Editar
+                                </a>
+                                @endcan
+                                @can('bienes_destroy')
+                                <form id="delete-form-{{ $item->id }}" action="{{ route('administracion.bienes_publicos.destroy', $item->id) }}" method="POST" class="inline">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="button" onclick="confirmDelete({{ $item->id }})" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-red-500 text-white active:translate-y-0.5 text-xs">
+                                        <span>🗑️</span>
+                                        Eliminar
+                                    </button>
+                                </form>
+                                @endcan
+                            </div>
+                            <p class="text-xs text-gray-500">{{ $item->created_at ? $item->created_at->format('d/m/Y H:i') : 'N/A' }}</p>
+                        </div>
+                    </div>
+                </div>
+            @empty
+                <!-- Mensaje cuando no hay bienes -->
+                <div class="p-12 text-center bg-white border shadow-lg border-white/20 backdrop-blur-md rounded-2xl">
+                    <h3 class="mb-2 text-xl font-bold text-gray-700">No hay bienes registrados</h3>
+                    <p class="mb-6 text-gray-500">Comienza agregando un nuevo bien público</p>
+                    @can('bienes_create')
+                    <a href="/administracion/bienes_publicos/create" class="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-blue-900 text-white">➕ Registrar Nuevo Bien</a>
+                    @endcan
+                </div>
+            @endforelse
+        </div>
+
+        <!-- Paginación -->
+        @if(isset($bienes) && $bienes->hasPages())
+        <div class="px-6 mt-8">
+            <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-4">
+                {!! $bienes->links() !!}
+            </div>
+        </div>
+        @endif
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        function confirmDelete(id) {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar!',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    document.getElementById('delete-form-' + id).submit();
+                }
+            });
+        }
+        function openQrModal(qrUrl, nInterno) {
+            Swal.fire({
+                title: 'Código QR - Bien: ' + nInterno,
+                html: '<img src="' + qrUrl + '" class="w-64 h-64 mx-auto border-2 border-gray-300 rounded-lg" alt="Código QR">',
+                showCloseButton: true,
+                showConfirmButton: true,
+                confirmButtonText: 'Descargar',
+                width: '450px'
+            }).then((result) => {
+                if (result.isConfirmed && !qrUrl.startsWith('data:')) {
+                    const link = document.createElement('a');
+                    link.href = qrUrl;
+                    link.download = 'QR_Bien_' + nInterno + '.png';
+                    link.click();
+                }
+            });
+        }
+    </script>
+
+    <script>
+        const filterData = {
+            'n_interno_bien': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todos' },
+                    @foreach($n_internos ?? [] as $n)
+                        { value: '{{ $n }}', text: '{{ $n }}' },
+                    @endforeach
+                ]
+            },
+            'descripcion': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todas' },
+                    @foreach($descripciones ?? [] as $desc)
+                        { value: '{{ $desc }}', text: '{{ $desc }}' },
+                    @endforeach
+                ]
+            },
+            'unidad_administrativa_id': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todas' },
+                    @foreach($unidad_administrativas ?? [] as $ua)
+                        { value: '{{ $ua->id }}', text: '{{ $ua->name }}' },
+                    @endforeach
+                ]
+            },
+            'usuario_de_uso_id': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todos' },
+                    @foreach($usuarios_de_uso ?? [] as $uu)
+                        { value: '{{ $uu->id }}', text: '{{ $uu->usuario_de_uso }}' },
+                    @endforeach
+                ]
+            },
+            'usuario_administrativo_id': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todos' },
+                    @foreach($usuarios_administrativos ?? [] as $ua)
+                        { value: '{{ $ua->id }}', text: '{{ $ua->usuario_administrativo }}' },
+                    @endforeach
+                ]
+            },
+            'estado_del_uso_id': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todos' },
+                    @foreach($estado_del_usos ?? [] as $e)
+                        { value: '{{ $e->id }}', text: '{{ $e->estado_del_uso }}' },
+                    @endforeach
+                ]
+            },
+            'forma_adquisicion_id': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todas' },
+                    @foreach($forma_adquisiciones ?? [] as $fa)
+                        { value: '{{ $fa->id }}', text: '{{ $fa->forma_adquisicion }}' },
+                    @endforeach
+                ]
+            },
+            'marca': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todas' },
+                    @foreach($marcas ?? [] as $marca)
+                        { value: '{{ $marca }}', text: '{{ $marca }}' },
+                    @endforeach
+                ]
+            },
+            'modelo': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todos' },
+                    @foreach($modelos ?? [] as $modelo)
+                        { value: '{{ $modelo }}', text: '{{ $modelo }}' },
+                    @endforeach
+                ]
+            },
+            'condicion_id': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todas' },
+                    @foreach($condiciones ?? [] as $c)
+                        { value: '{{ $c->id }}', text: '{{ $c->condicion }}' },
+                    @endforeach
+                ]
+            },
+            'color_id': {
+                type: 'select',
+                options: [
+                    { value: '', text: 'Todos' },
+                    @foreach($colors ?? [] as $color)
+                        { value: '{{ $color->id }}', text: '{{ $color->color }}' },
+                    @endforeach
+                ]
+            },
+            'serial': {
+                type: 'text',
+                placeholder: 'Ingresa el serial...'
+            },
+            'codigo_qr': {
+                type: 'text_qr',
+                placeholder: 'Ingresa el código QR...'
+            },
+            'busqueda': {
+                type: 'text'
+            }
+        };
+
+        function updateSecondFilter() {
+            const type = document.getElementById('filterType').value;
+            const container = document.getElementById('secondFilterContainer');
+            const select = document.getElementById('secondFilter');
+            const dateFilter = document.getElementById('dateRangeFilter');
+            const searchInput = document.getElementById('generalSearch');
+            const textFilter = document.getElementById('textFilter');
+
+            container.style.display = 'none';
+            select.disabled = true;
+            dateFilter.style.display = 'none';
+            searchInput.style.display = 'none';
+            textFilter.style.display = 'none';
+
+            const config = filterData[type];
+
+            if (config) {
+                if (config.type === 'select') {
+                    container.style.display = 'block';
+                    select.disabled = false;
+                    select.innerHTML = '';
+                    config.options.forEach(o => {
+                        const opt = document.createElement('option');
+                        opt.value = o.value;
+                        opt.textContent = o.text;
+                        select.appendChild(opt);
+                    });
+                    // Restaurar valor seleccionado si existe
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('secondFilter')) {
+                        select.value = urlParams.get('secondFilter');
+                    }
+                } else if (config.type === 'date') {
+                    dateFilter.style.display = 'block';
+                } else if (config.type === 'text' || config.type === 'text_qr') {
+                    textFilter.style.display = 'block';
+                    textFilter.placeholder = config.placeholder || 'Buscar...';
+                    textFilter.name = 'secondFilter';
+                    textFilter.onchange = applyTextFilter;
+                    // Restaurar valor si existe
+                    const urlParams = new URLSearchParams(window.location.search);
+                    if (urlParams.get('secondFilter')) {
+                        textFilter.value = urlParams.get('secondFilter');
+                    }
+                }
+            }
+        }
+
+        function applySelectFilter() {
+            const type = document.getElementById('filterType').value;
+            const value = document.getElementById('secondFilter').value;
+            window.location.href = '{{ route("administracion.bienes_publicos.index") }}?filterType=' + type + '&secondFilter=' + encodeURIComponent(value);
+        }
+
+        function applyTextFilter() {
+            const type = document.getElementById('filterType').value;
+            const value = document.getElementById('textFilter').value;
+            if (value.trim()) {
+                window.location.href = '{{ route("administracion.bienes_publicos.index") }}?filterType=' + type + '&secondFilter=' + encodeURIComponent(value);
+            }
+        }
+
+        function toggleAdvancedFilters() {
+            const el = document.getElementById('filterType');
+            el.style.display = el.style.display === 'none' ? 'inline-block' : 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const url = new URLSearchParams(window.location.search);
+            if (url.get('filterType')) {
+                const el = document.getElementById('filterType');
+                el.style.display = 'inline-block';
+                el.value = url.get('filterType');
+                updateSecondFilter();
+                setTimeout(() => {
+                    const sel = document.getElementById('secondFilter');
+                    if (url.get('secondFilter')) sel.value = url.get('secondFilter');
+                }, 100);
+            }
+        });
+    </script>
+
+    <!-- Date Range Picker -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.css">
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.min.js"></script>
+    <script>
+        $(function() {
+            if ($('#dateRangePicker').length) {
+                $('#dateRangePicker').daterangepicker({
+                    autoUpdateInput: false,
+                    locale: {
+                        cancelLabel: 'Limpiar',
+                        applyLabel: 'Aplicar',
+                        format: 'YYYY-MM-DD'
+                    }
+                }).on('apply.daterangepicker', function(e, p) {
+                    $(this).val(p.startDate.format('YYYY-MM-DD') + ' - ' + p.endDate.format('YYYY-MM-DD'));
+                    $('#fecha_desde').val(p.startDate.format('YYYY-MM-DD'));
+                    $('#fecha_hasta').val(p.endDate.format('YYYY-MM-DD'));
+                    $('#filterForm').submit();
+                });
+            }
+        });
+    </script>
+
+    <!-- QR Scanner -->
+    <script src="https://unpkg.com/html5-qrcode"></script>
+    <script>
+        let scanner = null;
+        function startQrScanner() {
+            Swal.fire({
+                title: 'Escanear QR',
+                html: '<div id="reader" class="w-full"></div>',
+                showCancelButton: true,
+                cancelButtonText: 'Cerrar',
+                width: '400px',
+                didOpen: () => {
+                    scanner = new Html5QrcodeScanner("reader", { fps: 10, qrbox: 250 });
+                    scanner.render(decodedText => {
+                        scanner.clear();
+                        Swal.close();
+                        window.location.href = '/bienes/qr/' + encodeURIComponent(decodedText.includes('/bienes/qr/') ? decodedText.split('/bienes/qr/')[1] : decodedText);
+                    });
+                }
+            });
+        }
+    </script>
+</x-app-layout>
+@endcan
+

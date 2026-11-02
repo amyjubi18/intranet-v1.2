@@ -1,313 +1,655 @@
-<nav x-data="{ open: false }" class="bg-blue-900 border-b border-gray-100">
-    <!-- Primary Navigation Menu -->
-    <div class="px-4 mx-auto max-w-7xl sm:px-6 lg:px-8">
-        <div class="flex justify-between h-16">
-            <div class="flex">
-                <!-- Logo -->
-                <div class="flex items-center shrink-0">
-                    <a href="{{ route('inicio') }}">
-                        <x-application-logo class="block w-auto text-gray-800 fill-current h-9" />
-                    </a>
-                </div>
+<!-- Sidebar Navigation -->
+<div class="flex flex-col h-full bg-gradient-to-r from-blue-800 to-indigo-900">
+    <!-- Header -->
+    <div class="sidebar-header flex items-center justify-between p-6 border-b border-blue-700">
+        <div class="sidebar-header-content flex items-center gap-3">
+            <img src="{{asset('img/Logo.png')}}" class="h-20 w-auto" alt="Logo">
 
-                <!-- Navigation Links -->
-                <div class="hidden space-x-8 sm:-my-px sm:ml-10 sm:flex">
-                    <x-nav-link :href="route('inicio')" :active="request()->routeIs('inicio')">
-
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" class="mr-1" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M12.71 2.29a1 1 0 0 0-1.42 0l-9 9a1 1 0 0 0 0 1.42A1 1 0 0 0 3 13h1v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7h1a1 1 0 0 0 1-1 1 1 0 0 0-.29-.71zM6 20v-9.59l6-6 6 6V20z"></path></svg> {{ __('Inicio') }}
-                    </x-nav-link>
-
-<!----------------Menu desplegable GTIC--------------------------->
-@can('user_index')
-                        <div class="hidden space-x-8 sm:flex sm:items-center sm:ml-6">
-                            <x-dropdown align="right" width="46">
-                                <x-slot name="trigger">
-
-                                    <button class="inline-flex items-center px-3 py-2 text-sm font-medium leading-10 text-white transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:text-white focus:outline-none ">
-
-                                        <x-nav-link-user :href="route('users.index')" :active="request()->routeIs('users.index')" >
-                                            {{ __('Usuarios') }}
-                                        </x-nav-link-user>
-
-
-                                        <div class="ml-1">
-                                            <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    </button>
-                                </x-slot>
-
-                                <x-slot name="content">
-
-                                    <x-dropdown-link-register  :href="route('users.create')" :active="request()->routeIs('users.create')">
-                                     {{ __('Registrar') }}
-                                    </x-dropdown-link-register>
-
-
-                                    <x-dropdown-link-roles :href="route('gtic.roles.index')" :active="request()->routeIs('gtic.roles.index')">
-
-                                        {{ __('Roles') }}
-                                    </x-dropdown-link-roles>
-
-
-                                    <x-dropdown-link-permisos :href="route('gtic.permisos.index')" :active="request()->routeIs('gtic.permisos.index')">
-
-                                        {{ __('Permisos') }}
-                                    </x-dropdown-link-permisos>
-
-
-                                </x-slot>
-                            </x-dropdown>
-                        </div>
-
-@endcan
-
-
-
-<!------------------menu desplegable administracion------------------------->
-@can('documentos_index')
-<div class="hidden space-x-8 sm:flex sm:items-center sm:ml-6">
-
-    <x-dropdown align="right" width="46">
-        <x-slot name="trigger">
-
-            <button class="inline-flex items-center px-3 py-2 text-sm font-medium leading-10 text-white transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:text-white focus:outline-none ">
-
-                <x-nav-link-documento :href="route('administracion.docs.index')" :active="request()->routeIs('admnistracion.docs.index')">
-                     {{ __('Documentos') }}
-                </x-nav-link-documento>
-
-
-                <div class="ml-1">
-                    <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                </div>
-
+        </div>
+        <div class="flex items-center gap-2">
+            <button onclick="closeSidebar()" class="lg:hidden sidebar-item p-2 hover:bg-blue-700 rounded-lg transition-colors">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <line x1="18" y1="6" x2="6" y2="18"/>
+                    <line x1="6" y1="6" x2="18" y2="18"/>
+                </svg>
             </button>
-        </x-slot>
-
-        <x-slot name="content">
-
-            <x-dropdown-link-cargar-documento  :href="route('administracion.docs.create')" :active="request()->routeIs('administracion.docs.create')">
-             {{ __('Cargar Documento') }}
-            </x-dropdown-link-cargar-documento>
-
-            <x-dropdown-link-categorias :href="route('administracion.categorias.index')" :active="request()->routeIs('administracion.categorias.index')">
-
-                {{ __('Categorías') }}
-            </x-dropdown-link-categorias>
-
-
-
-        </x-slot>
-    </x-dropdown>
-</div>
-    @endcan
-
-
-
-<!--------->
-
-<!------------------menu desplegable Bienes------------------------->
-@can('bienes_index')
-<div class="hidden space-x-8 sm:flex sm:items-center sm:ml-6">
-    <x-dropdown align="right" width="46">
-        <x-slot name="trigger">
-            {{-- @can('documentos_index') --}}
-            <button class="inline-flex items-center px-3 py-2 text-sm font-medium leading-10 text-white transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:text-white focus:outline-none ">
-                {{-- @can('documentos_index') --}}
-                <x-nav-link-bienes :href="route('administracion.bienes_publicos.index')" :active="request()->routeIs('administracion.bienes_publicos.index')">
-                     {{ __('Bienes') }}
-                </x-nav-link-bienes>
-                  {{-- @endcan
-            @endcan --}}
-
-                <div class="ml-1">
-                    <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                    </svg>
-                </div>
+            <button onclick="toggleSidebar()" class="sidebar-item p-2 hover:bg-blue-700 rounded-lg transition-colors" id="sidebarToggleBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" id="sidebarToggleIcon">
+                    <line x1="3" y1="6" x2="21" y2="6"/>
+                    <line x1="3" y1="12" x2="21" y2="12"/>
+                    <line x1="3" y1="18" x2="21" y2="18"/>
+                </svg>
             </button>
-        </x-slot>
-
-        <x-slot name="content">
-
-            <x-dropdown-link-formulario  :href="route('administracion.bienes_publicos.create')" :active="request()->routeIs('administracion.bienes_publicos.create')">
-             {{ __('Formulario') }}
-            </x-dropdown-link-formulario>
-            <x-dropdown-link-unidad-admin  :href="route('administracion.unidad_administrativa.index')" :active="request()->routeIs('administracion.unidad_administrativa.index')">
-                {{ __('Unidad Administrativa') }}
-               </x-dropdown-link-unidad-admin>
-               <x-dropdown-link-forma-adqui  :href="route('administracion.forma_adquisicion.index')" :active="request()->routeIs('administracion.forma_adquisicion.index')">
-                {{ __('Forma de Adquisición') }}
-               </x-dropdown-link-forma-adqui>
-
-               <x-dropdown-link-estado-uso :href="route('administracion.estado_del_uso.index')" :active="request()->routeIs('administracion.estado_del_uso.index')">
-
-                {{ __('Estado del Uso') }}
-            </x-dropdown-link-estado-uso>
-
-               <x-dropdown-link-categoria-ge :href="route('administracion.categoria_general.index')" :active="request()->routeIs('administracion.categoria-general.index')">
-                {{ __('Categoría General') }}
-               </x-dropdown-link-categoria-ge>
-
-            <x-dropdown-link-subcategoria :href="route('administracion.sub_categoria.index')" :active="request()->routeIs('administracion.sub_categoria.index')">
-
-                {{ __('Subcategoría') }}
-            </x-dropdown-link-subcategoria>
-
-            <x-dropdown-link-categoria-es :href="route('administracion.categoria_especifica.index')" :active="request()->routeIs('administracion.categoria_especifica.index')">
-                {{ __('Categoría Específica') }}
-               </x-dropdown-link-categoria-es>
-        </x-slot>
-    </x-dropdown>
-</div>
-
-@endcan
-
-                </div>
-            </div>
-
-            <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ml-6">
-                <x-dropdown align="right" width="48">
-                    <x-slot name="trigger">
-                        <button class="inline-flex items-center px-3 py-2 text-sm font-medium leading-4 transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md text-gray-50 hover:text-white focus:outline-none">
-
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;margin-right:4px;"><path d="M12 2A10.13 10.13 0 0 0 2 12a10 10 0 0 0 4 7.92V20h.1a9.7 9.7 0 0 0 11.8 0h.1v-.08A10 10 0 0 0 22 12 10.13 10.13 0 0 0 12 2zM8.07 18.93A3 3 0 0 1 11 16.57h2a3 3 0 0 1 2.93 2.36 7.75 7.75 0 0 1-7.86 0zm9.54-1.29A5 5 0 0 0 13 14.57h-2a5 5 0 0 0-4.61 3.07A8 8 0 0 1 4 12a8.1 8.1 0 0 1 8-8 8.1 8.1 0 0 1 8 8 8 8 0 0 1-2.39 5.64z"></path><path d="M12 6a3.91 3.91 0 0 0-4 4 3.91 3.91 0 0 0 4 4 3.91 3.91 0 0 0 4-4 3.91 3.91 0 0 0-4-4zm0 6a1.91 1.91 0 0 1-2-2 1.91 1.91 0 0 1 2-2 1.91 1.91 0 0 1 2 2 1.91 1.91 0 0 1-2 2z"></path></svg><div>{{ Auth::user()->name }}</div>
-
-                            <div class="ml-1">
-                                <svg class="w-4 h-4 fill-current" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
-                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </div>
-                        </button>
-                    </x-slot>
-
-                    <x-slot name="content">
-                        <x-dropdown-link-edit-profile :href="route('profile.edit')">
-                            {{ __('Perfil') }}
-                        </x-dropdown-link-edit-profile>
-
-                        <!-- Authentication -->
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-
-                            <x-dropdown-link-logout :href="route('logout')"
-                                    onclick="event.preventDefault();
-                                                this.closest('form').submit();">
-                                {{ __('Cerrar Sesión') }}
-                            </x-dropdown-link-logout>
-                        </form>
-                    </x-slot>
-                </x-dropdown>
-            </div>
-
-            <!-- Hamburger -->
-            <div class="flex items-center -mr-2 sm:hidden">
-                <button @click="open = ! open" class="inline-flex items-center justify-center p-2 text-white transition duration-150 ease-in-out rounded-md hover:text-white hover:bg-blue-500 focus:outline-none focus:bg-blue-900 focus:text-white">
-                    <svg class="w-6 h-6" stroke="currentColor" fill="none" viewBox="0 0 24 24">
-                        <path :class="{'hidden': open, 'inline-flex': ! open }" class="inline-flex" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
-                        <path :class="{'hidden': ! open, 'inline-flex': open }" class="hidden" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
         </div>
     </div>
 
-    <!-- Responsive Navigation Menu -->
-    <div :class="{'block': open, 'hidden': ! open}" class="hidden sm:hidden">
-        <div class="pt-2 pb-3 space-y-1 ">
-            <x-responsive-nav-link :href="route('inicio')" :active="request()->routeIs('inicio')">
-                {{ __('Inicio') }}
-            </x-responsive-nav-link>
-            @can('documentos_create')
-            <x-responsive-nav-link :href="route('administracion.docs.create')" :active="request()->routeIs('administracion.docs.create')">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="m21.706 5.292-2.999-2.999A.996.996 0 0 0 18 2H6a.996.996 0 0 0-.707.293L2.294 5.292A.994.994 0 0 0 2 6v13c0 1.103.897 2 2 2h16c1.103 0 2-.897 2-2V6a.994.994 0 0 0-.294-.708zM6.414 4h11.172l1 1H5.414l1-1zM4 19V7h16l.002 12H4z"></path><path d="M14 9h-4v3H7l5 5 5-5h-3z"></path></svg>  {{ __('Cargar ') }}
-            </x-responsive-nav-link>
-            @endcan
-            @can('documentos_index')
-            <x-responsive-nav-link :href="route('administracion.docs.index')" :active="request()->routeIs('admnistracion.docs.index')">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M19.903 8.586a.997.997 0 0 0-.196-.293l-6-6a.997.997 0 0 0-.293-.196c-.03-.014-.062-.022-.094-.033a.991.991 0 0 0-.259-.051C13.04 2.011 13.021 2 13 2H6c-1.103 0-2 .897-2 2v16c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2V9c0-.021-.011-.04-.013-.062a.952.952 0 0 0-.051-.259c-.01-.032-.019-.063-.033-.093zM16.586 8H14V5.414L16.586 8zM6 20V4h6v5a1 1 0 0 0 1 1h5l.002 10H6z"></path><path d="M8 12h8v2H8zm0 4h8v2H8zm0-8h2v2H8z"></path></svg>{{ __('Documentos') }}
-            </x-responsive-nav-link>
-            @endcan
+    <!-- Navigation -->
+    <div class="sidebar-nav flex-1 overflow-y-auto py-4">
+        <!-- Inicio -->
+        <a href="{{ route('inicio') }}" class="sidebar-item {{ request()->routeIs('inicio') ? 'active' : '' }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M3 12l2 2 4-4 4 4 4-4 4 4 2-2"/>
+                <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
+                <path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/>
+            </svg>
+            <span>Inicio</span>
+        </a>
 
-                 @can('user_create')
-             <x-responsive-nav-link :href="route('users.create')" :active="request()->routeIs('users.create')">
-                <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M19 8h-2v3h-3v2h3v3h2v-3h3v-2h-3zM4 8a3.91 3.91 0 0 0 4 4 3.91 3.91 0 0 0 4-4 3.91 3.91 0 0 0-4-4 3.91 3.91 0 0 0-4 4zm6 0a1.91 1.91 0 0 1-2 2 1.91 1.91 0 0 1-2-2 1.91 1.91 0 0 1 2-2 1.91 1.91 0 0 1 2 2zM4 18a3 3 0 0 1 3-3h2a3 3 0 0 1 3 3v1h2v-1a5 5 0 0 0-5-5H7a5 5 0 0 0-5 5v1h2z"></path></svg> {{ __('Registrar') }}
-             </x-responsive-nav-link>
+        @can('gtic')
+        <!-- GTIC -->
+        <div class="sidebar-item" onclick="toggleSubmenu('gtic')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <line x1="9" y1="9" x2="15" y2="9"/>
+                <line x1="9" y1="15" x2="15" y2="15"/>
+                <line x1="9" y1="9" x2="9" y2="15"/>
+                <line x1="15" y1="9" x2="15" y2="15"/>
+            </svg>
+            <span>GTIC</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="gtic-arrow">
+                <polyline points="6,9 12,15 18,9"/>
+            </svg>
+        </div>
+        <div class="submenu ml-4 hidden" id="gtic-submenu">
+            @can('user_index')
+            <a href="{{ route('users.index') }}" class="sidebar-item {{ request()->routeIs('users.index') ? 'active' : '' }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>Usuarios</span>
+            </a>
+            @endcan
+            @can('role_index')
+            <a href="{{ route('gtic.roles.index') }}" class="sidebar-item {{ request()->routeIs('gtic.roles.index') ? 'active' : '' }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+                <span>Roles</span>
+            </a>
+            @endcan
+            @can('permission_index')
+            <a href="{{ route('gtic.permisos.index') }}" class="sidebar-item {{ request()->routeIs('gtic.permisos.index') ? 'active' : '' }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <span>Permisos</span>
+            </a>
+            @endcan
+            @can('activity_log_index')
+            <a href="{{ route('gtic.activity-log.index') }}" class="sidebar-item {{ request()->routeIs('gtic.activity-log.index') ? 'active' : '' }}">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-4m-4 0V9a2 2 0 1 1 4 0v2m-4 0v2a2 2 0 0 0 4 0v-2"/>
+                </svg>
+                <span>Registro de Actividades</span>
+            </a>
+            @endcan
+        </div>
+        @endcan
+
+        @can('oga')
+        <!-- OGA -->
+        <div class="sidebar-item" onclick="toggleSubmenu('oga')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span>OGA</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="oga-arrow">
+                <polyline points="6,9 12,15 18,9"/>
+            </svg>
+        </div>
+        <div class="submenu ml-4 hidden" id="oga-submenu">
+            @can('documentos')
+            <div class="sidebar-item" onclick="toggleSubmenu('documentos')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                </svg>
+                <span>Dig de Documentos</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="documentos-arrow">
+                    <polyline points="6,9 12,15 18,9"/>
+                </svg>
+            </div>
+            <div class="submenu ml-4 hidden" id="documentos-submenu">
+                @can('documentos_index')
+                <a href="{{ route('administracion.documentos.index') }}" class="sidebar-item {{ request()->routeIs('administracion.documentos.index') ? 'active' : '' }}">
+                    <span>Documentos</span>
+                </a>
                 @endcan
                 @can('categorias_index')
-                <x-responsive-nav-link :href="route('administracion.categorias.create')" :active="request()->routeIs('administracion.categorias.create')">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M20 2H8c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2zM8 16V4h12l.002 12H8z"></path><path d="M4 8H2v12c0 1.103.897 2 2 2h12v-2H4V8zm11-2h-2v3h-3v2h3v3h2v-3h3V9h-3z"></path></svg> {{ __('Categoria') }}
-                </x-responsive-nav-link>
+                <a href="{{ route('administracion.categorias.index') }}" class="sidebar-item {{ request()->routeIs('administracion.categorias.index') ? 'active' : '' }}">
+                    <span>Categorías</span>
+                </a>
                 @endcan
-                @can('user_index')
-                <x-responsive-nav-link :href="route('users.index')" :active="request()->routeIs('users.index')">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M12 2a5 5 0 1 0 5 5 5 5 0 0 0-5-5zm0 8a3 3 0 1 1 3-3 3 3 0 0 1-3 3zm9 11v-1a7 7 0 0 0-7-7h-4a7 7 0 0 0-7 7v1h2v-1a5 5 0 0 1 5-5h4a5 5 0 0 1 5 5v1z"></path></svg> {{ __('Usuarios') }}
-                </x-responsive-nav-link>
+                @can('estanterias_index')
+                <a href="{{ route('administracion.estanterias.index') }}" class="sidebar-item {{ request()->routeIs('administracion.estanterias.index') ? 'active' : '' }}">
+                    <span>Estanterías</span>
+                </a>
                 @endcan
-                @can('role_index')
-                <x-responsive-nav-link  :href="route('gtic.roles.index')" :active="request()->routeIs('gtic.roles.index')">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M9.5 12c2.206 0 4-1.794 4-4s-1.794-4-4-4-4 1.794-4 4 1.794 4 4 4zm1.5 1H8c-3.309 0-6 2.691-6 6v1h15v-1c0-3.309-2.691-6-6-6z"></path><path d="M16.604 11.048a5.67 5.67 0 0 0 .751-3.44c-.179-1.784-1.175-3.361-2.803-4.44l-1.105 1.666c1.119.742 1.8 1.799 1.918 2.974a3.693 3.693 0 0 1-1.072 2.986l-1.192 1.192 1.618.475C18.951 13.701 19 17.957 19 18h2c0-1.789-.956-5.285-4.396-6.952z"></path></svg>{{ __('Roles') }}
-                </x-responsive-nav-link>
+            </div>
+            @endcan
+
+            @can('bienes')
+            <div class="sidebar-item" onclick="toggleSubmenu('bienes')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/>
+                    <line x1="7" y1="7" x2="7.01" y2="7"/>
+                </svg>
+                <span>Bienes Muebles</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="bienes-arrow">
+                    <polyline points="6,9 12,15 18,9"/>
+                </svg>
+            </div>
+            <div class="submenu ml-4 hidden" id="bienes-submenu">
+                @can('bienes_index')
+                <a href="{{ route('administracion.bienes_publicos.index') }}" class="sidebar-item {{ request()->routeIs('administracion.bienes_publicos.index') ? 'active' : '' }}">
+                    <span>Registros</span>
+                </a>
                 @endcan
-                @can('permission_index
-                ')
-                <x-responsive-nav-link :href="route('gtic.permisos.index')" :active="request()->routeIs('gtic.permisos.index')">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="mr-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M20 2H8c-1.103 0-2 .897-2 2v12c0 1.103.897 2 2 2h12c1.103 0 2-.897 2-2V4c0-1.103-.897-2-2-2zM8 16V4h12l.002 12H8z"></path><path d="M4 8H2v12c0 1.103.897 2 2 2h12v-2H4V8zm8.933 3.519-1.726-1.726-1.414 1.414 3.274 3.274 5.702-6.84-1.538-1.282z"></path></svg>{{ __('Permisos') }}
-                </x-responsive-nav-link>
+                @can('unidad_adminis_index')
+                <a href="{{ route('administracion.unidad_administrativa.index') }}" class="sidebar-item {{ request()->routeIs('administracion.unidad_administrativa.index') ? 'active' : '' }}">
+                    <span>Unidad Administrativa</span>
+                </a>
+                @endcan
+                @can('usuario_de_uso_index')
+                <a href="{{ route('administracion.usuario_de_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_de_uso.index') ? 'active' : '' }}">
+                    <span>Usuarios de Uso</span>
+                </a>
+                @endcan
+                @can('usuario_administrativo_index')
+                <a href="{{ route('administracion.usuario_administrativo.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_administrativo.index') ? 'active' : '' }}">
+                    <span>Usuarios Administrativo</span>
+                </a>
+                @endcan
+                @can('forma_adquisicion_index')
+                <a href="{{ route('administracion.forma_adquisicion.index') }}" class="sidebar-item {{ request()->routeIs('administracion.forma_adquisicion.index') ? 'active' : '' }}">
+                    <span>Forma de Adquisición</span>
+                </a>
+                @endcan
+                @can('estado_uso_index')
+                <a href="{{ route('administracion.estado_del_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.estado_del_uso.index') ? 'active' : '' }}">
+                    <span>Estado del Uso</span>
+                </a>
+                @endcan
+                @can('color_index')
+                <a href="{{ route('administracion.colors.index') }}" class="sidebar-item {{ request()->routeIs('administracion.colors.index') ? 'active' : '' }}">
+                    <span>Color</span>
+                </a>
+                @endcan
+                @can('condicion_index')
+                <a href="{{ route('administracion.condicion_fisica.index') }}" class="sidebar-item {{ request()->routeIs('administracion.condicion_fisica.index') ? 'active' : '' }}">
+                    <span>Condición Física</span>
+                </a>
+                @endcan
+            </div>
+            @endcan
+
+            @can('inv-oficina')
+            <div class="sidebar-item" onclick="toggleSubmenu('inv-oficina')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    <polyline points="7.5,4.27 16.5,9.27"/>
+                    <polyline points="3.29,7 12,12 20.71,7"/>
+                    <line x1="12" y1="22.5" x2="12" y2="12"/>
+                </svg>
+                <span>Inv Oficina</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="inv-oficina-arrow">
+                    <polyline points="6,9 12,15 18,9"/>
+                </svg>
+            </div>
+            <div class="submenu ml-4 hidden" id="inv-oficina-submenu">
+                @can('inventarioofic_index')
+                <a href="{{ route('administracion.inventario_oficinas.index') }}" class="sidebar-item {{ request()->routeIs('administracion.inventario_oficinas.index') ? 'active' : '' }}">
+                    <span>Ingresos de Oficina</span>
+                </a>
+                @endcan
+                @can('salidaofic_index')
+                <a href="{{ route('administracion.salida_oficina.index') }}" class="sidebar-item {{ request()->routeIs('administracion.salida_oficina.index') ? 'active' : '' }}">
+                    <span>Salida de Oficina</span>
+                </a>
+                @endcan
+                <div class="sidebar-item" onclick="toggleSubmenu('carga-previa-oficina')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    <span>Carga Previa</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-oficina-arrow">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                <div class="submenu ml-4 hidden" id="carga-previa-oficina-submenu">
+                    @can('articulo_index')
+                    <a href="{{ route('administracion.articulos.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.articulos.index') ? 'active' : '' }}">
+                        <span>Artículos</span>
+                    </a>
+                    @endcan
+                    @can('proveedor_index')
+                    <a href="{{ route('administracion.proveedores.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.proveedores.index') ? 'active' : '' }}">
+                        <span>Proveedores</span>
+                    </a>
+                    @endcan
+                    @can('unidad_medida_index')
+                    <a href="{{ route('administracion.unidad_medidas.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.unidad_medidas.index') ? 'active' : '' }}">
+                        <span>Unidad de Medida</span>
+                    </a>
+                    @endcan
+                    @can('area_index')
+                    <a href="{{ route('administracion.areas.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.areas.index') ? 'active' : '' }}">
+                        <span>Área</span>
+                    </a>
+                    @endcan
+                    @can('gerencia_index')
+                    <a href="{{ route('administracion.gerencias.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.gerencias.index') ? 'active' : '' }}">
+                        <span>Gerencia</span>
+                    </a>
+                    @endcan
+                </div>
+
+            </div>
+            @endcan
+
+            @can('inv-consumibles')
+            <div class="sidebar-item" onclick="toggleSubmenu('inv-consumibles')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                    <line x1="16" y1="13" x2="8" y2="13"/>
+                    <line x1="16" y1="17" x2="8" y2="17"/>
+                    <polyline points="10,9 9,9 8,9"/>
+                </svg>
+                <span>Inv Consumibles</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="inv-consumibles-arrow">
+                    <polyline points="6,9 12,15 18,9"/>
+                </svg>
+            </div>
+            <div class="submenu ml-4 hidden" id="inv-consumibles-submenu">
+                {{-- @can('inventarioimpre_index')
+                <a href="{{ route('administracion.inventario_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.inventario_impresoras.index') ? 'active' : '' }}">
+                    <span>Ingresos de Consumibles</span>
+                </a>
+                @endcan --}}
+                @can('almacen_inv_index')
+                <a href="{{ route('administracion.almacenamiento_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.almacenamiento_impresoras.index') ? 'active' : '' }}">
+                    <span>Almacenamiento de Consumibles</span>
+                </a>
+                @endcan
+                @can('dist_almac_index')
+                <a href="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.distribucion_almacenamiento_impresoras.index') ? 'active' : '' }}">
+                    <span>Distribución de Consumibles</span>
+                </a>
                 @endcan
 
+                 @can('salidaimpre_index')
+                <a href="{{ route('administracion.salida_almacen.index') }}" class="sidebar-item {{ request()->routeIs('administracion.salida_almacen.index') ? 'active' : '' }}">
+                    <span>Salida de Consumibles</span>
+                </a>
+                @endcan
+                <div class="sidebar-item" onclick="toggleSubmenu('carga-previa')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    <span>Carga Previa</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-arrow">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                <div class="submenu ml-4 hidden" id="carga-previa-submenu">
+                    @can('cartucho_index')
+                    <a href="{{ route('administracion.consumibles.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.consumibles.index') ? 'active' : '' }}">
+                        <span>Consumibles</span>
+                    </a>
+                    @endcan
+                    @can('colores_index')
+                    <a href="{{ route('administracion.tipo_consumibles.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.tipo_consumibles.index') ? 'active' : '' }}">
+                        <span>Tipo Consumibles</span>
+                    </a>
+                    @endcan
+                    @can('impresora_index')
+                    <a href="{{ route('administracion.impresoras.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.impresoras.index') ? 'active' : '' }}">
+                        <span>Impresoras</span>
+                    </a>
+                    @endcan
+                    @can('fabricante_index')
+                    <a href="{{ route('administracion.tipo_impresoras.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.tipo_impresoras.index') ? 'active' : '' }}">
+                        <span>Tipo Impresoras</span>
+                    </a>
+                    @endcan
+                    @can('proveedor_index')
+                    <a href="{{ route('administracion.proveedores.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.proveedores.index') ? 'active' : '' }}">
+                        <span>Proveedores</span>
+                    </a>
+                    @endcan
+                    @can('area_index')
+                    <a href="{{ route('administracion.areas.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.areas.index') ? 'active' : '' }}">
+                        <span>Área</span>
+                    </a>
+                    @endcan
+                    @can('gerencia_index')
+                    <a href="{{ route('administracion.gerencias.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.gerencias.index') ? 'active' : '' }}">
+                        <span>Gerencia</span>
+                    </a>
+                    @endcan
+                </div>
+
+
+            </div>
+            @endcan
+             @can('inventarioimpre_index')
+                <a href="{{ route('administracion.reportes.index') }}" class="sidebar-item {{ request()->routeIs('administracion.reportes.index') ? 'active' : '' }}">
+                    <span>Reportes</span>
+                </a>
+                @endcan
 
         </div>
+        @endcan
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        <!-- Responsive Settings Options -->
-        <div class="pt-4 pb-1 border-t border-gray-200">
-            <div class="px-4">
-                <div class="flex text-base font-medium text-white"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;margin-right:4px;"><path d="M12 2A10.13 10.13 0 0 0 2 12a10 10 0 0 0 4 7.92V20h.1a9.7 9.7 0 0 0 11.8 0h.1v-.08A10 10 0 0 0 22 12 10.13 10.13 0 0 0 12 2zM8.07 18.93A3 3 0 0 1 11 16.57h2a3 3 0 0 1 2.93 2.36 7.75 7.75 0 0 1-7.86 0zm9.54-1.29A5 5 0 0 0 13 14.57h-2a5 5 0 0 0-4.61 3.07A8 8 0 0 1 4 12a8.1 8.1 0 0 1 8-8 8.1 8.1 0 0 1 8 8 8 8 0 0 1-2.39 5.64z"></path><path d="M12 6a3.91 3.91 0 0 0-4 4 3.91 3.91 0 0 0 4 4 3.91 3.91 0 0 0 4-4 3.91 3.91 0 0 0-4-4zm0 6a1.91 1.91 0 0 1-2-2 1.91 1.91 0 0 1 2-2 1.91 1.91 0 0 1 2 2 1.91 1.91 0 0 1-2 2z"></path></svg>{{ Auth::user()->name }}</div>
-
+        @can('ogh')
+        <!-- OGH -->
+        <div class="sidebar-item" onclick="toggleSubmenu('ogh')">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                <circle cx="9" cy="7" r="4"/>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+            </svg>
+            <span>OGH</span>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="ogh-arrow">
+                <polyline points="6,9 12,15 18,9"/>
+            </svg>
+        </div>
+        <div class="submenu ml-4 hidden" id="ogh-submenu">
+            @can('documentos')
+            <div class="sidebar-item" onclick="toggleSubmenu('ogh-documentos')">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14,2 14,8 20,8"/>
+                </svg>
+                <span>Dig de Documentos</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="ogh-documentos-arrow">
+                    <polyline points="6,9 12,15 18,9"/>
+                </svg>
             </div>
-
-            <div class="mt-3 space-y-1">
-                <x-responsive-nav-link :href="route('profile.edit')">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="25" height="25" viewBox="0 0 25 25" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="m16 2.012 3 3L16.713 7.3l-3-3zM4 14v3h3l8.299-8.287-3-3zm0 6h16v2H4z"></path></svg>{{ __('Perfil') }}
-                </x-responsive-nav-link>
-
-                <!-- Authentication -->
-                <form method="POST" action="{{ route('logout') }}">
-                    @csrf
-
-                    <x-responsive-nav-link :href="route('logout')"
-                            onclick="event.preventDefault();
-                                        this.closest('form').submit();">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:; margin-right:4px;"><path d="M16 13v-2H7V8l-5 4 5 4v-3z"></path><path d="M20 3h-9c-1.103 0-2 .897-2 2v4h2V5h9v14h-9v-4H9v4c0 1.103.897 2 2 2h9c1.103 0 2-.897 2-2V5c0-1.103-.897-2-2-2z"></path></svg> {{ __('Cerrar Sesión') }}
-                    </x-responsive-nav-link>
-                </form>
+            <div class="submenu ml-4 hidden" id="ogh-documentos-submenu">
+                @can('documentos_index')
+                <a href="{{ route('gestion-humana.digitalizacion_documentos.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.digitalizacion_documentos.index') ? 'active' : '' }}">
+                    <span>Documentos</span>
+                </a>
+                @endcan
+                @can('area_adscrita_index')
+                <a href="{{ route('gestion-humana.area_adscrita.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.area_adscrita.index') ? 'active' : '' }}">
+                    <span>Area Adscrita</span>
+                </a>
+                @endcan
+                @can('tipo_documento_index')
+                <a href="{{ route('gestion-humana.tipo_documentos.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.tipo_documentos.index') ? 'active' : '' }}">
+                    <span>Tipo de Documento</span>
+                </a>
+                @endcan
             </div>
+            @endcan
+        </div>
+        @endcan
+    </div>
+
+    <!-- Bottom Section -->
+    <div class="sidebar-bottom p-4 border-t border-blue-700">
+        <div class="flex items-center gap-3 mb-4">
+            @if(Auth::user()->profile_photo)
+                <img src="{{ asset('archivos/avatars/' . Auth::user()->profile_photo) }}"
+                     alt="{{ Auth::user()->name }}"
+                     class="w-10 h-10 rounded-lg object-cover">
+            @else
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-green-600 flex items-center justify-center">
+                    <span class="text-white font-bold">{{ substr(Auth::user()->name, 0, 2) }}</span>
+                </div>
+            @endif
+            <div class="flex-1 min-w-0">
+                <p class="text-md font-bold text-white truncate">{{ Auth::user()->username }}</p>
+
+                <p class="text-xs text-blue-200 truncate">{{ Auth::user()->email ?? 'Usuario' }}</p>
+            </div>
+        </div>
+        <div class="space-y-2">
+            <a href="{{ route('profile.edit') }}" class="sidebar-item">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+                <span>Perfil</span>
+            </a>
+            <form method="POST" action="{{ route('logout') }}" class="inline">
+                @csrf
+                <button type="submit" class="sidebar-item w-full text-left">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                        <polyline points="16,17 21,12 16,7"/>
+                        <line x1="21" y1="12" x2="9" y2="12"/>
+                    </svg>
+                    <span>Cerrar Sesión</span>
+                </button>
+            </form>
         </div>
     </div>
-</nav>
+</div>
+
+<script>
+    // Función para obtener todos los padres de un menú
+    function getAllParents(menuId, parentMap) {
+        const parents = [];
+        let current = menuId;
+        while (parentMap[current]) {
+            current = parentMap[current];
+            parents.push(current);
+        }
+        return parents;
+    }
+
+    // Función para alternar submenús
+    function toggleSubmenu(menuId) {
+        const submenus = ['gtic', 'oga', 'ogh', 'documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina','ogh-documentos'];
+        const parentMap = {
+            'documentos': 'oga',
+            'bienes': 'oga',
+            'inv-oficina': 'oga',
+            'carga-previa-oficina': 'inv-oficina',
+            'inv-consumibles': 'oga',
+            'carga-previa': 'inv-consumibles',
+            'ogh-documentos': 'ogh'
+        };
+
+        const currentSubmenu = document.getElementById(menuId + '-submenu');
+        const currentArrow = document.getElementById(menuId + '-arrow');
+        const isCurrentlyOpen = currentSubmenu && !currentSubmenu.classList.contains('hidden');
+        const allParents = getAllParents(menuId, parentMap);
+
+        // Cerrar todos los submenús excepto los padres
+        submenus.forEach(id => {
+            if (!allParents.includes(id)) {
+                const submenu = document.getElementById(id + '-submenu');
+                const arrow = document.getElementById(id + '-arrow');
+                if (submenu) {
+                    submenu.classList.add('hidden');
+                    submenu.classList.remove('bg-blue-800');
+                }
+                if (arrow) arrow.style.transform = 'rotate(0deg)';
+            }
+        });
+
+        // Si el submenú actual no estaba abierto, abrirlo
+        if (!isCurrentlyOpen) {
+            // Abrir todos los padres primero
+            allParents.forEach(parentId => {
+                const parentSubmenu = document.getElementById(parentId + '-submenu');
+                const parentArrow = document.getElementById(parentId + '-arrow');
+                if (parentSubmenu) parentSubmenu.classList.remove('hidden');
+                if (parentArrow) parentArrow.style.transform = 'rotate(180deg)';
+            });
+
+            if (currentSubmenu) {
+                currentSubmenu.classList.remove('hidden');
+                currentSubmenu.classList.add('bg-blue-700');
+                if (currentArrow) currentArrow.style.transform = 'rotate(180deg)';
+            }
+        } else {
+            // Si estaba abierto, quitar el color de fondo
+            if (currentSubmenu) {
+                currentSubmenu.classList.remove('bg-blue-700');
+            }
+        }
+        // Si estaba abierto, queda cerrado (ya se cerró arriba, pero el padre se mantiene)
+    }
+
+    // Función para obtener el parámetro de la URL
+    function getUrlParam(param) {
+        const urlParams = new URLSearchParams(window.location.search);
+        return urlParams.get(param);
+    }
+
+    // Función para verificar y mostrar submenús activos
+    function checkActiveSubmenus() {
+        const parentMap = {
+            'documentos': 'oga',
+            'bienes': 'oga',
+            'inv-oficina': 'oga',
+            'inv-consumibles': 'oga',
+            'ogh-documentos': 'ogh',
+            'carga-previa': 'inv-consumibles',
+            'carga-previa-oficina': 'inv-oficina'
+        };
+
+        // Obtener el parámetro 'from' de la URL
+        const fromParam = getUrlParam('from');
+
+        // Determinar qué submenú de carga previa abrir según el parámetro 'from'
+        let targetCargaPrevia = null;
+        if (fromParam === 'consumibles') {
+            targetCargaPrevia = 'carga-previa';
+        } else if (fromParam === 'oficina') {
+            targetCargaPrevia = 'carga-previa-oficina';
+        }
+
+        // Primero verificar submenús de nivel 2 (los más profundos)
+        const level2Submenus = ['documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina', 'ogh-documentos'];
+        level2Submenus.forEach(menuId => {
+            const submenu = document.getElementById(menuId + '-submenu');
+            if (submenu) {
+                const activeLinks = submenu.querySelectorAll('.sidebar-item.active');
+                // Abrir si tiene elementos activos O si es el submenú de carga previa objetivo
+                if (activeLinks.length > 0 || menuId === targetCargaPrevia) {
+                    // Abrir el submenú de nivel 2
+                    submenu.classList.remove('hidden');
+                    submenu.classList.add('bg-blue-700');
+                    const arrow = document.getElementById(menuId + '-arrow');
+                    if (arrow) arrow.style.transform = 'rotate(180deg)';
+
+                    // Abrir el padre (nivel 1)
+                    const parent = parentMap[menuId];
+                    if (parent) {
+                        const parentSubmenu = document.getElementById(parent + '-submenu');
+                        const parentArrow = document.getElementById(parent + '-arrow');
+                        if (parentSubmenu) {
+                            parentSubmenu.classList.remove('hidden');
+                            parentSubmenu.classList.add('bg-blue-700');
+                        }
+                        if (parentArrow) parentArrow.style.transform = 'rotate(180deg)';
+                    }
+                }
+            }
+        });
+
+        // Luego verificar submenús de nivel 1 que no tienen hijos con elementos activos
+        const level1Submenus = ['gtic', 'oga', 'ogh'];
+        level1Submenus.forEach(menuId => {
+            const submenu = document.getElementById(menuId + '-submenu');
+            if (submenu) {
+                const activeLinks = submenu.querySelectorAll('.sidebar-item.active');
+                // Solo abrir si tiene elementos activos Y no es padre de un submenú ya abierto
+                if (activeLinks.length > 0) {
+                    const hasOpenChild = Array.from(submenu.querySelectorAll('.submenu')).some(child => !child.classList.contains('hidden'));
+                    if (!hasOpenChild) {
+                        submenu.classList.remove('hidden');
+                        submenu.classList.add('bg-blue-700');
+                        const arrow = document.getElementById(menuId + '-arrow');
+                        if (arrow) arrow.style.transform = 'rotate(180deg)';
+                    }
+                }
+            }
+        });
+
+        // Si hay un parámetro 'from' pero no se encontró ningún enlace activo,
+        // asegurar que el menú correspondiente esté abierto
+        if (targetCargaPrevia && !document.querySelector('.sidebar-item.active')) {
+            const targetSubmenu = document.getElementById(targetCargaPrevia + '-submenu');
+            if (targetSubmenu) {
+                targetSubmenu.classList.remove('hidden');
+                targetSubmenu.classList.add('bg-blue-700');
+                const targetArrow = document.getElementById(targetCargaPrevia + '-arrow');
+                if (targetArrow) targetArrow.style.transform = 'rotate(180deg)';
+
+                // Abrir el padre
+                const parent = parentMap[targetCargaPrevia];
+                if (parent) {
+                    const parentSubmenu = document.getElementById(parent + '-submenu');
+                    const parentArrow = document.getElementById(parent + '-arrow');
+                    if (parentSubmenu) {
+                        parentSubmenu.classList.remove('hidden');
+                        parentSubmenu.classList.add('bg-blue-700');
+                    }
+                    if (parentArrow) parentArrow.style.transform = 'rotate(180deg)';
+                }
+            }
+        }
+    }
+
+    // Toggle sidebar collapse/expand
+    function toggleSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.getElementById('mainContent');
+        const toggleIcon = document.getElementById('sidebarToggleIcon');
+        const toggleText = document.getElementById('sidebarToggleText');
+
+        const isCollapsed = sidebar.classList.contains('collapsed');
+
+        if (isCollapsed) {
+            // Expandir sidebar
+            sidebar.classList.remove('collapsed');
+            mainContent.classList.remove('sidebar-collapsed');
+            if (toggleIcon) toggleIcon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
+            if (toggleText) toggleText.textContent = 'Ocultar Menú';
+        } else {
+            // Colapsar sidebar
+            sidebar.classList.add('collapsed');
+            mainContent.classList.add('sidebar-collapsed');
+            if (toggleIcon) toggleIcon.innerHTML = '<path d="M3 12h18m-9-9l9 9-9 9"/>';
+            if (toggleText) toggleText.textContent = 'Mostrar Menú';
+        }
+    }
+
+    // Función para expandir todos los submenús en la página de inicio
+    function expandAllSubmenusOnHome() {
+        const allSubmenus = ['gtic', 'oga', 'ogh', 'documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina', 'ogh-documentos'];
+        allSubmenus.forEach(id => {
+            const submenu = document.getElementById(id + '-submenu');
+            if (submenu) {
+                submenu.classList.remove('hidden');
+                submenu.classList.add('bg-blue-700');
+                const arrow = document.getElementById(id + '-arrow');
+                if (arrow) arrow.style.transform = 'rotate(180deg)';
+            }
+        });
+    }
+
+    // Ejecutar al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        checkActiveSubmenus();
+        // Los submenús permanecen cerrados por defecto, solo se abren al hacer clic o si tienen elementos activos
+    });
+</script>
