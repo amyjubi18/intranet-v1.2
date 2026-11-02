@@ -41,8 +41,12 @@ class Handler extends ExceptionHandler
      */
     public function register(): void
     {
+        $this->renderable(function (AuthenticationException $e) {
+            return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        });
         $this->reportable(function (Throwable $e) {
             //
         });
+
     }
 }

@@ -3,11 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Documento;
+use App\Models\DocumentoArchivo;
+use App\Models\Estanteria;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Exports\UsersExport;
 use Maatwebsite\Excel\Facades\Excel;
-use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Facades\Gate;
 
@@ -23,25 +24,59 @@ class DocsController extends Controller
     {
         abort_if(Gate::denies('documentos_index'), 403);
 
+        // Parámetros de búsqueda y ordenamiento
+        $searchGeneral = $request->get('search_general');
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
 
-        $documentos = Documento::query()->with('categoria')->when(request('search'), function ($query) {
-            return $query->where('name', 'LIKE', '%' . request('search') . '%')
-                ->orWhere('description', 'LIKE', '%' . request('search') . '%')
-                ->orWhere('documento', 'LIKE', '%' . request('search') . '%')
-                ->orWhereHas('categoria', function ($q) {
-                    $q->where('name', 'LIKE', '%' . request('search') . '%');
-                });
-        })
-        ->when(request('fecha_inicial'), function($query) {
-            return $query->where('fecha', request('fecha_inicial'))->whereDate('fecha', '<=', date('Y-m-d'))->orWhere('fecha',request('fecha_final'))/* ->whereDate('fecha', '<=', date('Y-m-d')) */ ;
-    })/* ->when(request('fecha_final'), function($query) {
-        return $query->where('fecha', request('fecha_final'))->whereDate('fecha', '=', date('Y-m-d'));
-    }) */
-    ->latest()->paginate(5);
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
 
+        // Filtros avanzados
+        $filterType = $request->get('filterType');
+        $secondFilter = $request->get('secondFilter');
+        $search = $request->get('search');
+        $fechaDesde = $request->get('fecha_desde');
+        $fechaHasta = $request->get('fecha_hasta');
 
-        return view('administracion.docs.index', [
-            'documentos' => $documentos
+        // Filtro por estantería
+        $estanteriaId = $request->get('estanteria_id');
+
+        $documentos = Documento::query()->with('archivos.categoria', 'estanteria')
+            // Búsqueda general
+            ->when($searchGeneral, function ($query) use ($searchGeneral) {
+                return $query->where('name', 'LIKE', '%' . $searchGeneral . '%')
+                    ->orWhere('description', 'LIKE', '%' . $searchGeneral . '%')
+                    ->orWhereHas('archivos', function ($q) use ($searchGeneral) {
+                        $q->where('nombre_archivo', 'LIKE', '%' . $searchGeneral . '%');
+                    });
+            })
+            // Filtro por Nº Expediente
+            ->when($filterType === 'name' && $search, function ($query) use ($search) {
+                return $query->where('name', 'LIKE', '%' . $search . '%');
+            })
+            // Filtro por Descripción
+            ->when($filterType === 'description' && $search, function ($query) use ($search) {
+                return $query->where('description', 'LIKE', '%' . $search . '%');
+            })
+            // Filtro por rango de fechas
+            ->when($filterType === 'fecha' && $fechaDesde && $fechaHasta, function ($query) use ($fechaDesde, $fechaHasta) {
+                return $query->whereBetween('fecha', [$fechaDesde, $fechaHasta]);
+            })
+            // Filtro por estantería
+            ->when($estanteriaId, function ($query) use ($estanteriaId) {
+                return $query->where('estanteria_id', $estanteriaId);
+            })
+            ->orderBy($sort, $direction)
+            ->paginate(10);
+
+        return view('administracion.documentos.index', [
+            'documentos' => $documentos,
+            'categorias' => Categoria::all(),
+            'estanterias' => Estanteria::all(),
+            'sort' => $sort,
+            'direction' => $direction,
+            'search_general' => $searchGeneral
         ]);
     }
 
@@ -50,10 +85,10 @@ class DocsController extends Controller
      */
     public function create()
     {
-
         abort_if(Gate::denies('documentos_create'), 403);
-        return view('administracion.docs.create', [
-            "categorias" => Categoria::all()
+        return view('administracion.documentos.create', [
+            "categorias" => Categoria::orderBy('name')->get(),
+            "estanterias" => Estanteria::all()
         ]);
     }
 
@@ -62,44 +97,54 @@ class DocsController extends Controller
      */
     public function store(Request $request)
     {
-       /*  $validated = $request->validate([
-            'pdf' => 'required'
-        ]); */
         $request->validate([
-            'pdf'=> 'required'
+            'pdfs.*' => 'file|mimes:pdf',
+            'categoria_archivo_id.*' => 'required|exists:categorias,id'
         ]);
 
         try {
-
+            DB::beginTransaction();
 
             $documento = new Documento;
-            $documento->id = $request->get('id');
             $documento->name = $request->get('name');
             $documento->description = $request->get('description');
             $documento->fecha = $request->get('fecha');
-
-
-            if ($request->hasFile('pdf')) {
-                $archiv = $request->file('pdf');
-                $fileName = Str::slug(pathinfo($archiv->getClientOriginalName(), PATHINFO_FILENAME), '-') . '.' . $archiv->getClientOriginalExtension();
-                $path = /* '/archivos/'. */ $fileName;
-                if ($request->user()->documentos()->where('documento', $path)->count()) {
-                    return back()->withErrors(['pdf' => 'Ya existe un documento con ese nombre']);
-                }
-
-                $archiv->move(public_path() . '/archivos/', $path);
-                $documento->documento = $path;
-            }
-            $documento->categoria_id = $request->get('categoria_id');
             $documento->user_id = $request->user()->id;
+            $documento->estanteria_id = $request->get('estanteria_id');
+            $documento->categoria_id = $request->get('categoria_id');
             $documento->save();
 
-            DB::commit();
+            // Guardar múltiples PDFs
+            if ($request->hasFile('pdfs')) {
+                $categoriasArchivos = $request->get('categoria_archivo_id', []);
 
-            return redirect()->route("administracion.docs.index");
+                foreach ($request->file('pdfs') as $index => $pdf) {
+                    $fileName = Str::slug(pathinfo($pdf->getClientOriginalName(), PATHINFO_FILENAME), '-') . '.' . $pdf->getClientOriginalExtension();
+                    $path = $fileName;
+
+                    // Evitar conflictos de nombres
+                    while (file_exists(public_path('archivos/' . $path))) {
+                        $path = Str::random(10) . '-' . $fileName;
+                    }
+
+                    $pdf->move(public_path('archivos/'), $path);
+
+                    DocumentoArchivo::create([
+                        'documento_id' => $documento->id,
+                        'nombre_archivo' => $pdf->getClientOriginalName(),
+                        'ruta' => $path,
+                        'categoria_id' => $categoriasArchivos[$index] ?? null,
+                        'user_id' => $request->user()->id
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route("administracion.documentos.index")
+                ->with('success', 'Documento(s) guardado(s) correctamente');
         } catch (Exception $e) {
             DB::rollBack();
-            return $e;
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
 
@@ -116,10 +161,13 @@ class DocsController extends Controller
      */
     public function edit($id)
     {
-        //dd($documento);
         abort_if(Gate::denies('documentos_edit'), 403);
-        $documento = Documento::find($id);
-        return view('administracion.docs.edit', ['documento'=>$documento, 'categorias'=> Categoria::all()]);
+        $documento = Documento::with('archivos.categoria', 'estanteria', 'categoria')->find($id);
+        return view('administracion.documentos.edit', [
+            'documento' => $documento,
+            'categorias' => Categoria::orderBy('name')->get(),
+            'estanterias' => Estanteria::all()
+        ]);
     }
 
     /**
@@ -127,19 +175,85 @@ class DocsController extends Controller
      */
     public function update(Request $request, Documento $documento)
     {
-        $data = $request->only('name', 'description', 'fecha', 'categoria_id');
+        try {
+            DB::beginTransaction();
 
-        $documento->update($data);
+            // Actualizar datos principales
+            $documento->update([
+                'name' => $request->get('name'),
+                'description' => $request->get('description'),
+                'fecha' => $request->get('fecha'),
+                'estanteria_id' => $request->get('estanteria_id'),
+                'categoria_id' => $request->get('categoria_id'),
+            ]);
 
-        if ($request->hasFile('pdf')) {
-            $archiv = $request->file('pdf');
-            $fileName = Str::slug(pathinfo($archiv->getClientOriginalName(), PATHINFO_FILENAME), '-') . '.' . $archiv->getClientOriginalExtension();
-            $archiv->move(public_path() . '/archivos/', $fileName);
-            $documento->documento =  /* '/archivos/'. */$fileName;
-            $documento->save();
+            // Actualizar categorías de archivos existentes
+            if ($request->has('categoria_existente')) {
+                foreach ($request->get('categoria_existente') as $archivoId => $categoriaId) {
+                    $archivo = DocumentoArchivo::find($archivoId);
+                    if ($archivo) {
+                        $archivo->update(['categoria_id' => $categoriaId]);
+                    }
+                }
+            }
+
+            // Agregar nuevos PDFs si se proporcionan
+            if ($request->hasFile('pdfs')) {
+                $categoriasArchivos = $request->get('categoria_archivo_id', []);
+
+                foreach ($request->file('pdfs') as $index => $pdf) {
+                    $fileName = Str::slug(pathinfo($pdf->getClientOriginalName(), PATHINFO_FILENAME), '-') . '.' . $pdf->getClientOriginalExtension();
+                    $path = $fileName;
+
+                    // Evitar conflictos de nombres
+                    while (file_exists(public_path('archivos/' . $path))) {
+                        $path = Str::random(10) . '-' . $fileName;
+                    }
+
+                    $pdf->move(public_path('archivos/'), $path);
+
+                    DocumentoArchivo::create([
+                        'documento_id' => $documento->id,
+                        'nombre_archivo' => $pdf->getClientOriginalName(),
+                        'ruta' => $path,
+                        'categoria_id' => $categoriasArchivos[$index] ?? null,
+                        'user_id' => $request->user()->id
+                    ]);
+                }
+            }
+
+            DB::commit();
+            return redirect()->route('administracion.documentos.index')
+                ->with('success', 'Documento actualizado correctamente');
+        } catch (Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => $e->getMessage()]);
         }
+    }
 
-        return redirect()->route('administracion.docs.index', $documento->id)->with('success', 'Documento actualizado correctamente');
+    /**
+     * Eliminar un archivo específico
+     */
+    public function destroyArchivo(DocumentoArchivo $archivo)
+    {
+        try {
+            DB::beginTransaction();
+
+            // Eliminar archivo físico
+            if ($archivo->ruta && file_exists(public_path('archivos/' . $archivo->ruta))) {
+                unlink(public_path('archivos/' . $archivo->ruta));
+            }
+
+            $documento_id = $archivo->documento_id;
+            $archivo->delete();
+
+            DB::commit();
+            return redirect()->route('administracion.documentos.edit', $documento_id)
+                ->with('success', 'Archivo eliminado correctamente');
+        } catch (Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
 
     /**
@@ -148,9 +262,29 @@ class DocsController extends Controller
     public function destroy(Documento $documento)
     {
         abort_if(Gate::denies('documentos_destroy'), 403);
-        $documento->delete();
-        return redirect()->route('administracion.docs.index')->with('Documento eliminado');
+
+        try {
+            DB::beginTransaction();
+
+            // Eliminar todos los archivos asociados
+            foreach ($documento->archivos as $archivo) {
+                if ($archivo->ruta && file_exists(public_path('archivos/' . $archivo->ruta))) {
+                    unlink(public_path('archivos/' . $archivo->ruta));
+                }
+                $archivo->delete();
+            }
+
+            $documento->delete();
+
+            DB::commit();
+            return redirect()->route('administracion.documentos.index')
+                ->with('success', 'Documento(s) eliminado(s) correctamente');
+        } catch (Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => $e->getMessage()]);
+        }
     }
+
     public function export(){
         return Excel::download(new UsersExport, 'users.xlsx');
     }

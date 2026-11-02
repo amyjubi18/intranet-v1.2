@@ -112,4 +112,17 @@ return [
 
     'password_timeout' => 10800,
 
+    /*
+    |--------------------------------------------------------------------------
+    | Security Settings
+    |--------------------------------------------------------------------------
+    |
+    | Custom security settings for authentication.
+    |
+    */
+
+    'max_login_attempts' => 5,
+
+    'lockout_duration' => 30, // minutes
+
 ];

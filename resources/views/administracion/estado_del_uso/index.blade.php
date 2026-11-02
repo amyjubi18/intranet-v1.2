@@ -1,56 +1,281 @@
-<title>{{ 'Estado del uso' }}</title>
-
-@vite('resources/css/app.css')
+@can('estado_uso_index')
 <x-app-layout>
-    <body>
-        <x-slot name="header">
-            <h2 class="text-4xl font-semibold leading-tight text-center text-blue-800">
-                {{ __('Estado del uso') }}
-            </h2>
-        </x-slot>
-        <div class="p-4 px-20 m-6">
+    @section('title', 'Estados del Uso')
+    @section('subtitle', 'Gestión de estados del uso')
+<style>
+    .swal2-popup .swal2-actions {
+        display: flex !important;
+        opacity: 1 !important;
+    }
+    .swal2-popup .swal2-confirm {
+        opacity: 1 !important;
+        visibility: visible !important;
+        background-color: #F52727 !important;
+        color: white !important;
+    }
+    .swal2-popup .swal2-cancel {
+        opacity: 1 !important;
+        visibility: visible !important;
+        background-color: #2780F5 !important;
+        color: white !important;
+    }
+</style>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
 
-            <div>
-                <a class="inline-flex items-center px-4 py-2 mb-4 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:bg-blue-500 focus:bg-blue-500 active:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" href="{{route('administracion.estado_del_uso.create')}}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"></path></svg>Añadir nuevo estado del uso</a>
+        :root{
+            --color-primary:#1e3a8a; --color-secondary:#22C55E; --color-accent:#F59E0B;
+            --bg-from:#f8fafc; --bg-to:#e2e8f0;
+            --card-bg:white; --card-border:rgba(15,23,42,0.08);
+            --muted:#64748b; --text:#0f172a;
+            --link-hover-bg: rgba(15,23,42,0.06);
+            --active-bg: rgba(30,58,138,0.12);
+            --active-text: #0f172a;
+        }
+        body{
+            font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 35%, #cbd5e1 70%, #94a3b8 100%);
+            color:var(--text);
+        }
+        .glass{ background:var(--card-bg); border:1px solid var(--card-border); backdrop-filter:blur(8px) }
+        .btn{ display:inline-flex; align-items:center; gap:.5rem; border-radius:.75rem; padding:.625rem .9rem; font-weight:600; transition:.2s; border:1px solid var(--card-border) }
+        .btn-primary{ background:var(--color-primary); color:#fff }
+        .btn-secondary{ background:rgb(255, 255, 255) }
+        .btn-success{ background:var(--color-secondary); color:#fff }
+        .btn-warning{ background:var(--color-accent); color:#111827 }
+        .btn-secondary{ background:rgba(15,23,42,0.06) }
+
+        .main-content{
+            min-height:100vh;
+        }
+
+        /* Tarjetas de estadísticas */
+        .stat-card{
+            background:var(--card-bg);
+            border:1px solid var(--card-border);
+            backdrop-filter:blur(8px);
+            border-radius:1rem;
+            padding:1.5rem;
+            transition:.2s;
+        }
+        .stat-card:hover{
+            transform:translateY(-2px);
+            box-shadow:0 8px 24px rgba(2,6,23,.15);
+        }
+
+        /* Animaciones */
+        .fade-in{
+            animation:fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn{
+            from{ opacity:0; transform:translateY(10px); }
+            to{ opacity:1; transform:translateY(0); }
+        }
+
+        
+    </style>
+
+    <!-- Filtros y controles -->
+    <div class="sticky top-0 z-10 px-6 mb-6">
+        <div class="p-6 glass rounded-2xl fade-in">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-4">
+<!-- Buscador directo con debounce -->
+                    <form method="GET" action="{{ route('administracion.estado_del_uso.index') }}" id="searchForm" class="flex items-center gap-2">
+                        <input
+                            type="text"
+                            name="search"
+                            id="estadoUsoSearchInput"
+                            value="{{ $search ?? '' }}"
+                            placeholder="Buscar estado del uso..."
+                            class="w-64 px-4 py-2 text-sm glass rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        >
+                        @if($search)
+                        <a href="{{ route('administracion.estado_del_uso.index') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
+                            🗑️ Limpiar
+                        </a>
+                        @endif
+                        <!-- Selector de ordenamiento -->
+                        <div class="flex items-center gap-1 ml-2">
+                            <span class="text-xs text-gray-500">Ordenar por:</span>
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'estado_del_uso', 'direction' => $sort === 'estado_del_uso' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'estado_del_uso' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                Nombre
+                                @if($sort === 'estado_del_uso')
+                                    @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                                @else
+                                    <span class="text-gray-400">⇅</span>
+                                @endif
+                            </a>
+                            {{-- <a href="{{ request()->fullUrlWithQuery(['sort' => 'id', 'direction' => $sort === 'id' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'id' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                ID
+                                @if($sort === 'id')
+                                    @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                                @else
+                                    <span class="text-gray-400">⇅</span>
+                                @endif
+                            </a> --}}
+                        </div>
+                    </form>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    @can('estado_uso_create')
+                    <a href="{{ route('administracion.estado_del_uso.create') }}" class="btn inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 text-sm">
+                        <span>➕</span>
+                        Nuevo
+                    </a>
+                    @endcan
+                </div>
             </div>
-
-            <table class="table w-full text-black sm:p-4">
-
-
-
-                <thead class='text-sm font-semibold text-white uppercase bg-blue-900 border-4 border-white '>
-                    <tr class="border-4 border-blue-900 ">
-                        <th class='px-6 py-4 text-center border-4 border-blue-900 '>ID</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>ESTADO DEL USO</th>
-
-                   <th colspan="2" class='py-4 text-center border-4 border-blue-900 w-fit '>OPCIÓN</th>
-                </thead >
-                <tbody class='py-4 text-center border-4 border-blue-900'>
-                    @forelse ($estado_del_usos as $estado_del_uso)
-                        <tr class='px-6 py-2 my-4 text-black border-4 border-blue-900'>
-                            <td class='py-2 text-center border-4 border-blue-900'> {{$estado_del_uso->id}}</td>
-                            <td class='px-10 py-2 text-center border-4 border-blue-900'>
-                                {{$estado_del_uso->estado_del_uso}}</td>
-
-
-                            <td class='flex items-center justify-center py-2 text-center border-4 '> <a href="{{route('administracion.estado_del_uso.edit', $estado_del_uso->id)}}" target="blank_" class="w-fit inline-flex flex justify-around px-4 py-2.5 mr-2 font-semibold  text-white bg-green-700 rounded-lg transition duration-150 ease-in-out  hover:text-white hover:bg-green-500 focus:outline-none">Editar <svg xmlns="http://www.w3.org/2000/svg" class="ml-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="m16 2.012 3 3L16.713 7.3l-3-3zM4 14v3h3l8.299-8.287-3-3zm0 6h16v2H4z"></path></svg></a>
-                        <form action="{{ route('administracion.estado_del_uso.destroy', $estado_del_uso->id) }}" method="POST" onsubmit="return confirm('¿Seguro?')">
-                                    @csrf
-                                    @method('DELETE')
-                                <button class="inline-flex px-4 py-2.5 mt-3 items-center rounded-lg font-semibold text-center text-white bg-red-600  transition duration-150 ease-in-out  hover:text-white hover:bg-red-500 focus:outline-none" type="submit">Eliminar <svg xmlns="http://www.w3.org/2000/svg" class="ml-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"></path></svg></button>
-                        </form></td>
-
-                         @empty
-                         No hay ningun permiso registrado
-                         </tr>
-
-                    @endforelse
-                </tbody>
-
-            </table>
-            <div>
-                 {{$estado_del_usos->links()}}
-             </div>
         </div>
-    </body>
+    </div>
+
+    <!-- Registro de estados del uso -->
+    <div class="px-6 mb-8">
+        <div class="space-y-4 fade-in">
+            @forelse ($estado_del_usos as $estado_del_uso)
+            <!-- Registro -->
+            <div class="glass justify-between rounded-2xl p-6 hover:scale-[1.01] transition-transform">
+                <div class="grid items-center justify-between grid-cols-1 gap-6 lg:grid-cols-2">
+                    <!-- Estado del Uso -->
+                    <div class="text-center lg:text-left">
+                        <p class="mb-1 text-xs font-semibold text-blue-900">📋 Estado del Uso</p>
+                        <p class="p-2 text-lg font-semibold text-black rounded-lg w-fit" >{{ $estado_del_uso->estado_del_uso }}</p>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="text-center lg:text-left">
+                        <div class="flex justify-center gap-2 lg:justify-start">
+                            @can('estado_uso_edit')
+                            <a href="{{ route('administracion.estado_del_uso.edit', $estado_del_uso->id) }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs">
+                                <span>✏️</span>
+                                Editar
+                            </a>
+                            @endcan
+                            @can('estado_uso_destroy')
+                            <button onclick="confirmDelete({{ $estado_del_uso->id }}, '{{ $estado_del_uso->estado_del_uso }}')" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-red-500 text-white active:translate-y-0.5 text-xs">
+                                <span>🗑️</span>
+                                Eliminar
+                            </button>
+                            @endcan
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @empty
+            <div class="p-6 text-center glass rounded-2xl">
+                <p class="text-slate-400">No hay ningún estado del uso registrado</p>
+            </div>
+            @endforelse
+        </div>
+
+        <!-- Paginación -->
+        @if($estado_del_usos->hasPages())
+        <div class="flex justify-center mt-8">
+            <div class="p-4 glass rounded-xl">
+                {{ $estado_del_usos->links() }}
+            </div>
+        </div>
+        @endif
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed z-50 hidden bottom-4 right-4">
+        <div class="flex items-center gap-2 px-4 py-3 glass rounded-xl">
+            <div id="toastIcon">✅</div>
+            <div id="toastMsg" class="text-sm"></div>
+        </div>
+    </div>
+
+    <script>
+        // Función para confirmar eliminación
+        function confirmDelete(id, name) {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: `¿Quieres eliminar el estado del uso "${name}"? Esta acción no se puede deshacer.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Crear y enviar formulario de eliminación
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/administracion/estado_del_uso/${id}`;
+
+                    // Agregar token CSRF
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                    if (csrfToken) {
+                        const csrfInput = document.createElement('input');
+                        csrfInput.type = 'hidden';
+                        csrfInput.name = '_token';
+                        csrfInput.value = csrfToken.getAttribute('content');
+                        form.appendChild(csrfInput);
+                    }
+
+                    // Agregar método DELETE
+                    const methodInput = document.createElement('input');
+                    methodInput.type = 'hidden';
+                    methodInput.name = '_method';
+                    methodInput.value = 'DELETE';
+                    form.appendChild(methodInput);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
+
+        // Toast
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMsg');
+
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+
+            icon.textContent = icons[type] || icons.success;
+            msgEl.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // ==========================================
+        // BUSCADOR CON DEBOUNCE - ESTADOS DEL USO
+        // ==========================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('estadoUsoSearchInput');
+            const searchForm = document.getElementById('searchForm');
+
+            if (searchInput && searchForm) {
+                let searchTimeout;
+
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+
+                    // Debounce: esperar 300ms antes de buscar
+                    searchTimeout = setTimeout(function() {
+                        searchForm.submit();
+                    }, 300);
+                });
+            }
+
+            showToast('Módulo de estados del uso cargado', 'info');
+        });
+    </script>
 </x-app-layout>
+@endcan
+

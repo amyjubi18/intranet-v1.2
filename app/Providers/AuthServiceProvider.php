@@ -24,7 +24,7 @@ class AuthServiceProvider extends ServiceProvider
     public function boot(): void
     {
         /* ResetPassword::createUrlUsing(function ($user, string $token){
-            return 'https://intranet.codecyt.gob.ve/reset-password?token='.$token;
+            return 'http://intranet-v1.2.test/auth/reset-password?token='.$token;
         }); */
     }
 }

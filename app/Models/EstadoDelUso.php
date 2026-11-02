@@ -11,6 +11,6 @@ class EstadoDelUso extends Model
     protected $fillable =['estado_del_uso'];
     public function bienes()
     {
-        return $this->hasMany(Bienes::class, 'id');
+        return $this->hasMany(Biene::class, 'estado_del_uso_id');
     }
 }

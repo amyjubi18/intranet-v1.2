@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('unidad_administrativas', function (Blueprint $table) {
             $table->id();
-            $table->string('unidad_administrativa');
+            $table->string('name');
             $table->timestamps();
         });
     }

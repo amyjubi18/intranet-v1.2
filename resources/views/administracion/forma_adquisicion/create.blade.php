@@ -1,55 +1,158 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta name="csrf-token" content="{{ csrf_token() }}">
+@can('forma_adquisicion_create')
+<x-app-layout>
+    @section('title', 'Crear Forma de Adquisición')
+    @section('subtitle', 'Registrar nueva forma de adquisición')
 
-        <title>{{ 'Forma de Adquisición'}}</title>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
 
-        <!-- Fonts -->
-        <link rel="preconnect" href="https://fonts.bunny.net">
-        <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+        :root{
+            --color-primary:#1e3a8a; --color-secondary:#22C55E; --color-accent:#F59E0B;
+            --bg-from:#f8fafc; --bg-to:#e2e8f0;
+            --card-bg:rgb(255, 255, 255); --card-border:rgba(15,23,42,0.08);
+            --muted:#64748b; --text:#0f172a;
+            --link-hover-bg: rgba(15,23,42,0.06);
+            --active-bg: rgba(30,58,138,0.12);
+            --active-text: #0f172a;
+        }
+        body{
+            font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+            background: linear-gradient(135deg,var(--bg-from),var(--bg-to));
+            color:var(--text);
+        }
+        .glass{ background:var(--card-bg); border:1px solid var(--card-border); backdrop-filter:blur(8px) }
+        .btn{ display:inline-flex; align-items:center; gap:.5rem; border-radius:.75rem; padding:.625rem .9rem; font-weight:600; transition:.2s; border:1px solid var(--card-border) }
+        .btn:active{ transform:translateY(1px) }
+        .btn-primary{ background:var(--color-primary); color:#fff }
+        .btn-secondary{ background:rgba(15,23,42,0.06) }
+        .btn-success{ background:var(--color-secondary); color:#fff }
+        .btn-warning{ background:var(--color-accent); color:#111827 }
 
-        <!-- Scripts -->
-        @vite(['resources/css/app.css', 'resources/js/app.js'])
-    </head>
-    <body class="font-sans antialiased text-gray-900 ">
-        <section class="flex flex-col items-center h-screen border-4 border-blue-900 rounded md:flex-row ">
-            <div class="hidden h-screen bg-blue-600 lg:block md:w-1/2 xl:w-2/3">
-                <img src="/img/fondo-intranet.jpg" class="object-cover w-full h-full" alt="">
+        /* Formulario */
+        .form-input{
+            backdrop-filter:blur(8px);
+            border-radius:.75rem;
+            padding:.75rem 1rem;
+            width:100%;
+            color:var(--text);
+            transition:.2s;
+        }
+        .form-input:focus{
+            outline:none;
+            border-color:var(--color-primary);
+            box-shadow:0 0 0 3px rgba(30,58,138,0.1);
+        }
+        .form-label{
+            display:block;
+            font-weight:600;
+            margin-bottom:.5rem;
+            color:var(--text);
+        }
+
+        /* Animaciones */
+        .fade-in{
+            animation:fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn{
+            from{ opacity:0; transform:translateY(10px); }
+            to{ opacity:1; transform:translateY(0); }
+        }
+    </style>
+
+    <!-- Contenido principal -->
+    <div class="container max-w-4xl px-6 pb-20 mx-auto">
+        <div class="p-8 glass rounded-2xl fade-in">
+            <div class="mb-8 text-center">
+                <div class="grid w-16 h-16 mx-auto mb-4 rounded-2xl place-items-center bg-blue-500/20">
+                    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-blue-400">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                </div>
+                <h2 class="mb-2 text-2xl font-bold">Crear Forma de Adquisición</h2>
+                <p class="text-slate-400">Registra una nueva forma de adquisición en el sistema</p>
             </div>
 
-            <div class="w-full px-6 py-4 mt-6 overflow-hidden bg-white sm:max-w-md sm:rounded-lg">
+            <form id="crearFormaAdquisicionForm" action="{{ route('administracion.forma_adquisicion.store') }}" method="POST">
+                @csrf
 
-                <h1 class="py-3 pb-0 text-3xl font-bold text-center text-blue-900">Registrar una Forma de Adquisición</h1>
+                <!-- Campo de forma de adquisición -->
+                <div class="mb-6">
+                    <label class="form-label">Forma de Adquisición:</label>
+                    <input
+                        type="text"
+                        name="forma_adquisicion"
+                        class="bg-blue-100 border-none form-input "
+                        placeholder="Ingrese el nombre de la forma de adquisición..."
+                        value="{{ old('forma_adquisicion') }}"
+                        required
+                        autofocus
+                    >
+                    @error('forma_adquisicion')
+                        <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
+                    @enderror
+                </div>
 
-                <form action="{{route('administracion.forma_adquisicion.store')}}" method="POST" enctype="multipart/form-data">
-                    @csrf
-
-
-                    <div>
-                        <x-input-label for="forma_adquisicion" :value="__('Forma de Adquisición:')" />
-                        <x-text-input id="forma_adquisicion" class="block w-full mt-1" type="text" name="forma_adquisicion" :value="old('forma_adquisicion')" required autofocus autocomplete="Categoria" />
-                        <x-input-error :messages="$errors->get('forma_adquisicion')" class="mt-2" />
-                    </div>
-                    <div class="flex mt-4 justify-evenly">
-
-                        <a class="inline-flex items-center px-4 py-2 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:bg-blue-500 focus:bg-blue-500 active:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 " href="{{ route('administracion.forma_adquisicion.index') }}">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path></svg>{{ __('Regresar') }}
-                        </a>
-
-                        <x-primary-button class="ml-4" onsubmit="return route('administracion.forma_adquisicion.index')">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M5 21h14a2 2 0 0 0 2-2V8a1 1 0 0 0-.29-.71l-4-4A1 1 0 0 0 16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2zm10-2H9v-5h6zM13 7h-2V5h2zM5 5h2v4h8V5h.59L19 8.41V19h-2v-5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5H5z"></path></svg> {{ __('Guardar') }}
-                        </x-primary-button>
-                    </div>
-
-
-                </form>
-
-            </div>
+                <!-- Botones de acción -->
+                <div class="flex items-center justify-between gap-4 pt-6 border-t border-white/10">
+                    <x-primary-link href="{{ route('administracion.forma_adquisicion.index') }}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path></svg>
+                        {{ __('Regresar') }}
+                    </x-primary-link>
+                    <x-primary-button type="submit" class="btn-save">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                            <polyline points="17,21 17,13 7,13 7,21"/>
+                            <polyline points="7,3 7,8 15,8"/>
+                        </svg>
+                        Guardar
+                    </x-primary-button>
+                </div>
+            </form>
         </div>
-    </section>
-    </body>
-</html>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed z-50 hidden bottom-4 right-4">
+        <div class="flex items-center gap-2 px-4 py-3 glass rounded-xl">
+            <div id="toastIcon">✅</div>
+            <div id="toastMsg" class="text-sm"></div>
+    </div>
+
+    <script>
+        // Toast
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMsg');
+
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+
+            icon.textContent = icons[type] || icons.success;
+            msgEl.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        // Envío del formulario
+        document.getElementById('crearFormaAdquisicionForm').addEventListener('submit', (e) => {
+            showToast('Creando forma de adquisición...', 'info');
+        });
+
+        // Inicialización
+        function init() {
+            showToast('Módulo de creación de forma de adquisición cargado', 'info');
+        }
+
+        // Inicializar cuando el DOM esté listo
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</x-app-layout>
+@endcan
 

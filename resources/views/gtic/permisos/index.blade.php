@@ -1,61 +1,253 @@
-<title>{{ 'Permisos' }}</title>
-
-@vite('resources/css/app.css')
 <x-app-layout>
-    <body>
-        <x-slot name="header">
-            <h2 class="text-4xl font-semibold leading-tight text-center text-blue-800">
-                {{ __('Permisos') }}
-            </h2>
-        </x-slot>
-        <div class="p-4 px-20 m-6">
+    @section('title', 'Permisos')
+    @section('subtitle', 'Gestión de permisos')
+<style>
+    .swal2-popup .swal2-actions {
+        display: flex !important;
+        opacity: 1 !important;
+    }
+    .swal2-popup .swal2-confirm {
+        opacity: 1 !important;
+        visibility: visible !important;
+        background-color: #F52727 !important;
+        color: white !important;
+    }
+    .swal2-popup .swal2-cancel {
+        opacity: 1 !important;
+        visibility: visible !important;
+        background-color: #2780F5 !important;
+        color: white !important;
+    }
+</style>
+    <style>
+        body {
+            box-sizing: border-box;
+        }
 
-            <div>
-                <a class="inline-flex items-center px-4 py-2 mb-4 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:bg-blue-500 focus:bg-blue-500 active:bg-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2" href="{{route('gtic.permisos.create')}}"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"></path></svg>Añadir nuevos permisos</a>
-            </div>
-            <form action="{{route('gtic.permisos.index')}}" method="GET" class="flex-grow">
-                <input type="search" name="search" placeholder="Buscar" value="{{request('search')}}"
-                class="w-1/2 px-4 py-2 border border-gray-200 rounded">
-                <button class="py-2.5 px-4 text-white bg-blue-900 rounded-lg ml-2 inline-flex hover:bg-blue-500" type="submit">Buscar<svg xmlns="http://www.w3.org/2000/svg" class="ml-2" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M10 18a7.952 7.952 0 0 0 4.897-1.688l4.396 4.396 1.414-1.414-4.396-4.396A7.952 7.952 0 0 0 18 10c0-4.411-3.589-8-8-8s-8 3.589-8 8 3.589 8 8 8zm0-14c3.309 0 6 2.691 6 6s-2.691 6-6 6-6-2.691-6-6 2.691-6 6-6z"></path><path d="M11.412 8.586c.379.38.588.882.588 1.414h2a3.977 3.977 0 0 0-1.174-2.828c-1.514-1.512-4.139-1.512-5.652 0l1.412 1.416c.76-.758 2.07-.756 2.826-.002z"></path></svg></button>
-                <a href="{{route('gtic.permisos.index')}}" class="px-4 py-3 ml-2 text-white bg-blue-900 rounded-lg hover:bg-blue-500">Actualizar<svg xmlns="http://www.w3.org/2000/svg" class="inline-flex ml-2" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M10 11H7.101l.001-.009a4.956 4.956 0 0 1 .752-1.787 5.054 5.054 0 0 1 2.2-1.811c.302-.128.617-.226.938-.291a5.078 5.078 0 0 1 2.018 0 4.978 4.978 0 0 1 2.525 1.361l1.416-1.412a7.036 7.036 0 0 0-2.224-1.501 6.921 6.921 0 0 0-1.315-.408 7.079 7.079 0 0 0-2.819 0 6.94 6.94 0 0 0-1.316.409 7.04 7.04 0 0 0-3.08 2.534 6.978 6.978 0 0 0-1.054 2.505c-.028.135-.043.273-.063.41H2l4 4 4-4zm4 2h2.899l-.001.008a4.976 4.976 0 0 1-2.103 3.138 4.943 4.943 0 0 1-1.787.752 5.073 5.073 0 0 1-2.017 0 4.956 4.956 0 0 1-1.787-.752 5.072 5.072 0 0 1-.74-.61L7.05 16.95a7.032 7.032 0 0 0 2.225 1.5c.424.18.867.317 1.315.408a7.07 7.07 0 0 0 2.818 0 7.031 7.031 0 0 0 4.395-2.945 6.974 6.974 0 0 0 1.053-2.503c.027-.135.043-.273.063-.41H22l-4-4-4 4z"></path></svg></a>
-            </form>
-            <table class="table w-full text-black sm:p-4">
+        :root{
+            --color-primary:#1e3a8a; --color-secondary:#22C55E; --color-accent:#F59E0B;
+            --bg-from:#f8fafc; --bg-to:#e2e8f0;
+            --card-bg:white; --card-border:rgba(15,23,42,0.08);
+            --muted:#64748b; --text:#0f172a;
+            --link-hover-bg: rgba(15,23,42,0.06);
+            --active-bg: rgba(30,58,138,0.12);
+            --active-text: #0f172a;
+        }
+        body{
+            font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 35%, #cbd5e1 70%, #94a3b8 100%);
+            color:var(--text);
+        }
+        .glass{ background:var(--card-bg); border:1px solid var(--card-border); backdrop-filter:blur(8px) }
+        .btn{ display:inline-flex; align-items:center; gap:.5rem; border-radius:.75rem; padding:.625rem .9rem; font-weight:600; transition:.2s; border:1px solid var(--card-border) }
+        .btn-primary{ background:var(--color-primary); color:#fff }
+        .btn-secondary{ background:rgb(255, 255, 255) }
+        .btn-success{ background:var(--color-secondary); color:#fff }
+        .btn-warning{ background:var(--color-accent); color:#111827 }
+        .btn-secondary{ background:rgba(15,23,42,0.06) }
 
+        .main-content{
+            min-height:100vh;
+        }
 
+        /* Tarjetas de estadísticas */
+        .stat-card{
+            background:var(--card-bg);
+            border:1px solid var(--card-border);
+            backdrop-filter:blur(8px);
+            border-radius:1rem;
+            padding:1.5rem;
+            transition:.2s;
+        }
+        .stat-card:hover{
+            transform:translateY(-2px);
+            box-shadow:0 8px 24px rgba(2,6,23,.15);
+        }
 
-                <thead class='text-sm font-semibold text-white uppercase bg-blue-900 border-4 border-white '>
-                    <tr class="border-4 border-blue-900 ">
-                        <th class='px-6 py-4 text-center border-4 border-blue-900 '>ID</th>
-                    <th class='px-6 py-4 text-center border-4 border-blue-900 '>PERMISOS</th>
+        /* Animaciones */
+        .fade-in{
+            animation:fadeIn 0.3s ease-in-out;
+        }
+        @keyframes fadeIn{
+            from{ opacity:0; transform:translateY(10px); }
+            to{ opacity:1; transform:translateY(0); }
+        }
 
-                   <th colspan="2" class='py-4 text-center border-4 border-blue-900 w-fit '>OPCIÓN</th>
-                </thead >
-                <tbody class='py-4 text-center border-4 border-blue-900'>
-                    @forelse ($permissions as $permission)
-                        <tr class='px-6 py-2 my-4 text-black border-4 border-blue-900'>
-                            <td class='py-2 text-center border-4 border-blue-900'> {{$permission->id}}</td>
-                            <td class='px-10 py-2 text-center border-4 border-blue-900'>
-                                {{$permission->name}}</td>
+       
+    </style>
 
-                           {{-- <td class='py-4 text-center border-4 border-blue-900'><a href="{{route('gtic.permisos.show', $permiso->id)}}"  class="px-4 py-2.5 text-white bg-blue-900 rounded-lg">Permiso</a></td> --}}
-                            <td class='flex items-center justify-center py-2 text-center border-4 '> <a href="{{route('gtic.permisos.edit', $permission->id)}}" target="blank_" class="w-fit inline-flex flex justify-around px-4 py-2.5 mr-2  text-white bg-green-700 rounded-lg transition duration-150 ease-in-out  hover:text-white hover:bg-green-500 focus:outline-none">Editar <svg xmlns="http://www.w3.org/2000/svg" class="ml-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="m16 2.012 3 3L16.713 7.3l-3-3zM4 14v3h3l8.299-8.287-3-3zm0 6h16v2H4z"></path></svg></a>
-                        <form action="{{ route('gtic.permisos.destroy', $permission->id) }}" method="POST" onsubmit="return confirm('¿Seguro?')">
-                                    @csrf
-                                    @method('DELETE')
-                                <button class="inline-flex px-4 py-2.5 mt-3 items-center rounded-lg font-semibold text-center text-white bg-red-600  transition duration-150 ease-in-out  hover:text-white hover:bg-red-500 focus:outline-none" type="submit">Eliminar <svg xmlns="http://www.w3.org/2000/svg" class="ml-1" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"></path></svg></button>
-                        </form></td>
+    <!-- Filtros y controles -->
+    <div class="sticky top-0 z-10 px-6 mb-6">
+        <div class="p-6 glass rounded-2xl fade-in">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-wrap items-center gap-4">
+                    <!-- Buscador directo con debounce -->
+                    <form method="GET" action="{{ route('gtic.permisos.index') }}" id="searchForm" class="flex items-center gap-2">
+                        <input
+                            type="text"
+                            name="search"
+                            id="permisosSearchInput"
+                            value="{{ $search ?? '' }}"
+                            placeholder="Buscar permiso..."
+                            class="w-64 px-4 py-2 text-sm glass rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                        >
+                        @if($search)
+                        <a href="{{ route('gtic.permisos.index') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
+                           🗑️ Limpiar
+                        </a>
+                        @endif
+                        <!-- Selector de ordenamiento -->
+                        <div class="flex items-center gap-1 ml-2">
+                            <span class="text-xs text-gray-500">Ordenar por:</span>
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'name', 'direction' => $sort === 'name' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'name' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                Nombre
+                                @if($sort === 'name')
+                                    @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                                @else
+                                    <span class="text-gray-400">⇅</span>
+                                @endif
+                            </a>
+                        </div>
+                    </form>
+                </div>
 
-                         @empty
-                         No hay ningun permiso registrado
-                         </tr>
-
-                    @endforelse
-                </tbody>
-
-            </table>
-            <div>
-                {{$permissions->links()}}
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('gtic.permisos.create') }}" class="btn inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 text-sm">
+                        <span>➕</span>
+                        Nuevo
+                    </a>
+                </div>
             </div>
         </div>
-    </body>
+    </div>
+
+    <!-- Registro de permisos -->
+    <div class="px-6 mb-8">
+        <div class="space-y-4 fade-in">
+            @forelse ($permissions as $permission)
+            <!-- Registro -->
+            <div class="glass justify-between rounded-2xl p-6 hover:scale-[1.01] transition-transform">
+                <div class="grid items-center justify-between grid-cols-1 gap-6 lg:grid-cols-2">
+                    <!-- Permiso -->
+                    <div class="text-center lg:text-left">
+                        <p class="mb-1 text-xs font-semibold text-blue-900">🔑 Permiso</p>
+                        <p class="p-2 text-lg font-semibold text-black rounded-lg w-fit" >{{ $permission->name }}</p>
+                    </div>
+
+                    <!-- Acciones -->
+                    <div class="text-center lg:text-left">
+                        <div class="flex justify-center gap-2 lg:justify-start">
+                            <a href="{{ route('gtic.permisos.edit', $permission->id) }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs">
+                                <span>✏️</span>
+                                Editar
+                            </a>
+                            <button onclick="confirmDelete({{ $permission->id }}, '{{ $permission->name }}')" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-red-500 text-white active:translate-y-0.5 text-xs">
+                                <span>🗑️</span>
+                                Eliminar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @empty
+            <div class="p-6 text-center glass rounded-2xl">
+                <p class="text-slate-400">No hay ningún permiso registrado</p>
+            </div>
+            @endforelse
+        </div>
+
+        <!-- Paginación -->
+        @if($permissions->hasPages())
+        <div class="flex justify-center mt-8">
+            <div class="p-4 glass rounded-xl">
+                {{ $permissions->links() }}
+            </div>
+        </div>
+        @endif
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed z-50 hidden bottom-4 right-4">
+        <div class="flex items-center gap-2 px-4 py-3 glass rounded-xl">
+            <div id="toastIcon">✅</div>
+            <div id="toastMsg" class="text-sm"></div>
+        </div>
+    </div>
+
+    <!-- Formulario oculto para eliminar -->
+    <form id="deleteForm" method="POST" action="" style="display: none;">
+        @csrf
+        @method('DELETE')
+    </form>
+
+    <script>
+        // ==========================================
+        // BUSCADOR CON DEBOUNCE - PERMISOS
+        // ==========================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('permisosSearchInput');
+            const searchForm = document.getElementById('searchForm');
+
+            if (searchInput && searchForm) {
+                // Debounce para búsqueda automática
+                let searchTimeout;
+
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+
+                    // Mostrar indicador visual de búsqueda
+                    searchInput.classList.add('bg-blue-50');
+
+                    // Debounce: esperar 300ms antes de buscar (más rápido)
+                    searchTimeout = setTimeout(function() {
+                        searchForm.submit();
+                    }, 300);
+                });
+            }
+
+            showToast('Módulo de permisos cargado', 'info');
+        });
+
+        // Función para confirmar eliminación
+        function confirmDelete(id, name) {
+            Swal.fire({
+                title: '¿Estás seguro?',
+                text: `¿Deseas eliminar el permiso "${name}"?`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#F52727',
+                cancelButtonColor: '#2780F5',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.getElementById('deleteForm');
+                    form.action = `{{ route('gtic.permisos.destroy', '') }}/${id}`;
+                    form.submit();
+                }
+            });
+        }
+
+        // Toast
+        function showToast(msg, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = document.getElementById('toastIcon');
+            const msgEl = document.getElementById('toastMsg');
+
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                info: 'ℹ️'
+            };
+
+            icon.textContent = icons[type] || icons.success;
+            msgEl.textContent = msg;
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+    </script>
 </x-app-layout>
+

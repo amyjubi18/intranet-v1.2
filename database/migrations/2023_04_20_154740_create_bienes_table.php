@@ -1,14 +1,15 @@
 <?php
 
-use App\Models\CategoriaEspecifica;
-use App\Models\CategoriaGeneral;
+use App\Models\UsuarioDeUso;
 use App\Models\EstadoDelUso;
 use App\Models\FormaAdquisicion;
-use App\Models\SubCategoria;
 use App\Models\UnidadAdministrativa;
+use App\Models\Color;
+use App\Models\Condicion;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Models\UsuarioAdministrativo;
 
 return new class extends Migration
 {
@@ -20,7 +21,6 @@ return new class extends Migration
         Schema::create('bienes', function (Blueprint $table) {
             $table->id();
             $table->string('sede');
-            $table->foreignIdFor(UnidadAdministrativa::class);
             $table->string('n_interno_bien');
             $table->string('descripcion');
             $table->foreignIdFor(FormaAdquisicion::class);
@@ -29,14 +29,16 @@ return new class extends Migration
             $table->string('valor_factura');
             $table->string('moneda');
             $table->foreignIdFor(EstadoDelUso::class);
-            $table->string('condicion_fisica');
+            $table->foreignIdFor(Condicion::class);
             $table->string('marca');
             $table->string('modelo');
+            $table->foreignIdFor(Color::class);
+            $table->foreignIdFor(UnidadAdministrativa::class);
+            $table->foreignIdFor(UsuarioAdministrativo::class);
+            $table->foreignIdFor(UsuarioDeUso::class);
             $table->string('serial');
-            $table->foreignIdFor(CategoriaGeneral::class);
-            $table->foreignIdFor(SubCategoria::class);
-            $table->foreignIdFor(CategoriaEspecifica::class);
-            $table->string('codigo_contable');
+            $table->string('comentario');
+            $table->date('fecha_comentario');
             $table->timestamps();
         });
     }
