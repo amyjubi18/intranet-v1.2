@@ -166,7 +166,19 @@ class DistribucionAlmacenamientoImpresoraController extends Controller
     {
         abort_if(Gate::denies('dist_almac_create'), 403);
 
-        $almacenamientos = AlmacenamientoImpresora::with('cartuchos', 'colores')->get();
+        // Obtener registros únicos por nombre de impresora + nombre de consumible + nombre de color
+        $todos = AlmacenamientoImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes')->get();
+
+        // Agrupar por nombre de impresora + nombre de consumible + nombre de color
+        $almacenamientos = $todos->groupBy(function($item) {
+            $impresora = $item->impresoras?->impresora ?? '';
+            $cartucho = $item->cartuchos?->cartucho ?? '';
+            $color = $item->colores?->colore ?? '';
+            return $impresora . '|' . $cartucho . '|' . $color;
+        })->map(function($group) {
+            return $group->sortByDesc('id')->first();
+        })->values();
+
         $gerencias = Gerencia::with('area')->get();
 
         return view('administracion.distribucion_almacenamiento_impresoras.create', compact(
@@ -185,10 +197,34 @@ class DistribucionAlmacenamientoImpresoraController extends Controller
             'unidades_asignadas' => 'required|integer|min:1',
         ]);
 
-        // Check if the assigned units don't exceed available units
-        $almacenamiento = AlmacenamientoImpresora::find($request->almacenamiento_impresora_id);
-        $totalAsignado = DistribucionAlmacenamientoImpresora::where('almacenamiento_impresora_id', $request->almacenamiento_impresora_id)->sum('unidades_asignadas');
-        $disponible = $almacenamiento->unidades_disponibles - $totalAsignado;
+        // Obtener el almacenamiento seleccionado
+        $almacenamiento = AlmacenamientoImpresora::with('impresoras', 'cartuchos', 'colores')->find($request->almacenamiento_impresora_id);
+
+        // Calcular unidades disponibles por nombre de impresora + consumible + color
+        $nombreImpresora = $almacenamiento->impresoras?->impresora ?? '';
+        $nombreCartucho = $almacenamiento->cartuchos?->cartucho ?? '';
+        $nombreColor = $almacenamiento->colores?->colore ?? '';
+
+        $todos = AlmacenamientoImpresora::with('impresoras', 'cartuchos', 'colores')->get();
+        $coincidentes = $todos->filter(function($item) use ($nombreImpresora, $nombreCartucho, $nombreColor) {
+            return ($item->impresoras?->impresora ?? '') === $nombreImpresora
+                && ($item->cartuchos?->cartucho ?? '') === $nombreCartucho
+                && ($item->colores?->colore ?? '') === $nombreColor;
+        });
+
+        $totalRegistrados = $coincidentes->sum('unidades');
+
+        $totalAsignado = DistribucionAlmacenamientoImpresora::whereHas('almacenamientoImpresora', function($q) use ($nombreImpresora, $nombreCartucho, $nombreColor) {
+            $q->whereHas('impresoras', function($q2) use ($nombreImpresora) {
+                $q2->where('impresora', $nombreImpresora);
+            })->whereHas('cartuchos', function($q2) use ($nombreCartucho) {
+                $q2->where('cartucho', $nombreCartucho);
+            })->whereHas('colores', function($q2) use ($nombreColor) {
+                $q2->where('colore', $nombreColor);
+            });
+        })->sum('unidades_asignadas');
+
+        $disponible = $totalRegistrados - $totalAsignado;
 
         if ($request->unidades_asignadas > $disponible) {
             return back()->withErrors(['unidades_asignadas' => 'Las unidades asignadas exceden las disponibles.']);
@@ -196,10 +232,8 @@ class DistribucionAlmacenamientoImpresoraController extends Controller
 
         DistribucionAlmacenamientoImpresora::create(array_merge($request->all(), [
             'unidades_asignadas_originales' => $request->unidades_asignadas,
+            'user_id' => auth()->id(),
         ]));
-
-        // Update available units in storage
-        $almacenamiento->decrement('unidades_disponibles', $request->unidades_asignadas);
 
         return redirect()->route('administracion.distribucion_almacenamiento_impresoras.index')->with('success', 'Distribución creada exitosamente.');
     }
@@ -219,26 +253,72 @@ class DistribucionAlmacenamientoImpresoraController extends Controller
     {
         abort_if(Gate::denies('dist_almac_edit'), 403);
 
-        $distribucion = DistribucionAlmacenamientoImpresora::findOrFail($id);
-        $almacenamientos = AlmacenamientoImpresora::with('cartuchos', 'colores')->get();
-        $gerencias = Gerencia::with('area')->get();
+        $distribucion = DistribucionAlmacenamientoImpresora::with(
+            'almacenamientoImpresora.cartuchos',
+            'almacenamientoImpresora.colores',
+            'almacenamientoImpresora.impresoras',
+            'almacenamientoImpresora.fabricantes',
+            'gerencia.area'
+        )->findOrFail($id);
 
-        // Calculate available units for each almacenamiento (original - assigned)
-        foreach ($almacenamientos as $almacenamiento) {
-            $totalAsignado = DistribucionAlmacenamientoImpresora::where('almacenamiento_impresora_id', $almacenamiento->id)->sum('unidades_asignadas');
-            $almacenamiento->unidades_disponibles_calculadas = $almacenamiento->unidades_disponibles - $totalAsignado;
+        // Obtener registros únicos por nombre de impresora + nombre de consumible + nombre de color
+        $todos = AlmacenamientoImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes')->get();
+
+        // Agrupar por nombre de impresora + nombre de consumible + nombre de color
+        $almacenamientos = $todos->groupBy(function($item) {
+            $impresora = $item->impresoras?->impresora ?? '';
+            $cartucho = $item->cartuchos?->cartucho ?? '';
+            $color = $item->colores?->colore ?? '';
+            return $impresora . '|' . $cartucho . '|' . $color;
+        })->map(function($group) {
+            return $group->sortByDesc('id')->first();
+        })->values();
+
+        // Obtener los datos de la impresora actual para seleccionarla automáticamente
+        $impresoraActual = '';
+        $cartuchoActual = '';
+        $colorActual = '';
+
+        if ($distribucion->almacenamientoImpresora) {
+            $impresoraActual = $distribucion->almacenamientoImpresora->impresoras?->impresora ?? '';
+            $cartuchoActual = $distribucion->almacenamientoImpresora->cartuchos?->cartucho ?? '';
+            $colorActual = $distribucion->almacenamientoImpresora->colores?->colore ?? '';
         }
 
-        // Calculate for the current distribucion's almacenamiento
-        if ($distribucion->almacenamiento_impresora) {
-            $totalAsignadoActual = DistribucionAlmacenamientoImpresora::where('almacenamiento_impresora_id', $distribucion->almacenamiento_impresora_id)
-                ->where('id', '!=', $id)
-                ->sum('unidades_asignadas');
-            $distribucion->almacenamiento_impresora->unidades_disponibles_calculadas = $distribucion->almacenamiento_impresora->unidades_disponibles - $totalAsignadoActual;
+        $gerencias = Gerencia::with('area')->get();
+
+        // Calculate available units for the current distribucion's almacenamiento
+        if ($distribucion->almacenamientoImpresora) {
+            $almacenamiento = $distribucion->almacenamientoImpresora;
+            $nombreImpresora = $almacenamiento->impresoras?->impresora ?? '';
+            $nombreCartucho = $almacenamiento->cartuchos?->cartucho ?? '';
+            $nombreColor = $almacenamiento->colores?->colore ?? '';
+
+            // Calcular total de unidades registradas con el mismo nombre de impresora, consumible y color
+            $totalRegistrados = $todos->filter(function($item) use ($nombreImpresora, $nombreCartucho, $nombreColor) {
+                return ($item->impresoras?->impresora ?? '') === $nombreImpresora
+                    && ($item->cartuchos?->cartucho ?? '') === $nombreCartucho
+                    && ($item->colores?->colore ?? '') === $nombreColor;
+            })->sum('unidades');
+
+            // Calcular total asignado excluyendo el registro actual
+            $totalAsignado = DistribucionAlmacenamientoImpresora::whereHas('almacenamientoImpresora', function($q) use ($nombreImpresora, $nombreCartucho, $nombreColor) {
+                $q->whereHas('impresoras', function($q2) use ($nombreImpresora) {
+                    $q2->where('impresora', $nombreImpresora);
+                })->whereHas('cartuchos', function($q2) use ($nombreCartucho) {
+                    $q2->where('cartucho', $nombreCartucho);
+                })->whereHas('colores', function($q2) use ($nombreColor) {
+                    $q2->where('colore', $nombreColor);
+                });
+            })
+            ->where('id', '!=', $id)
+            ->sum('unidades_asignadas');
+
+            $distribucion->almacenamientoImpresora->unidades_disponibles_calculadas = $totalRegistrados - $totalAsignado;
         }
 
         return view('administracion.distribucion_almacenamiento_impresoras.edit', compact(
-            'distribucion', 'almacenamientos', 'gerencias'
+            'distribucion', 'almacenamientos', 'gerencias', 'impresoraActual', 'cartuchoActual', 'colorActual'
         ));
     }
 
@@ -254,23 +334,46 @@ class DistribucionAlmacenamientoImpresoraController extends Controller
         ]);
 
         $distribucion = DistribucionAlmacenamientoImpresora::findOrFail($id);
+        $almacenamiento = AlmacenamientoImpresora::with('impresoras', 'cartuchos', 'colores')->find($request->almacenamiento_impresora_id);
 
-        // Check if the assigned units don't exceed available units
-        $almacenamiento = AlmacenamientoImpresora::find($request->almacenamiento_impresora_id);
-        $totalAsignado = DistribucionAlmacenamientoImpresora::where('almacenamiento_impresora_id', $request->almacenamiento_impresora_id)
-            ->where('id', '!=', $id)
-            ->sum('unidades_asignadas');
-        $disponible = $almacenamiento->unidades_disponibles - $totalAsignado;
+        // Calcular unidades disponibles por nombre de impresora + consumible + color
+        $nombreImpresora = $almacenamiento->impresoras?->impresora ?? '';
+        $nombreCartucho = $almacenamiento->cartuchos?->cartucho ?? '';
+        $nombreColor = $almacenamiento->colores?->colore ?? '';
+
+        $todos = AlmacenamientoImpresora::with('impresoras', 'cartuchos', 'colores')->get();
+        $coincidentes = $todos->filter(function($item) use ($nombreImpresora, $nombreCartucho, $nombreColor) {
+            return ($item->impresoras?->impresora ?? '') === $nombreImpresora
+                && ($item->cartuchos?->cartucho ?? '') === $nombreCartucho
+                && ($item->colores?->colore ?? '') === $nombreColor;
+        });
+
+        $totalRegistrados = $coincidentes->sum('unidades');
+
+        $totalAsignado = DistribucionAlmacenamientoImpresora::whereHas('almacenamientoImpresora', function($q) use ($nombreImpresora, $nombreCartucho, $nombreColor, $id) {
+            $q->whereHas('impresoras', function($q2) use ($nombreImpresora) {
+                $q2->where('impresora', $nombreImpresora);
+            })->whereHas('cartuchos', function($q2) use ($nombreCartucho) {
+                $q2->where('cartucho', $nombreCartucho);
+            })->whereHas('colores', function($q2) use ($nombreColor) {
+                $q2->where('colore', $nombreColor);
+            });
+        })
+        ->where('id', '!=', $id)
+        ->sum('unidades_asignadas');
+
+        $disponible = $totalRegistrados - $totalAsignado;
 
         if ($request->unidades_asignadas > $disponible) {
             return back()->withErrors(['unidades_asignadas' => 'Las unidades asignadas exceden las disponibles.']);
         }
 
-        $distribucion->update($request->all());
+        // Obtener las unidades originales para calcular la diferencia
+        // Note: unidadesOriginales ya no se usa ya que no se modifica unidades_disponibles
 
-        // Update available units in storage
-        $diferencia = $request->unidades_asignadas - $distribucion->getOriginal('unidades_asignadas');
-        $almacenamiento->decrement('unidades_disponibles', $diferencia);
+        $distribucion->update(array_merge($request->all(), [
+            'user_id' => auth()->id(),
+        ]));
 
         return redirect()->route('administracion.distribucion_almacenamiento_impresoras.index')->with('success', 'Distribución actualizada exitosamente.');
     }
@@ -283,11 +386,8 @@ class DistribucionAlmacenamientoImpresoraController extends Controller
         abort_if(Gate::denies('dist_almac_destroy'), 403);
 
         $distribucion = DistribucionAlmacenamientoImpresora::findOrFail($id);
-        $distribucion->delete();
 
-        // Restore available units in storage
-        $almacenamiento = AlmacenamientoImpresora::find($distribucion->almacenamiento_impresora_id);
-        $almacenamiento->increment('unidades_disponibles', $distribucion->unidades_asignadas);
+        $distribucion->delete();
 
         return redirect()->route('administracion.distribucion_almacenamiento_impresoras.index')->with('success', 'Distribución eliminada exitosamente.');
     }

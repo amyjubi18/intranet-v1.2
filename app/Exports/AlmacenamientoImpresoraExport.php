@@ -90,16 +90,23 @@ class AlmacenamientoImpresoraExport implements FromQuery, WithHeadings, WithMapp
             'Stock Min',
             'Unidades',
             'Unidades Disponibles',
+            'Total Disp. (Impresora)',
             'Factura',
         ];
     }
 
     public function map($almacenamiento): array
     {
+        // Calcular total de unidades disponibles por impresora, color y fecha de ingreso
+        $totalDisponiblesImpresora = AlmacenamientoImpresora::where('impresora_id', $almacenamiento->impresora_id)
+            ->where('colore_id', $almacenamiento->colore_id)
+            ->where('fecha_ingreso', $almacenamiento->fecha_ingreso)
+            ->sum('unidades_disponibles');
+
         return [
             str_pad($almacenamiento->impresoras->id, 4, '0', STR_PAD_LEFT),
-            $almacenamiento->fecha_ingreso,
-            \Carbon\Carbon::parse($almacenamiento->created_at)->format('d/m/Y'),
+            $almacenamiento->fecha_ingreso ? \Carbon\Carbon::parse($almacenamiento->fecha_ingreso)->format('d/m/Y') : '',
+            $almacenamiento->created_at ? \Carbon\Carbon::parse($almacenamiento->created_at)->format('d/m/Y H:i') : '',
             $almacenamiento->cartuchos ? $almacenamiento->cartuchos->cartucho : 'N/A',
             $almacenamiento->colores ? $almacenamiento->colores->colore : 'N/A',
             $almacenamiento->impresoras ? $almacenamiento->impresoras->impresora : 'N/A',
@@ -108,6 +115,7 @@ class AlmacenamientoImpresoraExport implements FromQuery, WithHeadings, WithMapp
             $almacenamiento->cartuchos ? $almacenamiento->cartuchos->stock_min : 'N/A',
             $almacenamiento->unidades,
             $almacenamiento->unidades_disponibles,
+            $totalDisponiblesImpresora,
             $almacenamiento->n_factura,
         ];
     }

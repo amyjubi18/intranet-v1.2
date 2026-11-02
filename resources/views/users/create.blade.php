@@ -132,7 +132,7 @@
 
                                 <!-- Fecha de nacimiento -->
                                 <div class="form-group">
-                                    <label class="form-label" for="fecha_nacimiento">Fecha de Nacimiento *</label>
+                                    <label class="form-label" for="fecha_nacimiento">Fec. de Nacimiento *</label>
                                     <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-input" value="{{ old('fecha_nacimiento') }}" required>
                                     @error('fecha_nacimiento')
                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
@@ -183,7 +183,7 @@
 
                                 <!-- Repetir contraseña -->
                                 <div class="form-group">
-                                    <label class="form-label" for="password_confirmation">Repetir Contraseña *</label>
+                                    <label class="form-label" for="password_confirmation">Rep. Contraseña *</label>
                                     <input type="password" id="password_confirmation" name="password_confirmation" class="form-input" placeholder="••••••••" required>
                                 </div>
                             </div>

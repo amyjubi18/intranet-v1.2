@@ -33,7 +33,7 @@ class ActivityLogExport implements FromCollection, WithHeadings, WithMapping, Wi
     {
         return [
             $activity->id,
-            $activity->user ? $activity->user->name : 'N/A',
+            $activity->user ? $activity->user->username : 'N/A',
             $activity->user ? $activity->user->email : 'N/A',
             $activity->ip_address,
             $activity->device ?? 'Desconocido',

@@ -14,34 +14,46 @@ class GerenciasController extends Controller
 
         abort_if(Gate::denies('gerencia_index'), 403);
 
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'gerencia');
+        $direction = $request->get('direction', 'asc');
 
-        $gerencias = Gerencia::query()->with('area');
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $query = Gerencia::query()->with('area');
 
         // Filtros específicos
         if ($request->has('gerencia') && $request->gerencia) {
-            $gerencias->where('id', $request->gerencia);
+            $query->where('id', $request->gerencia);
         }
 
         if ($request->has('area') && $request->area) {
-            $gerencias->where('area_id', $request->area);
+            $query->where('area_id', $request->area);
         }
 
-        // Handle simple search (fallback)
-        $gerencias->when(request('search'), function($query){
-            return $query->where('gerencia', 'LIKE', '%'. request('search') . '%')
-            ->orWhereHas('area', function ($q){
-                $q->where('area', 'LIKE', '%' . request('search') . '%');
-            });
-        });
+        // Handle simple search
+        if ($search) {
+            $query->where('gerencia', 'LIKE', '%'.$search.'%')
+                ->orWhereHas('area', function ($q) use ($search) {
+                    $q->where('area', 'LIKE', '%' . $search . '%');
+                });
+        }
 
-        $gerencias = $gerencias->orderBy('gerencia', 'asc')->paginate(5);
+        $gerencias = $query->orderBy($sort, $direction)->paginate(15);
 
         // Obtener todas las gerencias y áreas sin paginar para los filtros
         $todasLasGerencias = Gerencia::orderBy('gerencia', 'asc')->get();
         $todasLasAreas = Area::orderBy('area', 'asc')->get();
 
-
-        return view('administracion.gerencias.index', ['gerencias'=> $gerencias, 'todasLasGerencias' => $todasLasGerencias, 'todasLasAreas' => $todasLasAreas]);
+        return view('administracion.gerencias.index', [
+            'gerencias'=> $gerencias,
+            'todasLasGerencias' => $todasLasGerencias,
+            'todasLasAreas' => $todasLasAreas,
+            'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction
+        ]);
    }
     public function show(){
        return view('administracion.gerencias.show', ['gerencias' => Gerencia::get()]);

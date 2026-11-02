@@ -128,7 +128,7 @@
                         <select id="secondFilter" onchange="applySelectFilter()" class="glass bg-blue-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('gerencia') || request('area') || request('cartucho') || request('impresora') || request('colore') || request('fabricante') ? 'bg-blue-200 border-blue-500' : '' }}" disabled>
                             <option value="">Primero selecciona un filtro</option>
                             @if(request('gerencia'))
-                                @foreach($gerencias as $gerencia)
+                                @foreach($gerencias->sortBy('gerencia') as $gerencia)
                                 <option value="{{ $gerencia->id }}" {{ request('gerencia') == $gerencia->id ? 'selected' : '' }}>{{ $gerencia->gerencia }} ({{ $gerencia->area->area ?? "N/A" }})</option>
                                 @endforeach
                             @endif
@@ -519,7 +519,6 @@
         @endif
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Sistema de filtros dinámicos para salida de almacenamiento de impresoras
         const filterData = {
@@ -527,7 +526,7 @@
                 type: 'select',
                 options: [
                     { value: '', text: 'Todas las gerencias' },
-                    @foreach($gerencias as $gerencia)
+                    @foreach($gerencias->sortBy('gerencia') as $gerencia)
                     { value: '{{ $gerencia->id }}', text: '{{ $gerencia->gerencia }} ({{ $gerencia->area->area ?? "N/A" }})' },
                     @endforeach
                 ]

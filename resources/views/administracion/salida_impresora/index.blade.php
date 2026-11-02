@@ -100,7 +100,7 @@
                                         <option value="{{ $impresora->id }}" {{ request('secondFilter') == $impresora->id ? 'selected' : '' }}>{{ $impresora->impresora }}</option>
                                     @endforeach
                                 @elseif(request('filterType') == 'gerencia_id')
-                                    @foreach($gerencias as $gerencia)
+                                    @foreach($gerencias->sortBy('gerencia') as $gerencia)
                                         <option value="{{ $gerencia->id }}" {{ request('secondFilter') == $gerencia->id ? 'selected' : '' }}>{{ $gerencia->gerencia }}</option>
                                     @endforeach
                                 @elseif(request('filterType') == 'area_id')

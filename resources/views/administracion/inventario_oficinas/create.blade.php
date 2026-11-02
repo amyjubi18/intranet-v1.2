@@ -42,8 +42,79 @@
       width: 20px;
       height: 20px;
     }
+
+    /* Ocultar el template */
+    #row-template {
+      display: none;
+    }
     </style>
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
+        <!-- Template oculto para clonar filas -->
+        <template id="row-template">
+            <div class="form-row bg-white/20 p-4 shadow-lg rounded-lg">
+                <div class="space-y-4">
+                    <!-- Fecha de Ingreso - Full width -->
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-black">Fecha de Factura:</label>
+                        <input type="date" name="fecha_ingreso[]" class="w-fit px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900" required>
+                    </div>
+
+                    <!-- Articulo and Unidad de Medida side by side -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-black">Artículo:</label>
+                            <select name="articulo_id[]" class="articulo-select border-none bg-blue-200 w-full px-3 py-2 rounded-lg focus:ring-blue-900" required>
+                                <option value="">Seleccione</option>
+                                @foreach ($articulos->sortBy('articulo') as $articulo)
+                                <option value="{{ $articulo->id }}">{{ str_pad($articulo->id, 4, '0', STR_PAD_LEFT) }} - {{ $articulo->articulo }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="unidad-medida-div">
+                            <label class="block text-sm font-medium mb-1 text-black">Unidad de Medida:</label>
+                            <span class="unidad-medida-display block border-none bg-blue-100 w-full px-3 py-2 rounded-lg text-gray-700">Seleccione artículo primero</span>
+                            <input type="hidden" name="unidad_medida_id[]" class="unidad-medida-hidden bg-blue-100 w-full px-3 py-2 rounded-lg">
+                        </div>
+                    </div>
+
+                    <!-- Proveedor -->
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-black">Proveedor:</label>
+                        <select name="proveedore_id[]" class="w-full border-none bg-blue-100 px-3 py-2 rounded-lg focus:ring-blue-900" required>
+                            <option value="">Seleccione</option>
+                            @foreach ($proveedores as $proveedore)
+                            <option value="{{ $proveedore->id }}">{{ $proveedore->proveedor }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Ubicación -->
+                    <div>
+                        <label class="block text-sm font-medium mb-1 text-black">Ubicación:</label>
+                        <select name="ubicacion_id[]" class="w-full border-none bg-blue-100 px-3 py-2 rounded-lg focus:ring-blue-900">
+                            <option value="">Seleccione (Opcional)</option>
+                            @foreach ($ubicacions as $ubicacion)
+                            <option value="{{ $ubicacion->id }}">{{ $ubicacion->ubicacion }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Cantidad and Número de Factura side by side -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-black">Cantidad:</label>
+                            <input type="number" name="unidades[]" class="w-full border-none bg-blue-100 px-3 py-2 rounded-lg focus:ring-blue-900" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1 text-black">Número de Factura:</label>
+                            <input type="text" name="n_factura[]" class="w-full px-3 border-none bg-blue-100 py-2 rounded-lg focus:ring-blue-900" required>
+                        </div>
+                    </div>
+                </div>
+                <button type="button" class="remove-row flex mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-3 rounded-lg transition-all"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"></path></svg> Remover</button>
+            </div>
+        </template>
+
         <!-- Custom Sidebar for this page -->
         <div class="w-full lg:col-span-1 p-4 h-auto bg-white shadow-lg rounded-lg">
             <h2 class="text-xl font-bold mb-4 text-center text-blue-950">Visualizar Registros</h2>
@@ -257,33 +328,16 @@
         // Add row function
         document.getElementById('add-row').addEventListener('click', () => {
             const formRows = document.getElementById('form-rows');
-            const firstRow = formRows.querySelector('.form-row');
-            const newRow = firstRow.cloneNode(true);
 
-            // Clear values
-            newRow.querySelectorAll('input').forEach(el => {
-                el.value = '';
-            });
+            // Usar el template en lugar de clonar la fila existente
+            const template = document.getElementById('row-template');
+            const newRow = template.content.cloneNode(true);
 
-            // Reset selects
-            newRow.querySelectorAll('select').forEach(el => {
-                el.selectedIndex = 0;
-                // Reset Tom Select if exists
-                if (el.tomselect) {
-                    el.tomselect.clear();
-                }
-            });
+            // La fila ya viene limpia del template, solo inicializar Tom Select
+            const clonedSelect = newRow.querySelector('.articulo-select');
 
-            // Reset dependent sections
-            newRow.querySelector('.unidad-medida-display').textContent = 'Seleccione artículo primero';
-            newRow.querySelector('.unidad-medida-hidden').value = '';
-
-            // Show remove button
-            newRow.querySelector('.remove-row').classList.remove('hidden');
-
-            // Initialize Tom Select for the new row
-            const newSelect = newRow.querySelector('.articulo-select');
-            initTomSelect(newSelect);
+            // Initialize Tom Select para la nueva fila
+            initTomSelect(clonedSelect);
 
             // Add input listeners
             addInputListeners(newRow);

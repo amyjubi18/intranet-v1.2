@@ -175,25 +175,7 @@
             display: none;
         }
 
-        /* Paginador */
-        .pagination .page-link {
-            background-color: #1e40af;
-            color: white;
-            border-color: #1e40af;
-        }
-        .pagination .page-link:hover {
-            background-color: #1d4ed8;
-            border-color: #1d4ed8;
-            color: white;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #1e40af;
-            border-color: #1e40af;
-        }
-        .pagination .page-item.disabled .page-link {
-            background-color: #6b7280;
-            border-color: #6b7280;
-        }
+        
     </style>
 
     <!-- Controles -->
@@ -272,7 +254,6 @@
             <div id="toastMsg" class="text-sm"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Función para confirmar eliminación
         function confirmDelete(id, name) {

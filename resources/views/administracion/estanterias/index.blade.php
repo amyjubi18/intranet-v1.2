@@ -126,7 +126,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
@@ -177,10 +176,22 @@
             });
         }
 
-        // Auto-submit on search
-        document.getElementById('generalSearch').addEventListener('change', function() {
-            document.getElementById('filterForm').submit();
-        });
+        // Auto-submit on search with debounce
+        const generalSearch = document.getElementById('generalSearch');
+        const filterForm = document.getElementById('filterForm');
+
+        if (generalSearch && filterForm) {
+            let searchTimeout;
+
+            generalSearch.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+
+                // Debounce: esperar 500ms antes de buscar
+                searchTimeout = setTimeout(function() {
+                    filterForm.submit();
+                }, 500);
+            });
+        }
 
         document.addEventListener('DOMContentLoaded', () => showToast('Módulo de estanterías cargado', 'info'));
     </script>

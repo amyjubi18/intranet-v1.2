@@ -431,25 +431,25 @@
                 recordDiv.className = 'bg-white border border-gray-300 rounded-lg p-4 m-2 shadow-lg text-sm';
                 recordDiv.innerHTML = '<div class="flex items-center justify-between mb-2"><h3 class="font-bold text-blue-900">Bien #' + (index + 1) + '</h3><span class="px-2 py-1 text-xs text-blue-800 bg-blue-100 rounded">' + sede + '</span></div>' +
                     '<div class="mb-2 space-y-1 text-xs text-gray-600">' +
-                    '<p><span class="font-medium text-gray-800">Sede:</span> ' + sede + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Fecha Adquisición:</span> ' + fechaAdquisicion + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Unidad Administrativa:</span> ' + getSelectText(unidadAdministrativa) + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Usuario Administrativo:</span> ' + getSelectText(usuarioAdministrativo) + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Usuario de Uso:</span> ' + getSelectText(usuarioDeUso) + '</p>' +
-                    '<p><span class="font-medium text-gray-800">N° Interno:</span> ' + nInternoBien + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Descripción:</span> ' + descripcion + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Forma Adquisición:</span> ' + getSelectText(formaAdquisicion) + '</p>' +
-                    '<p><span class="font-medium text-gray-800">N° Factura:</span> ' + nFactura + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Valor Factura:</span> ' + valorFactura + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Moneda:</span> ' + getSelectText(moneda) + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Estado del Uso:</span> ' + getSelectText(estadoDelUso) + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Condición:</span> ' + getSelectText(condicion) + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Marca:</span> ' + marca + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Modelo:</span> ' + modelo + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Color:</span> ' + getSelectText(color) + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Serial:</span> ' + serial + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Comentario:</span> ' + comentario + '</p>' +
-                    '<p><span class="font-medium text-gray-800">Fecha Comentario:</span> ' + fechaComentario + '</p>' +
+                    '<p><span class="font-bold text-gray-800 ">Sede:</span> ' + sede + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Fecha Adquisición:</span> ' + fechaAdquisicion + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Unidad Administrativa:</span> ' + getSelectText(unidadAdministrativa) + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Usuario Administrativo:</span> ' + getSelectText(usuarioAdministrativo) + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Usuario de Uso:</span> ' + getSelectText(usuarioDeUso) + '</p>' +
+                    '<p><span class="font-bold text-gray-800">N° Interno:</span> ' + nInternoBien + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Descripción:</span> ' + descripcion + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Forma Adquisición:</span> ' + getSelectText(formaAdquisicion) + '</p>' +
+                    '<p><span class="font-bold text-gray-800">N° Factura:</span> ' + nFactura + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Valor Factura:</span> ' + valorFactura + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Moneda:</span> ' + getSelectText(moneda) + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Estado del Uso:</span> ' + getSelectText(estadoDelUso) + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Condición:</span> ' + getSelectText(condicion) + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Marca:</span> ' + marca + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Modelo:</span> ' + modelo + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Color:</span> ' + getSelectText(color) + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Serial:</span> ' + serial + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Comentario:</span> ' + comentario + '</p>' +
+                    '<p><span class="font-bold text-gray-800">Fecha Comentario:</span> ' + fechaComentario + '</p>' +
                     '</div>';
                 pendingRecordsDiv.appendChild(recordDiv);
             });

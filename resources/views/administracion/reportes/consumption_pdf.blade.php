@@ -107,6 +107,7 @@
                 <tr>
                     <th>Posición</th>
                     <th>Consumible</th>
+                    <th>Impresora</th>
                     <th>Total Salidas</th>
                 </tr>
             </thead>
@@ -115,6 +116,7 @@
                 <tr>
                     <td style="text-align: center;">{{ $index + 1 }}</td>
                     <td>{{ $item['name'] }}</td>
+                    <td>{{ $item['printer_name'] }}</td>
                     <td style="text-align: center;">{{ $item['value'] }}</td>
                 </tr>
                 @endforeach

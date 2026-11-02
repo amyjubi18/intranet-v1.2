@@ -123,7 +123,7 @@
     <table>
         <thead>
             <tr>
-                <th>ID</th>
+                <th>ITEM</th>
                 <th>Fecha de Salida</th>
                 <th>Artículo</th>
                 <th>Unidad de Medida</th>
@@ -131,8 +131,8 @@
                 <th>Área</th>
                 <th>Solicitante</th>
                 <th>Cantidad</th>
-                <th>Stock Actual</th>
-                <th>Total Inicial</th>
+                <th>Unidades Disponibles</th>
+                <th>Histórico de Unidades</th>
                 <th>Ajuste Inv.</th>
                 <th>Fecha Reg.</th>
             </tr>
@@ -140,20 +140,20 @@
         <tbody>
             @foreach($salida_oficinas as $item)
             @php
-                $stockTotalReal = $item->stockTotalReal ?? 0;
-                $sumaUnidades = $item->sumaUnidades ?? 0;
+                $stockHistorico = $item->stockHistorico ?? $item->historico_unidades_disponibles ?? 0;
+                $stockRestante = max(0, $stockHistorico - $item->cantidad);
             @endphp
             <tr>
-                <td>{{ str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</td>
+                <td>{{ str_pad($item->articulos->id, 4, '0', STR_PAD_LEFT) }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->fecha_salida)->format('d/m/Y') }}</td>
                 <td>{{ $item->articulos ? $item->articulos->articulo : 'N/A' }}</td>
                 <td>{{ $item->unidad_medidas ? $item->unidad_medidas->unidad_medida : 'N/A' }}</td>
                 <td>{{ $item->gerencias ? $item->gerencias->gerencia : 'N/A' }}</td>
                 <td>{{ $item->areas ? $item->areas->area : 'N/A' }}</td>
-                <td>{{ $item->users ? $item->users->name : 'N/A' }}</td>
+                <td>{{ $item->users ? $item->users->username : 'N/A' }}</td>
                 <td>{{ $item->cantidad }}</td>
-                <td>{{ $stockTotalReal }}</td>
-                <td>{{ $sumaUnidades }}</td>
+                <td>{{ $stockRestante }}</td>
+                <td>{{ $stockHistorico }}</td>
                 <td>{{ $item->ajuste_inventario ?? 'N/A' }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y') }}</td>
             </tr>

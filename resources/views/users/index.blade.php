@@ -6,6 +6,7 @@
         <script src="https://cdn.tailwindcss.com"></script>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+        <!-- SweetAlert2 se carga desde el layout principal -->
     </x-slot>
 
     <style>
@@ -225,49 +226,7 @@
             flex: 1;
         }
 
-        /* Pagination */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.25rem;
-            margin-top: 1.5rem;
-            padding: 1rem;
-        }
-
-        .pagination a,
-        .pagination span {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 2rem;
-            height: 2rem;
-            padding: 0 0.5rem;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text);
-            text-decoration: none;
-        }
-
-        .pagination a:hover {
-            background: rgba(59, 130, 246, 0.1);
-            border-color: var(--color-primary);
-        }
-
-        .pagination .active span {
-            background: var(--color-primary);
-            color: white;
-            border-color: var(--color-primary);
-        }
-
-        .pagination .disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
+        
 
         /* Grid */
         .users-grid {
@@ -332,24 +291,36 @@
                         <a href="{{ route('users.index') }}" class="btn btn-secondary text-xs">
                             🗑️ Limpiar
                         </a>
+
+                        <!-- Selector de Ordenamiento -->
+                        <div class="flex items-center gap-1 ml-2 border-l pl-3 border-slate-300">
+                            <span class="text-xs text-slate-500 font-medium">Ordenar:</span>
+                            <button type="button" onclick="toggleSortDirection()" class="flex items-center gap-1 px-2 py-1 rounded bg-blue-100 hover:bg-blue-200 transition-colors text-xs font-medium text-blue-800">
+                                <span id="sortIcon">
+                                    @if(isset($direction) && $direction == 'asc')
+                                        ↑
+                                    @else
+                                        ↓
+                                    @endif
+                                </span>
+                                <span id="sortLabel">@if(isset($sort) && $sort == 'name') Nombre @elseif(isset($sort) && $sort == 'created_at') Fecha @elseif(isset($sort) && $sort == 'cedula') Cédula @elseif(isset($sort) && $sort == 'email') Correo @else Nombre @endif</span>
+                            </button>
+                        </div>
+
+                        <!-- Campos ocultos para sort y direction -->
+                        <input type="hidden" name="sort" id="sortInput" value="{{ $sort ?? 'name' }}">
+                        <input type="hidden" name="direction" id="directionInput" value="{{ $direction ?? 'desc' }}">
                     </div>
 
                     <div class="flex items-center gap-2">
-                        <!-- Búsqueda rápida -->
+                        <!-- Búsqueda rápida con debounce -->
                         <div class="relative">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400">
                                 <circle cx="10" cy="10" r="7"/>
                                 <path d="M21 21l-4.35-4.35"/>
                             </svg>
-                            <input type="search" name="search" placeholder="Búsqueda rápida..." value="{{ request('search') }}" class="form-input pl-8 text-xs" style="width: 200px;">
+                            <input type="search" name="search" id="quickSearch" placeholder="Búsqueda rápida..." value="{{ request('search') }}" class="form-input pl-8 text-xs" style="width: 200px;">
                         </div>
-                        <button type="submit" class="btn btn-primary text-xs">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="10" cy="10" r="7"/>
-                                <path d="M21 21l-4.35-4.35"/>
-                            </svg>
-                        </button>
-
                     </div>
                       <!-- Botón Añadir Usuario -->
                         <a href="{{ route('users.create') }}" class="btn bg-blue-900 text-white hover:bg-blue-700 text-xs">
@@ -471,10 +442,10 @@
                                     </svg>
                                     Editar
                                 </a>
-                                <form action="{{ route('users.delete', $user->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro que quieres eliminar este usuario?')">
+<form id="delete-form-{{ $user->id }}" action="{{ route('users.delete', $user->id) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
-                                    <button type="submit" class="btn btn-danger">
+                                    <button type="button" class="btn btn-danger btn-delete-user" data-user-id="{{ $user->id }}" data-user-name="{{ $user->name }} {{ $user->lastname }}">
                                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                             <path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"/>
                                         </svg>
@@ -525,7 +496,7 @@
     </div>
     @endif
 
-    @if(session('error'))
+@if(session('error'))
     <div id="toast" class="toast show error">
         <div id="toastIcon">❌</div>
         <div id="toastMessage">{{ session('error') }}</div>
@@ -598,6 +569,23 @@
         document.addEventListener('DOMContentLoaded', function() {
             const filterForm = document.getElementById('filterForm');
 
+            // ==========================================
+            // BUSCADOR RÁPIDO CON DEBOUNCE - USUARIOS
+            // ==========================================
+            const quickSearch = document.getElementById('quickSearch');
+            if (quickSearch && filterForm) {
+                let searchTimeout;
+
+                quickSearch.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+
+                    // Debounce: esperar 500ms antes de buscar
+                    searchTimeout = setTimeout(function() {
+                        filterForm.submit();
+                    }, 500);
+                });
+            }
+
             // Segundo filtro (rol, status)
             const secondFilter = document.getElementById('secondFilter');
             if (secondFilter) {
@@ -617,7 +605,7 @@
                 });
             }
 
-            // Filtros de texto individuales
+// Filtros de texto individuales
             const textFilter = document.getElementById('textFilter');
             if (textFilter) {
                 textFilter.addEventListener('input', function() {
@@ -625,6 +613,48 @@
                     window.searchTimeout = setTimeout(function() {
                         filterForm.submit();
                     }, 500);
+                });
+            }
+        });
+
+        // ==========================================
+        // ORDENAMIENTO DE COLUMNAS
+        // ==========================================
+
+        function toggleSortDirection() {
+            const currentDirection = document.getElementById('directionInput').value;
+            const newDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+
+            // Actualizar el campo hidden
+            document.getElementById('directionInput').value = newDirection;
+
+            // Actualizar el ícono
+            document.getElementById('sortIcon').innerHTML = newDirection === 'asc' ? '↑' : '↓';
+
+            // Enviar el formulario
+            document.getElementById('filterForm').submit();
+        }
+
+        // Confirmar eliminación con SweetAlert2
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.btn-delete-user')) {
+                const button = e.target.closest('.btn-delete-user');
+                const userId = button.getAttribute('data-user-id');
+                const userName = button.getAttribute('data-user-name');
+
+                Swal.fire({
+                    title: '¿Estás seguro?',
+                    text: `¿Deseas eliminar al usuario "${userName}"? Esta acción no se puede deshacer.`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc2626',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: 'Sí, eliminar',
+                    cancelButtonText: 'Cancelar'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('delete-form-' + userId).submit();
+                    }
                 });
             }
         });

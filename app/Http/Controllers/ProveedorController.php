@@ -13,9 +13,22 @@ class ProveedorController extends Controller
 
         abort_if(Gate::denies('proveedor_index'), 403);
 
-      $proveedores = Proveedore::paginate(5);
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'proveedor');
+        $direction = $request->get('direction', 'asc');
 
-       return view('administracion.proveedores.index', ['proveedores'=> $proveedores]);
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $query = Proveedore::query();
+
+        if ($search) {
+            $query->where('proveedor', 'LIKE', '%'.$search.'%');
+        }
+
+        $proveedores = $query->orderBy($sort, $direction)->paginate(15);
+
+        return view('administracion.proveedores.index', compact('proveedores', 'search', 'sort', 'direction'));
    }
     public function show(){
        return view('administracion.proveedores.show', ['proveedores' => Proveedore::get()]);

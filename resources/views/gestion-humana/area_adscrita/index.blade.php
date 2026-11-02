@@ -73,25 +73,7 @@
             to{ opacity:1; transform:translateY(0); }
         }
 
-        /* Paginador */
-        .pagination .page-link {
-            background-color: #1e40af;
-            color: white;
-            border-color: #1e40af;
-        }
-        .pagination .page-link:hover {
-            background-color: #1d4ed8;
-            border-color: #1d4ed8;
-            color: white;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #1e40af;
-            border-color: #1e40af;
-        }
-        .pagination .page-item.disabled .page-link {
-            background-color: #6b7280;
-            border-color: #6b7280;
-        }
+       
     </style>
 
     <!-- Filtros y controles -->
@@ -99,24 +81,45 @@
         <div class="p-6 glass rounded-2xl fade-in">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex flex-wrap items-center gap-4">
-                    <!-- Buscador directo -->
-                    <form method="GET" action="{{ route('gestion-humana.area_adscrita.index') }}" class="flex items-center gap-2">
+<!-- Buscador directo con debounce -->
+                    <form method="GET" action="{{ route('gestion-humana.area_adscrita.index') }}" id="searchForm" class="flex items-center gap-2">
                         <input
                             type="text"
                             name="search"
+                            id="areaAdscritaSearchInput"
                             value="{{ $search ?? '' }}"
                             placeholder="Buscar área adscrita..."
                             class="w-64 px-4 py-2 text-sm glass rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                         >
-                        <button type="submit" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
-                            Buscar 🔍
-                        </button>
                         @if($search)
                         <a href="{{ route('gestion-humana.area_adscrita.index') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
-                           Limpiar 🗑️
+                           🗑️ Limpiar
                         </a>
                         @endif
                     </form>
+
+                    <!-- Selector de ordenamiento -->
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs text-gray-500">Ordenar:</span>
+                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'area_adscrita', 'direction' => $sort === 'area_adscrita' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'area_adscrita' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            Área
+                            @if($sort === 'area_adscrita')
+                                @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                            @else
+                                <span class="text-gray-400">⇅</span>
+                            @endif
+                        </a>
+                       {{--  <a href="{{ request()->fullUrlWithQuery(['sort' => 'id', 'direction' => $sort === 'id' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'id' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            ID
+                            @if($sort === 'id')
+                                @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                            @else
+                                <span class="text-gray-400">⇅</span>
+                            @endif
+                        </a> --}}
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
@@ -190,6 +193,28 @@
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
+        // ==========================================
+        // BUSCADOR CON DEBOUNCE - ÁREAS ADSCRITAS
+        // ==========================================
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('areaAdscritaSearchInput');
+            const searchForm = document.getElementById('searchForm');
+
+            if (searchInput && searchForm) {
+                let searchTimeout;
+
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+
+                    // Debounce: esperar 300ms antes de buscar
+                    searchTimeout = setTimeout(function() {
+                        searchForm.submit();
+                    }, 300);
+                });
+            }
+        });
+
         // Función para confirmar eliminación
         function confirmDelete(id, name) {
             Swal.fire({

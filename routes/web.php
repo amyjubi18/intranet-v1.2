@@ -54,11 +54,12 @@ use App\Http\Controllers\DistribucionAlmacenamientoImpresoraController;
 use App\Http\Controllers\SalidaAlmacenamientoImpresoraController;
 use App\Http\Controllers\UnifiedInventoryController;
 use App\Http\Controllers\ActivityLogController;
-use App\Http\Controllers\SecurityActivityController;
 use App\Http\Controllers\EstanteriaController;
 use App\Http\Controllers\BusquedaController;
 use App\Http\Controllers\NotificationController;
-
+use App\Http\Controllers\ConstanciaTrabajoController;
+use App\Http\Controllers\ReciboPagoController;
+use App\Http\Controllers\NoticiaController;
 
 /*
 |--------------------------------------------------------------------------
@@ -79,7 +80,7 @@ Route::get('/inicio', function () {
     return view('inicio');
 })->middleware(['auth', 'verified'])->name('inicio');
 
-Route::middleware(['auth', 'session.timeout'])->group(function () {
+Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(function () {
 
 // API routes that need auth
 Route::get('/api/impresoras', [ImpresoraApiController::class, 'index'])->name('api.impresoras');
@@ -114,10 +115,14 @@ Route::get('/pdf', 'PdfController@generateForm');
 
     //permisos
     Route::resource('gtic/permisos', PermissionController::class)->names('gtic.permisos')->parameters(['permisos' => 'permission']);
+    // Ruta para verificar nombre de permiso único
+    Route::get('/gtic/permisos/check-name', [PermissionController::class, 'checkName'])->name('gtic.permisos.check-name');
 
 
     //roles
     Route::resource('gtic/roles', RoleController::class)->names('gtic.roles');
+    // Ruta para verificar nombre de rol único
+    Route::get('/gtic/roles/check-name', [RoleController::class, 'checkName'])->name('gtic.roles.check-name');
 
     //Administracion
 
@@ -183,12 +188,12 @@ Route::get('/pdf', 'PdfController@generateForm');
 Route::resource('/administracion/estado_del_uso', EstadoUsoController::class)->names('administracion.estado_del_uso');
 
 /* INVENTARIO OFICINA */
-
-
 //inventario Oficina
 Route::resource('/administracion/inventario_oficinas', InventarioOficController::class)->names('administracion.inventario_oficinas')->parameters(['inventario_oficinas' => 'inventario_oficina']);
 Route::get('/administracion/inventario_oficinas/export/excel', [InventarioOficController::class, 'exportExcel'])->name('administracion.inventario_oficinas.export.excel');
 Route::get('/administracion/inventario_oficinas/export/pdf', [InventarioOficController::class, 'exportPdf'])->name('administracion.inventario_oficinas.export.pdf');
+Route::post('/administracion/inventario_oficinas/destroy-multiple', [InventarioOficController::class, 'destroyMultiple'])->name('administracion.inventario_oficinas.destroyMultiple');
+Route::post('/administracion/inventario_oficinas/destroy-all', [InventarioOficController::class, 'destroyAll'])->name('administracion.inventario_oficinas.destroyAll');
 
  //Ubicacion
  Route::resource('/administracion/ubicacion', UbicacionController::class)->names('administracion.ubicacion') ;
@@ -206,8 +211,10 @@ Route::get('/administracion/inventario_oficinas/export/pdf', [InventarioOficCont
  //Gerencias
  Route::resource('/administracion/gerencias', GerenciasController::class)->names('administracion.gerencias')->parameters(['gerencias' => 'gerencia']) ;
 
- //Salida oficina
+//Salida oficina
  Route::resource('/administracion/salida_oficina', SalidaOficController::class)->names('administracion.salida_oficina');
+ Route::post('/administracion/salida_oficina/destroy-multiple', [SalidaOficController::class, 'destroyMultiple'])->name('administracion.salida_oficina.destroyMultiple');
+ Route::post('/administracion/salida_oficina/destroy-all', [SalidaOficController::class, 'destroyAll'])->name('administracion.salida_oficina.destroyAll');
 
 
 /* DIGITALIZACION DE DOCUMENTOS OGH */
@@ -293,10 +300,10 @@ Route::get('/administracion/reportes/gerencia-area/pdf', [UnifiedInventoryContro
     Route::get('/gtic/activity-log/export/excel', [ActivityLogController::class, 'exportExcel'])->name('gtic.activity-log.export.excel');
     Route::get('/gtic/activity-log/export/pdf', [ActivityLogController::class, 'exportPdf'])->name('gtic.activity-log.export.pdf');
 
-    // Security Activity (New)
-    Route::get('/gtic/security-activity', [SecurityActivityController::class, 'index'])->name('gtic.security-activity.index');
-    Route::get('/gtic/security-activity/export', [SecurityActivityController::class, 'export'])->name('gtic.security-activity.export');
-    Route::get('/gtic/security-activity/failed', [SecurityActivityController::class, 'failedAttempts'])->name('gtic.security-activity.failed');
+    // Activity Log (Security Activity)
+    Route::get('/gtic/security-activity', [ActivityLogController::class, 'index'])->name('gtic.security-activity.index');
+    Route::get('/gtic/security-activity/export', [ActivityLogController::class, 'export'])->name('gtic.security-activity.export');
+    Route::get('/gtic/security-activity/failed', [ActivityLogController::class, 'failedAttempts'])->name('gtic.security-activity.failed');
 
 /*-----------------REGISTRO DE INSUMOS-----------------------------*/
 
@@ -336,5 +343,33 @@ Route::middleware(['auth'])->prefix('api/notificaciones')->group(function () {
     Route::post('/mark-all-read', [NotificationController::class, 'markAllAsRead'])->name('api.notificaciones.markAllRead');
     Route::post('/mark-read/{type}', [NotificationController::class, 'markAsRead'])->name('api.notificaciones.markRead');
     Route::get('/unread-count', [NotificationController::class, 'getUnreadCount'])->name('api.notificaciones.unreadCount');
+});
+
+// Rutas de Constancia de Trabajo
+Route::middleware(['auth'])->prefix('api')->group(function () {
+    Route::post('/constancia-trabajo/solicitar', [ConstanciaTrabajoController::class, 'sendRequest'])->name('constancia-trabajo.solicitar');
+});
+
+// Rutas de Recibo de Pago
+Route::middleware(['auth'])->prefix('api')->group(function () {
+    Route::post('/recibo-pago/solicitar', [ReciboPagoController::class, 'sendRequest'])->name('recibo-pago.solicitar');
+});
+
+// Rutas de noticias locales
+Route::middleware(['auth'])->prefix('api')->group(function () {
+    Route::get('/noticias', [NoticiaController::class, 'apiIndex'])->name('api.noticias.index');
+    Route::get('/noticias/{id}', [NoticiaController::class, 'apiShow'])->name('api.noticias.show');
+    Route::post('/noticias', [NoticiaController::class, 'apiStore'])->name('api.noticias.store');
+});
+
+// Rutas de gestión de noticias (solo para admin, gtic, gerente, coordinacion)
+Route::middleware(['auth'])->group(function () {
+    Route::get('/noticias', [NoticiaController::class, 'index'])->name('noticias.index');
+    Route::get('/noticias/create', [NoticiaController::class, 'create'])->name('noticias.create');
+    Route::post('/noticias', [NoticiaController::class, 'store'])->name('noticias.store');
+    Route::get('/noticias/{id}/edit', [NoticiaController::class, 'edit'])->name('noticias.edit');
+    Route::put('/noticias/{id}', [NoticiaController::class, 'update'])->name('noticias.update');
+    Route::delete('/noticias/{id}', [NoticiaController::class, 'destroy'])->name('noticias.destroy');
+    Route::post('/noticias/publish-all', [NoticiaController::class, 'publishAll'])->name('noticias.publishAll');
 });
 

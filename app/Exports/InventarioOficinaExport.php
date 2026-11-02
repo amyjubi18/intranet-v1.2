@@ -8,6 +8,7 @@ use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 use Maatwebsite\Excel\Concerns\ShouldAutoSize;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class InventarioOficinaExport implements FromCollection, WithHeadings, WithMapping, ShouldAutoSize
 {
@@ -20,7 +21,7 @@ class InventarioOficinaExport implements FromCollection, WithHeadings, WithMappi
 
     public function collection()
     {
-        $query = InventarioOficina::with(['proveedores']);
+        $query = InventarioOficina::with(['proveedores', 'articulos', 'unidad_medidas']);
 
         // Aplicar filtros
         if (!empty($this->filters['filterType'])) {
@@ -52,12 +53,21 @@ class InventarioOficinaExport implements FromCollection, WithHeadings, WithMappi
                     if (!empty($this->filters['secondFilter'])) {
                         $query->where('proveedore_id', $this->filters['secondFilter']);
                     }
-
-
-
+                    break;
+                case 'articulo_id':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('articulo_id', $this->filters['secondFilter']);
+                    }
+                    break;
+                case 'unidad_medida_id':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('unidad_medida_id', $this->filters['secondFilter']);
+                    }
                     break;
                 case 'n_factura':
-                    if (!empty($this->filters['n_factura'])) {
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('n_factura', $this->filters['secondFilter']);
+                    } elseif (!empty($this->filters['n_factura'])) {
                         $query->where('n_factura', 'like', '%' . $this->filters['n_factura'] . '%');
                     }
                     break;
@@ -69,8 +79,13 @@ class InventarioOficinaExport implements FromCollection, WithHeadings, WithMappi
                               ->orWhere('n_factura', 'like', '%' . $search . '%')
                               ->orWhereHas('proveedores', function($subQ) use ($search) {
                                   $subQ->where('proveedor', 'like', '%' . $search . '%');
+                              })
+                              ->orWhereHas('articulos', function($subQ) use ($search) {
+                                  $subQ->where('articulo', 'like', '%' . $search . '%');
+                              })
+                              ->orWhereHas('unidad_medidas', function($subQ) use ($search) {
+                                  $subQ->where('unidad_medida', 'like', '%' . $search . '%');
                               });
-
                         });
                     }
                     break;
@@ -83,13 +98,14 @@ class InventarioOficinaExport implements FromCollection, WithHeadings, WithMappi
     public function headings(): array
     {
         return [
-            'ID',
-            'Fecha de Factura',
+            'ITEM',
             'Artículo',
+            'Fecha de Factura',
             'Unidad de Medida',
             'Proveedor',
             'Unidades',
             'Unidades Disponibles',
+            'Total Disponibles',
             'Nº Factura',
             'Fecha de Ingreso',
         ];
@@ -97,14 +113,19 @@ class InventarioOficinaExport implements FromCollection, WithHeadings, WithMappi
 
     public function map($inventario_oficina): array
     {
+        // Calcular total de unidades disponibles del artículo
+        $totalDisponiblesArticulo = InventarioOficina::where('articulo_id', $inventario_oficina->articulo_id)
+            ->sum('unidades_disponibles');
+
         return [
-            str_pad($inventario_oficina->id, 4, '0', STR_PAD_LEFT),
+            str_pad($inventario_oficina->articulo_id, 4, '0', STR_PAD_LEFT),
+            $inventario_oficina->articulos ? $inventario_oficina->articulos->articulo : 'N/A',
             $inventario_oficina->fecha_ingreso ? \Carbon\Carbon::parse($inventario_oficina->fecha_ingreso)->format('d/m/Y') : '',
-            $inventario_oficina->articulos ? $inventario_oficina->articulos->articulo : '',
-            $inventario_oficina->unidad_medidas ? $inventario_oficina->unidad_medidas->unidad_medida : '',
-            $inventario_oficina->proveedores ? $inventario_oficina->proveedores->proveedor : '',
+            $inventario_oficina->unidad_medidas ? $inventario_oficina->unidad_medidas->unidad_medida : 'N/A',
+            $inventario_oficina->proveedores ? $inventario_oficina->proveedores->proveedor : 'N/A',
             $inventario_oficina->unidades,
             $inventario_oficina->unidades_disponibles,
+            $totalDisponiblesArticulo,
             $inventario_oficina->n_factura,
             $inventario_oficina->created_at ? $inventario_oficina->created_at->format('d/m/Y H:i') : '',
         ];

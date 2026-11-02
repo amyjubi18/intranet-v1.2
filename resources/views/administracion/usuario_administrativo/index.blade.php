@@ -144,25 +144,7 @@
             to{ opacity:1; transform:translateY(0); }
         }
 
-        /* Paginador */
-        .pagination .page-link {
-            background-color: #1e40af;
-            color: white;
-            border-color: #1e40af;
-        }
-        .pagination .page-link:hover {
-            background-color: #1d4ed8;
-            border-color: #1d4ed8;
-            color: white;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #1e40af;
-            border-color: #1e40af;
-        }
-        .pagination .page-item.disabled .page-link {
-            background-color: #6b7280;
-            border-color: #6b7280;
-        }
+        
     </style>
 
     <!-- Filtros y controles -->
@@ -206,13 +188,36 @@
                         <input type="text" id="textFilter" placeholder="Buscar..." class="hidden px-4 py-2 text-sm glass rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50">
                     </div>
 
-                    <!-- Botón para limpiar filtros -->
+<!-- Botón para limpiar filtros -->
                     <button onclick="clearFilters()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                         🗑️ Limpiar
                     </button>
+
+                    <!-- Selector de ordenamiento -->
+
+                        <span class="text-xs text-gray-500">Ordenar:</span>
+                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'usuario_administrativo', 'direction' => $sort === 'usuario_administrativo' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'usuario_administrativo' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            Usuario
+                            @if($sort === 'usuario_administrativo')
+                                @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                            @else
+                                <span class="text-gray-400">⇅</span>
+                            @endif
+                        </a>
+                        {{-- <a href="{{ request()->fullUrlWithQuery(['sort' => 'id', 'direction' => $sort === 'id' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'id' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            ID
+                            @if($sort === 'id')
+                                @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                            @else
+                                <span class="text-gray-400">⇅</span>
+                            @endif
+                        </a> --}}
+
                 </div>
 
-                <div class="flex items-center gap-3">
+                <div class="flex  gap-3 items-end">
                     @can('usuario_administrativo_create')
                     <a href="{{ route('administracion.usuario_administrativo.create') }}" class="btn inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 text-sm">
                         <span>➕</span>
@@ -287,7 +292,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Sistema de filtros dinámicos para usuarios administrativos
         const filterData = {

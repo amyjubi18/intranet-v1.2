@@ -9,6 +9,12 @@ class Impresora extends Model
 {
     use HasFactory;
     protected $fillable =['impresora', 'imagen', 'user_id'];
+
+    public function gerencias()
+    {
+        return $this->belongsToMany(Gerencia::class, 'impresora_gerencia');
+    }
+
     public function salida_impresoras()
     {
         return $this->hasMany(SalidaImpresora::class, 'id');

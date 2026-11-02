@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\SalidaOficina;
 use App\Models\Articulo;
 use App\Models\Area;
@@ -13,24 +12,44 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use Exception;
 use App\Http\Livewire;
+use Illuminate\Support\Facades\Hash;
 
 class SalidaOficController extends Controller
 {
-    public function index(Request $request)
+    /* public function index(Request $request)
     {
         abort_if(Gate::denies('salidaofic_index'), 403);
 
-        // Query base con relaciones - JOIN para obtener unidades_disponibles directamente
         $query = SalidaOficina::with(['articulos', 'gerencias', 'areas', 'unidad_medidas', 'users'])
             ->leftJoin('inventario_oficinas', 'salida_oficinas.inventario_oficina_id', '=', 'inventario_oficinas.id')
             ->select('salida_oficinas.*', 'inventario_oficinas.unidades_disponibles', 'inventario_oficinas.unidades as unidades_totales')
             ->orderBy('salida_oficinas.id', 'desc');
 
-        // Aplicar filtros según el tipo seleccionado
+        if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+            $query->whereBetween('fecha_salida', [$request->fecha_desde, $request->fecha_hasta]);
+        } elseif ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_salida', '>=', $request->fecha_desde);
+        } elseif ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_salida', '<=', $request->fecha_hasta);
+        }
+
+        if ($request->filled('fecha_ingreso_desde') && $request->filled('fecha_ingreso_hasta')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->whereBetween('fecha_ingreso', [$request->fecha_ingreso_desde, $request->fecha_ingreso_hasta]);
+            });
+        } elseif ($request->filled('fecha_ingreso_desde')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->whereDate('fecha_ingreso', '>=', $request->fecha_ingreso_desde);
+            });
+        } elseif ($request->filled('fecha_ingreso_hasta')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->whereDate('fecha_ingreso', '<=', $request->fecha_ingreso_hasta);
+            });
+        }
+
         if ($request->filled('filterType')) {
             switch ($request->filterType) {
                 case 'fecha':
-                    // Filtro por fecha de salida
                     if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
                         $query->whereBetween('fecha_salida', [$request->fecha_desde, $request->fecha_hasta]);
                     } elseif ($request->filled('fecha_desde')) {
@@ -41,7 +60,6 @@ class SalidaOficController extends Controller
                     break;
 
                 case 'fecha_ingreso':
-                    // Filtro por fecha de ingreso (desde inventario_oficinas)
                     if ($request->filled('fecha_ingreso_desde') && $request->filled('fecha_ingreso_hasta')) {
                         $query->whereHas('inventario_oficinas', function($q) use ($request) {
                             $q->whereBetween('fecha_ingreso', [$request->fecha_ingreso_desde, $request->fecha_ingreso_hasta]);
@@ -58,16 +76,10 @@ class SalidaOficController extends Controller
                     break;
 
                 case 'gerencia':
-                    // Filtro por gerencia Y sus áreas relacionadas
                     if ($request->filled('secondFilter')) {
-                        // Obtener la gerencia seleccionada con sus áreas
                         $gerencia = Gerencia::with('area')->find($request->secondFilter);
-
                         if ($gerencia) {
-                            // Obtener los IDs de las áreas relacionadas a esta gerencia
                             $areaIds = $gerencia->area ? [$gerencia->area->id] : [];
-
-                            // Filtrar por gerencia_id O por las áreas relacionadas
                             $query->where(function($q) use ($request, $areaIds) {
                                 $q->where('gerencia_id', $request->secondFilter)
                                   ->orWhereIn('area_id', $areaIds);
@@ -79,21 +91,18 @@ class SalidaOficController extends Controller
                     break;
 
                 case 'area':
-                    // Filtro por área
                     if ($request->filled('secondFilter')) {
                         $query->where('area_id', $request->secondFilter);
                     }
                     break;
 
                 case 'articulo':
-                    // Filtro por artículo
                     if ($request->filled('secondFilter')) {
                         $query->where('salida_oficinas.articulo_id', $request->secondFilter);
                     }
                     break;
 
                 case 'busqueda':
-                    // Búsqueda general en múltiples campos
                     if ($request->filled('busqueda')) {
                         $search = $request->busqueda;
                         $query->where(function($q) use ($search) {
@@ -117,21 +126,13 @@ class SalidaOficController extends Controller
             }
         }
 
-        // Paginar resultados
         $salida_oficinas = $query->paginate(10);
-
-        // Agrupar resultados por artículo para la vista (manteniendo el orden descendente)
         $salidasAgrupadas = $salida_oficinas->getCollection()->groupBy('articulo_id');
-
-        // Obtener datos para filtros
         $gerencias = Gerencia::with('area')->get();
         $areas = Area::all();
         $articulos = Articulo::all();
 
-        // Calcular sumatoria de unidades_disponibles del inventario para cada artículo
-        // Esto obtiene el stock total real disponible para cada artículo
         $stockPorArticulo = [];
-        // Calcular sumatoria de unidades (columna unidades, no unidades_disponibles) para cada artículo
         $sumaUnidadesPorArticulo = [];
         foreach ($articulos as $articulo) {
             $stockPorArticulo[$articulo->id] = InventarioOficina::where('articulo_id', $articulo->id)
@@ -140,14 +141,11 @@ class SalidaOficController extends Controller
                 ->sum('unidades');
         }
 
-        // Estadísticas para las tarjetas
         $ultimasFechasSalida = SalidaOficina::orderBy('fecha_salida', 'desc')->first();
         $ultimasFechasSalida = $ultimasFechasSalida ? \Carbon\Carbon::parse($ultimasFechasSalida->fecha_salida)->format('d/m/Y') : 'N/A';
-
         $totalSalidas = SalidaOficina::count();
         $salidasEsteMes = SalidaOficina::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
 
-        // Items bajo stock (cantidad retirada > stock_min del artículo)
         $salidasBajoStock = SalidaOficina::with('articulos')
             ->whereHas('articulos', function($q) {
                 $q->whereRaw('salida_oficinas.cantidad < articulos.stock_min');
@@ -156,7 +154,6 @@ class SalidaOficController extends Controller
             ->get();
         $countSalidasBajoStock = $salidasBajoStock->count();
 
-        // Obtener registros de inventario_oficinas para el artículo seleccionado
         $inventarioFiltrado = null;
         if ($request->filled('filterType') && $request->filterType === 'articulo' && $request->filled('secondFilter')) {
             $inventarioFiltrado = InventarioOficina::with(['articulos', 'unidad_medidas', 'ubicacion', 'proveedores'])
@@ -180,22 +177,138 @@ class SalidaOficController extends Controller
             'areas' => $areas,
             'articulos' => $articulos,
         ]);
+    } */
+   public function index(Request $request)
+{
+    abort_if(Gate::denies('salidaofic_index'), 403);
+
+    $query = SalidaOficina::with(['articulos', 'gerencias', 'areas', 'unidad_medidas', 'users'])
+        ->leftJoin('inventario_oficinas', 'salida_oficinas.inventario_oficina_id', '=', 'inventario_oficinas.id')
+        ->select('salida_oficinas.*', 'inventario_oficinas.unidades_disponibles', 'inventario_oficinas.unidades as unidades_totales')
+        ->orderBy('salida_oficinas.id', 'desc');
+
+    // 1. Filtros de Fecha de Salida
+    if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+        $query->whereBetween('fecha_salida', [$request->fecha_desde, $request->fecha_hasta]);
+    } elseif ($request->filled('fecha_desde')) {
+        $query->whereDate('fecha_salida', '>=', $request->fecha_desde);
+    } elseif ($request->filled('fecha_hasta')) {
+        $query->whereDate('fecha_salida', '<=', $request->fecha_hasta);
     }
+
+    // 2. Filtros de Fecha de Ingreso
+    if ($request->filled('fecha_ingreso_desde') && $request->filled('fecha_ingreso_hasta')) {
+        $query->whereHas('inventario_oficinas', function($q) use ($request) {
+            $q->whereBetween('fecha_ingreso', [$request->fecha_ingreso_desde, $request->fecha_ingreso_hasta]);
+        });
+    } elseif ($request->filled('fecha_ingreso_desde')) {
+        $query->whereHas('inventario_oficinas', function($q) use ($request) {
+            $q->whereDate('fecha_ingreso', '>=', $request->fecha_ingreso_desde);
+        });
+    } elseif ($request->filled('fecha_ingreso_hasta')) {
+        $query->whereHas('inventario_oficinas', function($q) use ($request) {
+            $q->whereDate('fecha_ingreso', '<=', $request->fecha_ingreso_hasta);
+        });
+    }
+
+    // 3. Filtro por Gerencia
+    $gerenciaId = $request->input('gerencia', $request->filterType === 'gerencia' ? $request->secondFilter : null);
+    if ($gerenciaId) {
+        $gerencia = Gerencia::with('area')->find($gerenciaId);
+        if ($gerencia) {
+            $areaIds = $gerencia->area ? [$gerencia->area->id] : [];
+            $query->where(function($q) use ($gerenciaId, $areaIds) {
+                $q->where('salida_oficinas.gerencia_id', $gerenciaId)
+                  ->orWhereIn('salida_oficinas.area_id', $areaIds);
+            });
+        } else {
+            $query->where('salida_oficinas.gerencia_id', $gerenciaId);
+        }
+    }
+
+    // 4. Filtro por Área
+    $areaId = $request->input('area', $request->filterType === 'area' ? $request->secondFilter : null);
+    if ($areaId) {
+        $query->where('salida_oficinas.area_id', $areaId);
+    }
+
+    // 5. Filtro por Artículo
+    $articuloId = $request->input('articulo', $request->filterType === 'articulo' ? $request->secondFilter : null);
+    if ($articuloId) {
+        $query->where('salida_oficinas.articulo_id', $articuloId);
+    }
+
+    // 6. Búsqueda por Texto
+    if ($request->filled('busqueda')) {
+        $search = $request->busqueda;
+        $query->where(function($q) use ($search) {
+            $q->where('salida_oficinas.cantidad', 'like', '%' . $search . '%')
+              ->orWhere('salida_oficinas.ajuste_inventario', 'like', '%' . $search . '%')
+              ->orWhereHas('articulos', fn($subQ) => $subQ->where('articulo', 'like', '%' . $search . '%'))
+              ->orWhereHas('gerencias', fn($subQ) => $subQ->where('gerencia', 'like', '%' . $search . '%'))
+              ->orWhereHas('areas', fn($subQ) => $subQ->where('area', 'like', '%' . $search . '%'))
+              ->orWhereHas('users', fn($subQ) => $subQ->where('name', 'like', '%' . $search . '%'));
+        });
+    }
+
+    // Paginación manteniendo los parámetros en la URL
+    $salida_oficinas = $query->paginate(10)->withQueryString();
+    $salidasAgrupadas = $salida_oficinas->getCollection()->groupBy('articulo_id');
+
+    $gerencias = Gerencia::with('area')->get();
+    $areas = Area::all();
+    $articulos = Articulo::all();
+
+    $stockPorArticulo = [];
+    $sumaUnidadesPorArticulo = [];
+    foreach ($articulos as $articulo) {
+        $stockPorArticulo[$articulo->id] = InventarioOficina::where('articulo_id', $articulo->id)->sum('unidades_disponibles');
+        $sumaUnidadesPorArticulo[$articulo->id] = InventarioOficina::where('articulo_id', $articulo->id)->sum('unidades');
+    }
+
+    $ultimasFechasSalida = SalidaOficina::orderBy('fecha_salida', 'desc')->first();
+    $ultimasFechasSalida = $ultimasFechasSalida ? \Carbon\Carbon::parse($ultimasFechasSalida->fecha_salida)->format('d/m/Y') : 'N/A';
+    $totalSalidas = SalidaOficina::count();
+    $salidasEsteMes = SalidaOficina::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->count();
+
+    $salidasBajoStock = SalidaOficina::with('articulos')
+        ->whereHas('articulos', function($q) {
+            $q->whereRaw('salida_oficinas.cantidad < articulos.stock_min');
+        })
+        ->take(5)
+        ->get();
+    $countSalidasBajoStock = $salidasBajoStock->count();
+
+    $inventarioFiltrado = null;
+    if ($articuloId) {
+        $inventarioFiltrado = InventarioOficina::with(['articulos', 'unidad_medidas', 'ubicacion', 'proveedores'])
+            ->where('articulo_id', $articuloId)
+            ->orderBy('fecha_ingreso', 'desc')
+            ->get();
+    }
+
+    return view('administracion.salida_oficina.index', compact(
+        'salida_oficinas', 'salidasAgrupadas', 'stockPorArticulo',
+        'sumaUnidadesPorArticulo', 'inventarioFiltrado', 'ultimasFechasSalida',
+        'totalSalidas', 'salidasEsteMes', 'salidasBajoStock',
+        'countSalidasBajoStock', 'gerencias', 'areas', 'articulos'
+    ));
+}
+
     public function create()
     {
-     abort_if(Gate::denies('salidaofic_create'), 403);
+        abort_if(Gate::denies('salidaofic_create'), 403);
 
         return view('administracion.salida_oficina.create', [
             "inventario_oficinas" => InventarioOficina::all(),
             "articulos" => Articulo::all(),
             "unidad_medidas" => UnidadMedida::all(),
             "areas" => Area::all(),
-            /*  "users" => User::all(),  */
         ]);
     }
+
     public function store(Request $request)
     {
-
         $request->validate([
             'fecha_salida' =>'required|date|before_or_equal:today',
             'inventario_oficina_id' => 'required',
@@ -203,37 +316,37 @@ class SalidaOficController extends Controller
             'articulo_id' => 'required',
             'cantidad' => 'required|integer|min:1',
             'area_id' => 'required',
-
         ]);
+
         $salida_oficina = new SalidaOficina;
-
-            $salida_oficina->fecha_salida = $request->fecha_salida;
-            $salida_oficina->inventario_oficina_id = $request->inventario_oficina_id;
-            $salida_oficina->cantidad = $request->cantidad;
-            $salida_oficina->unidad_medida_id = $request->unidad_medida_id;
-            $salida_oficina->articulo_id = $request->articulo_id;
-            $salida_oficina->area_id = $request->area_id;
-            $salida_oficina->user_id = auth()->id();
-            $salida_oficina->save();
-
-
+        $salida_oficina->fecha_salida = $request->fecha_salida;
+        $salida_oficina->inventario_oficina_id = $request->inventario_oficina_id;
+        $salida_oficina->cantidad = $request->cantidad;
+        $salida_oficina->unidad_medida_id = $request->unidad_medida_id;
+        $salida_oficina->articulo_id = $request->articulo_id;
+        $salida_oficina->area_id = $request->area_id;
+        $salida_oficina->user_id = auth()->id();
+        $salida_oficina->save();
 
         return redirect()->route('administracion.salida_oficina.index')->with('datos', 'Registro exitoso');
     }
- public function edit($id)
+
+    public function edit($id)
     {
-        //dd($documento);
         abort_if(Gate::denies('salidaofic_edit'), 403);
 
         $salida_oficina = SalidaOficina::find($id);
 
-        return view('administracion.salida_oficina.edit', ['salida_oficina' => $salida_oficina, 'inventario_oficinas' => InventarioOficina::all(), 'articulos' => Articulo::all(),'unidad_medidas' => UnidadMedida::all(), 'areas' => Area::all()]);
-
-
-
+        return view('administracion.salida_oficina.edit', [
+            'salida_oficina' => $salida_oficina,
+            'inventario_oficinas' => InventarioOficina::all(),
+            'articulos' => Articulo::all(),
+            'unidad_medidas' => UnidadMedida::all(),
+            'areas' => Area::all()
+        ]);
     }
 
-     public function update(Request $request, $id)
+    public function update(Request $request, $id)
     {
         $request->validate([
             'fecha_salida' =>'required|date|before_or_equal:today',
@@ -243,32 +356,27 @@ class SalidaOficController extends Controller
             'cantidad' => 'required|integer|min:1',
             'area_id' => 'required',
         ]);
-        $salida_oficina =SalidaOficina::find($id);
 
-        $salida_oficina->fecha_salida =$request->input('fecha_salida');
-        $salida_oficina->inventario_oficina_id =$request->input('inventario_oficina_id');
-        $salida_oficina->unidad_medida_id =$request->input('unidad_medida_id');
-        $salida_oficina->articulo_id =$request->input('articulo_id');
-        $salida_oficina->cantidad =$request->input('cantidad');
-        $salida_oficina->area_id =$request->input('area_id');
+        $salida_oficina = SalidaOficina::find($id);
+        $salida_oficina->fecha_salida = $request->input('fecha_salida');
+        $salida_oficina->inventario_oficina_id = $request->input('inventario_oficina_id');
+        $salida_oficina->unidad_medida_id = $request->input('unidad_medida_id');
+        $salida_oficina->articulo_id = $request->input('articulo_id');
+        $salida_oficina->cantidad = $request->input('cantidad');
+        $salida_oficina->area_id = $request->input('area_id');
         $salida_oficina->save();
 
-       /* $biene->update($data); */
-
-
-
-        return redirect()->route('administracion.salida_oficina.index', $salida_oficina->id)->with('success', 'Excel actualizado correctamente');
+        return redirect()->route('administracion.salida_oficina.index', $salida_oficina->id)->with('success', 'Registro actualizado correctamente');
     }
+
     public function destroy($id)
     {
         abort_if(Gate::denies('salidaofic_destroy'), 403);
 
         try {
-            // Iniciar transacción para asegurar integridad de datos
             DB::transaction(function () use ($id) {
                 $salida_oficina = SalidaOficina::findOrFail($id);
 
-                // Restaurar las unidades disponibles en el inventario
                 if ($salida_oficina->inventario_oficina_id && $salida_oficina->cantidad) {
                     $inventario = InventarioOficina::find($salida_oficina->inventario_oficina_id);
                     if ($inventario) {
@@ -277,27 +385,103 @@ class SalidaOficController extends Controller
                     }
                 }
 
-                // Eliminar el registro de salida
                 $salida_oficina->delete();
             });
 
             return redirect()->route('administracion.salida_oficina.index')
                 ->with('datos', 'Registro eliminado correctamente. Las unidades han sido restauradas al inventario.');
-
         } catch (\Exception $e) {
             return redirect()->route('administracion.salida_oficina.index')
                 ->with('error', 'Error al eliminar el registro: ' . $e->getMessage());
         }
     }
 
-    /**
-     * Export to Excel
-     */
+    public function destroyMultiple(Request $request)
+    {
+        abort_if(Gate::denies('salidaofic_destroy'), 403);
+
+        $request->validate([
+            'ids' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $ids = json_decode($request->ids, true);
+        if (!is_array($ids) || count($ids) === 0) {
+            return redirect()->back()->with('error', 'No se seleccionaron registros para eliminar.');
+        }
+
+        $count = count($ids);
+
+        try {
+            DB::transaction(function () use ($ids) {
+                foreach ($ids as $id) {
+                    $salida_oficina = SalidaOficina::findOrFail($id);
+
+                    if ($salida_oficina->inventario_oficina_id && $salida_oficina->cantidad) {
+                        $inventario = InventarioOficina::find($salida_oficina->inventario_oficina_id);
+                        if ($inventario) {
+                            $inventario->unidades_disponibles += $salida_oficina->cantidad;
+                            $inventario->save();
+                        }
+                    }
+
+                    $salida_oficina->delete();
+                }
+            });
+
+            return redirect()->route('administracion.salida_oficina.index')
+                ->with('datos', "Se eliminaron {$count} registro(s) correctamente. Las unidades han sido restauradas al inventario.");
+        } catch (\Exception $e) {
+            return redirect()->route('administracion.salida_oficina.index')
+                ->with('error', 'Error al eliminar los registros: ' . $e->getMessage());
+        }
+    }
+
+    public function destroyAll(Request $request)
+    {
+        abort_if(Gate::denies('salidaofic_destroy'), 403);
+
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        try {
+            DB::transaction(function () {
+                $allSalidas = SalidaOficina::all();
+
+                foreach ($allSalidas as $salida_oficina) {
+                    if ($salida_oficina->inventario_oficina_id && $salida_oficina->cantidad) {
+                        $inventario = InventarioOficina::find($salida_oficina->inventario_oficina_id);
+                        if ($inventario) {
+                            $inventario->unidades_disponibles += $salida_oficina->cantidad;
+                            $inventario->save();
+                        }
+                    }
+                }
+
+                SalidaOficina::query()->delete();
+            });
+
+            return redirect()->route('administracion.salida_oficina.index')
+                ->with('datos', "Se eliminaron todos los registros correctamente. Las unidades han sido restauradas al inventario.");
+        } catch (\Exception $e) {
+            return redirect()->route('administracion.salida_oficina.index')
+                ->with('error', 'Error al eliminar los registros: ' . $e->getMessage());
+        }
+    }
+
     public function exportExcel(Request $request)
     {
         abort_if(Gate::denies('salidaofic_index'), 403);
 
-        // Convertir request a array para pasar a la exportación
         $filters = $request->all();
 
         return \Maatwebsite\Excel\Facades\Excel::download(
@@ -306,9 +490,6 @@ class SalidaOficController extends Controller
         );
     }
 
-    /**
-     * Export to PDF
-     */
     public function exportPdf(Request $request)
     {
         abort_if(Gate::denies('salidaofic_index'), 403);
@@ -317,7 +498,28 @@ class SalidaOficController extends Controller
             ->leftJoin('inventario_oficinas', 'salida_oficinas.inventario_oficina_id', '=', 'inventario_oficinas.id')
             ->select('salida_oficinas.*', 'inventario_oficinas.unidades_disponibles');
 
-        // Aplicar los mismos filtros que en index
+        if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+            $query->whereBetween('fecha_salida', [$request->fecha_desde, $request->fecha_hasta]);
+        } elseif ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_salida', '>=', $request->fecha_desde);
+        } elseif ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_salida', '<=', $request->fecha_hasta);
+        }
+
+        if ($request->filled('fecha_ingreso_desde') && $request->filled('fecha_ingreso_hasta')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->whereBetween('fecha_ingreso', [$request->fecha_ingreso_desde, $request->fecha_ingreso_hasta]);
+            });
+        } elseif ($request->filled('fecha_ingreso_desde')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->whereDate('fecha_ingreso', '>=', $request->fecha_ingreso_desde);
+            });
+        } elseif ($request->filled('fecha_ingreso_hasta')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->whereDate('fecha_ingreso', '<=', $request->fecha_ingreso_hasta);
+            });
+        }
+
         if ($request->filled('filterType')) {
             switch ($request->filterType) {
                 case 'fecha':
@@ -329,7 +531,6 @@ class SalidaOficController extends Controller
                         $query->where('fecha_salida', '<=', $request->fecha_hasta);
                     }
                     break;
-
                 case 'fecha_ingreso':
                     if ($request->filled('fecha_ingreso_desde') && $request->filled('fecha_ingreso_hasta')) {
                         $query->whereHas('inventario_oficinas', function($q) use ($request) {
@@ -345,25 +546,21 @@ class SalidaOficController extends Controller
                         });
                     }
                     break;
-
                 case 'gerencia':
                     if ($request->filled('secondFilter')) {
                         $query->where('gerencia_id', $request->secondFilter);
                     }
                     break;
-
                 case 'area':
                     if ($request->filled('secondFilter')) {
                         $query->where('area_id', $request->secondFilter);
                     }
                     break;
-
                 case 'articulo':
                     if ($request->filled('secondFilter')) {
                         $query->where('salida_oficinas.articulo_id', $request->secondFilter);
                     }
                     break;
-
                 case 'busqueda':
                     if ($request->filled('busqueda')) {
                         $search = $request->busqueda;
@@ -390,11 +587,9 @@ class SalidaOficController extends Controller
 
         $salida_oficinas = $query->orderBy('salida_oficinas.id', 'desc')->get();
 
-        // Calcular estadísticas para el PDF
         $totalRegistros = $salida_oficinas->count();
         $totalUnidades = $salida_oficinas->sum('cantidad');
 
-        // Calcular sumaUnidadesPorArticulo (igual que en el índice)
         $sumaUnidadesPorArticulo = [];
         $articulos = Articulo::all();
         foreach ($articulos as $articulo) {
@@ -402,15 +597,11 @@ class SalidaOficController extends Controller
                 ->sum('unidades');
         }
 
-        // Agregar campos calculados a cada registro
         $salida_oficinas->each(function ($item) use ($sumaUnidadesPorArticulo) {
-            // stockTotalReal: viene del campo historico_unidades_disponibles o del join
-            $item->stockTotalReal = $item->historico_unidades_disponibles ?? $item->unidades_disponibles ?? 0;
-            // sumaUnidades: suma de unidades del inventario para este artículo
-            $item->sumaUnidades = $sumaUnidadesPorArticulo[$item->articulo_id] ?? 0;
+            $item->stockHistorico = $item->historico_unidades_disponibles ?? 0;
+            $item->stockRestante = max(0, $item->stockHistorico - $item->cantidad);
         });
 
-        // Generar descripción de filtros aplicados
         $filtersApplied = $request->filled('filterType');
         $filterDescription = '';
         if ($filtersApplied) {

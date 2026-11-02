@@ -194,25 +194,6 @@
             display: none;
         }
 
-        /* Paginador */
-        .pagination .page-link {
-            background-color: #1e40af;
-            color: white;
-            border-color: #1e40af;
-        }
-        .pagination .page-link:hover {
-            background-color: #1d4ed8;
-            border-color: #1d4ed8;
-            color: white;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #1e40af;
-            border-color: #1e40af;
-        }
-        .pagination .page-item.disabled .page-link {
-            background-color: #6b7280;
-            border-color: #6b7280;
-        }
     </style>
 
     <!-- Filtros y controles -->
@@ -224,6 +205,7 @@
                     <select id="filterType" onchange="updateSecondFilter()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
                         <option value="">Seleccionar filtro</option>
                         <option value="nombre-impresora">Nombre de impresora</option>
+                        <option value="gerencia_id">Gerencia</option>
                         <option value="consumible">Consumible</option>
                         <option value="color">Tipo de Consumible</option>
                         <option value="tipo">Tipo de Impresora</option>
@@ -258,10 +240,33 @@
                         <input type="text" id="textFilter" placeholder="Buscar..." class="glass rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 hidden">
                     </div>
 
-                    <!-- Botón para limpiar filtros -->
+<!-- Botón para limpiar filtros -->
                     <button onclick="clearFilters()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                         🗑️ Limpiar
                     </button>
+
+                    <!-- Selector de ordenamiento -->
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs text-gray-500">Ordenar:</span>
+                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'impresora_id', 'direction' => $sort === 'impresora_id' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'impresora_id' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            Impresora
+                            @if($sort === 'impresora_id')
+                                @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                            @else
+                                <span class="text-gray-400">⇅</span>
+                            @endif
+                        </a>
+                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'cartucho', 'direction' => $sort === 'cartucho' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'cartucho' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            Consumible
+                            @if($sort === 'cartucho')
+                                @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                            @else
+                                <span class="text-gray-400">⇅</span>
+                            @endif
+                        </a>
+                    </div>
                 </div>
 
                 <div class="flex items-center gap-3">
@@ -296,6 +301,14 @@
                         <p class="font-semibold text-lg">{{ $cartucho->impresora ? $cartucho->impresora->impresora : 'N/A' }}</p>
                         <p class="text-xs text-blue-900 font-semibold mb-1">Tipo de Impresora</p>
                         <p class="text-sm px-2 py-1 rounded-full bg-blue-300/20 text-gray-500 inline-block">{{ $cartucho->fabricante ? $cartucho->fabricante->fabricante : 'N/A' }}</p>
+                        <p class="text-xs text-blue-900 font-semibold mb-1"> Gerencia</p>
+                        @if($cartucho->impresora && $cartucho->impresora->gerencias->count() > 0)
+                            <div class="flex flex-wrap justify-center lg:justify-start gap-1 mt-1">
+                                @foreach($cartucho->impresora->gerencias as $gerencia)
+                                    <span class="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">🏢 {{ $gerencia->gerencia }} - {{ $gerencia->area->area }}</span>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
 
                     <!-- Imagen -->
@@ -374,7 +387,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Estado de la aplicación
         let stockChart, distributionChart;
@@ -461,6 +473,16 @@
                     { value: '', text: 'Todas las impresoras' },
                     @foreach($impresoras as $impresora)
                     { value: '{{ $impresora->id }}', text: '{{ $impresora->impresora }}' },
+                    @endforeach
+                ]
+            },
+            'gerencia_id': {
+                type: 'searchable-select',
+                searchPlaceholder: 'Buscar gerencia...',
+                options: [
+                    { value: '', text: 'Todas las gerencias' },
+                    @foreach($gerencias as $gerencia)
+                    { value: '{{ $gerencia->id }}', text: '{{ $gerencia->gerencia }}@if($gerencia->area) - {{ $gerencia->area->area }}@endif' },
                     @endforeach
                 ]
             },

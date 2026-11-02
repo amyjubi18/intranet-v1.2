@@ -39,8 +39,7 @@ class User extends Authenticatable
         'profile_photo',
         'status',
         'is_active',
-        'telefono',
-        'direccion',
+
         // Security fields
         'password_changed_at',
         'password_expires_at',
@@ -318,7 +317,7 @@ class User extends Authenticatable
      */
     public function getPerfilIncompletoAttribute()
     {
-        $camposRequeridos = ['lastname', 'cedula', 'fecha_nacimiento', 'telefono', 'direccion'];
+        $camposRequeridos = ['lastname', 'cedula', 'fecha_nacimiento', 'departamento'];
         $camposFaltantes = [];
 
         foreach ($camposRequeridos as $campo) {
@@ -357,5 +356,104 @@ class User extends Authenticatable
             ->logOnly(['name', 'email'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
+    }
+
+    // ==================== Birthday Methods ====================
+
+    /**
+     * Get users with birthday in the current month
+     */
+    public static function getBirthdaysForCurrentMonth()
+    {
+        $currentMonth = now()->month;
+
+        return self::whereNotNull('fecha_nacimiento')
+            ->whereMonth('fecha_nacimiento', $currentMonth)
+            ->where('is_active', true)
+            ->orderByRaw('DAY(fecha_nacimiento)')
+            ->get();
+    }
+
+    /**
+     * Check if user has birthday this month
+     */
+    public function hasBirthdayThisMonth(): bool
+    {
+        if (!$this->fecha_nacimiento) {
+            return false;
+        }
+        return $this->fecha_nacimiento->month === now()->month;
+    }
+
+    /**
+     * Get birthday display date (day and month name)
+     */
+    public function getBirthdayDisplayDateAttribute(): string
+    {
+        if (!$this->fecha_nacimiento) {
+            return '';
+        }
+
+        $meses = [
+            1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
+            5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
+            9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
+        ];
+
+        return $this->fecha_nacimiento->day . ' de ' . $meses[$this->fecha_nacimiento->month];
+    }
+
+    /**
+     * Get birthday day of month
+     */
+    public function getBirthdayDayAttribute(): int
+    {
+        return $this->fecha_nacimiento ? $this->fecha_nacimiento->day : 0;
+    }
+
+    /**
+     * Get all birthdays for calendar (all months)
+     */
+    public static function getAllBirthdaysForCalendar()
+    {
+        return self::whereNotNull('fecha_nacimiento')
+            ->where('is_active', true)
+            ->select('id', 'name', 'lastname', 'departamento', 'fecha_nacimiento')
+            ->get()
+            ->groupBy(function($user) {
+                return $user->fecha_nacimiento->month;
+            });
+    }
+
+    /**
+     * Get initials for avatar
+     */
+    public function getInitialsAttribute(): string
+    {
+        $name = substr($this->name, 0, 1);
+        $lastname = substr($this->lastname ?? '', 0, 1);
+        return strtoupper($name . $lastname);
+    }
+
+    /**
+     * Get days until next birthday
+     */
+    public function getDaysUntilBirthdayAttribute(): ?int
+    {
+        if (!$this->fecha_nacimiento) {
+            return null;
+        }
+
+        $birthday = now()->year . '-' .
+                    str_pad($this->fecha_nacimiento->month, 2, '0', STR_PAD_LEFT) . '-' .
+                    str_pad($this->fecha_nacimiento->day, 2, '0', STR_PAD_LEFT);
+
+        $birthdayDate = now()->parse($birthday);
+
+        if ($birthdayDate->isPast()) {
+            $birthdayDate = $birthdayDate->addYear();
+        }
+
+        return now()->diffInDays($birthdayDate, false);
     }
 }

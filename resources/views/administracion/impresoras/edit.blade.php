@@ -105,6 +105,126 @@
             from{ opacity:0; transform:translateY(10px); }
             to{ opacity:1; transform:translateY(0); }
         }
+         .permissions-input-container {
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            background: rgba(59, 130, 246, 0.02);
+        }
+
+        .permission-input-row {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .btn-icon {
+            padding: 0.75rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .added-permissions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid rgba(59, 130, 246, 0.1);
+        }
+
+        .permission-tag {
+            background: rgba(59, 130, 246, 0.1);
+            color: #1e40af;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            border: 1px solid rgba(59, 130, 246, 0.2);
+        }
+
+        .permission-tag button {
+            background: none;
+            border: none;
+            color: #1e40af;
+            cursor: pointer;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            transition: color 0.2s;
+        }
+
+        .permission-tag button:hover {
+            color: #dc2626;
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: white;
+            border: 2px solid rgba(59, 130, 246, 0.2);
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            box-shadow: 0 10px 30px rgba(30, 58, 138, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            z-index: 2000;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: all;
+        }
+
+        .toast.success {
+            border-color: rgba(34, 197, 94, 0.3);
+            background: rgba(34, 197, 94, 0.05);
+        }
+
+        .toast.error {
+            border-color: rgba(220, 38, 38, 0.3);
+            background: rgba(220, 38, 38, 0.05);
+        }
+
+        .toast-icon {
+            font-size: 1.25rem;
+        }
+
+        .toast-message {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: #1e3a8a;
+        }
+
+        @media (max-width: 768px) {
+            .main-wrapper {
+                padding: 1rem;
+            }
+
+            .title-section h1 {
+                font-size: 1.5rem;
+            }
+
+            .form-actions {
+                flex-direction: column;
+            }
+
+            .form-actions .btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
     </style>
 
     <!-- Contenido principal -->
@@ -130,6 +250,151 @@
                         <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
                     @enderror
                 </div>
+
+                <!-- Campo de Gerencia -->
+                <div class="mb-6">
+                    <label class="form-label">Gerencias:</label>
+                    <div class="permissions-input-container border-4 justify-center items-center border-blue-200 rounded-lg " style="padding: 1.5rem;">
+                        <div class="permission-input-row">
+                            <select id="gerenciaSelect" class="form-input" style="font-size: 0.95rem;">
+                                <option value="">Seleccionar gerencia...</option>
+                                @foreach($gerencias as $gerencia)
+                                    <option value="{{ $gerencia->id }}">{{ $gerencia->gerencia }}@if($gerencia->area) - {{ $gerencia->area->area }}@endif</option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn btn-primary btn-icon" onclick="addGerencia()" style="padding: 1rem;">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <line x1="12" y1="5" x2="12" y2="19" />
+                                    <line x1="5" y1="12" x2="19" y2="12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <div id="addedGerencias" class="added-permissions" style="min-height: 60px; max-height: 200px; overflow-y: auto;">
+                            @php
+                                $selectedGerencias = old('gerencia_ids', $impresora->gerencias()->pluck('gerencias.id')->toArray());
+                            @endphp
+                            @if($selectedGerencias)
+                                @foreach($selectedGerencias as $gerenciaId)
+                                    @php
+                                        $gerenciaData = $gerencias->firstWhere('id', $gerenciaId);
+                                    @endphp
+                                    @if($gerenciaData)
+                                        <div class="permission-tag" data-gerencia-id="{{ $gerenciaId }}">
+                                            {{ $gerenciaData->gerencia }}
+                                            <input type="hidden" name="gerencia_ids[]" value="{{ $gerenciaId }}">
+                                            <button type="button" onclick="removeGerencia(this)">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                                    <line x1="18" y1="6" x2="6" y2="18"/>
+                                                    <line x1="6" y1="6" x2="18" y2="18"/>
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    @endif
+                                @endforeach
+                            @else
+                                <p style="color: #64748b; font-size: 0.875rem; text-align: center; width: 100%; padding: 1rem 0;">No hay gerencias agregadas aún</p>
+                            @endif
+                        </div>
+                    </div>
+                    @error('gerencia_ids')
+                        <p class="text-red-500 text-sm mt-1">{{ $message }}</p>
+                    @enderror
+                </div>
+
+                <script>
+                    // Variables globales
+                    let selectedGerencias = @json(old('gerencia_ids', $impresora->gerencias()->pluck('gerencias.id')->toArray()));
+
+                    // Lista de gerencias disponibles
+                    const allGerencias = @json($gerencias->mapWithKeys(function($g) { return [$g->id => $g->gerencia . ($g->area ? ' - ' . $g->area->area : '')]; }));
+
+                    // Actualizar select de gerencias
+                    function updateGerenciaSelect() {
+                        const select = document.getElementById('gerenciaSelect');
+                        const allOptions = select.querySelectorAll('option');
+                        allOptions.forEach(option => {
+                            option.style.display = '';
+                        });
+                        selectedGerencias.forEach(gerenciaId => {
+                            const option = select.querySelector(`option[value="${gerenciaId}"]`);
+                            if (option) {
+                                option.style.display = 'none';
+                            }
+                        });
+                    }
+
+                    // Añadir gerencia
+                    function addGerencia() {
+                        const select = document.getElementById('gerenciaSelect');
+                        const gerenciaId = select.value;
+
+                        if (!gerenciaId) {
+                            alert('Seleccione una gerencia válida');
+                            return;
+                        }
+
+                        if (selectedGerencias.includes(gerenciaId)) {
+                            alert('Esta gerencia ya fue agregada');
+                            return;
+                        }
+
+                        selectedGerencias.push(gerenciaId);
+                        updateGerenciaSelect();
+                        renderGerencias();
+                    }
+
+                    // Renderizar gerencias
+                    function renderGerencias() {
+                        const container = document.getElementById('addedGerencias');
+
+                        if (selectedGerencias.length === 0) {
+                            container.innerHTML = '<p style="color: #64748b; font-size: 0.875rem; text-align: center; width: 100%; padding: 1rem 0;">No hay gerencias agregadas aún</p>';
+                            return;
+                        }
+
+                        container.innerHTML = '';
+
+                        selectedGerencias.forEach((gerenciaId) => {
+                            if (allGerencias[gerenciaId]) {
+                                const tag = document.createElement('div');
+                                tag.className = 'permission-tag';
+                                tag.setAttribute('data-gerencia-id', gerenciaId);
+                                tag.innerHTML = `
+                                    ${allGerencias[gerenciaId]}
+                                    <input type="hidden" name="gerencia_ids[]" value="${gerenciaId}">
+                                    <button type="button" onclick="removeGerencia(this)">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <line x1="18" y1="6" x2="6" y2="18"/>
+                                            <line x1="6" y1="6" x2="18" y2="18"/>
+                                        </svg>
+                                    </button>
+                                `;
+                                container.appendChild(tag);
+                            }
+                        });
+                    }
+
+                    // Eliminar gerencia
+                    function removeGerencia(button) {
+                        const tag = button.closest('.permission-tag');
+                        const gerenciaId = tag.getAttribute('data-gerencia-id');
+
+                        selectedGerencias = selectedGerencias.filter(g => g != gerenciaId);
+                        tag.remove();
+
+                        if (selectedGerencias.length === 0) {
+                            document.getElementById('addedGerencias').innerHTML = '<p style="color: #64748b; font-size: 0.875rem; text-align: center; width: 100%; padding: 1rem 0;">No hay gerencias agregadas aún</p>';
+                        }
+
+                        updateGerenciaSelect();
+                    }
+
+                    // Inicializar
+                    document.addEventListener('DOMContentLoaded', function() {
+                        updateGerenciaSelect();
+                    });
+                </script>
 
                 <!-- Área de carga de imagen -->
                 <div class="mb-8">
@@ -210,7 +475,7 @@
                             <polyline points="17,21 17,13 7,13 7,21"/>
                             <polyline points="7,3 7,8 15,8"/>
                         </svg>
-                        Actualizar 
+                        Actualizar
                     </x-primary-button>
                 </div>
             </form>
@@ -224,7 +489,6 @@
             <div id="toastMsg" class="text-sm"></div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Estado de la aplicación
         let selectedFile = null;

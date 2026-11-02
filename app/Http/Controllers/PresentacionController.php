@@ -12,9 +12,20 @@ class PresentacionController extends Controller
 
         abort_if(Gate::denies('presentacion_index'), 403);
 
-        $search =trim($request->get('search'));
-        $presentacions = DB::table('presentacions')->select('id', 'presentacion')->where('presentacion', 'LIKE', '%'.$search.'%')->orderBy('presentacion', 'asc')->paginate(15);
-        return view('registros-insumos.medicamentos.presentacion.index', compact('presentacions', 'search'));
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'presentacion');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $presentacions = DB::table('presentacions')
+            ->select('id', 'presentacion')
+            ->where('presentacion', 'LIKE', '%'.$search.'%')
+            ->orderBy($sort, $direction)
+            ->paginate(15);
+
+        return view('registros-insumos.medicamentos.presentacion.index', compact('presentacions', 'search', 'sort', 'direction'));
 
     }
      public function show(){

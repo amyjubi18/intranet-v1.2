@@ -1,5 +1,16 @@
 document.addEventListener('DOMContentLoaded', function() {
+    // Verificar si FullCalendar está disponible antes de inicializar
+    if (typeof FullCalendar === 'undefined') {
+        console.log('FullCalendar no disponible - agenda deshabilitada');
+        return; // Salir si FullCalendar no está cargado
+    }
+
     var calendarEl = document.getElementById('agenda');
+    if (!calendarEl) {
+        console.log('Elemento agenda no encontrado - agenda deshabilitada');
+        return; // Salir si no hay elemento agenda en la página
+    }
+
 const formulario = document.querySelector('#formularioEventos');
     var calendar = new FullCalendar.Calendar(calendarEl, {
       initialView: 'dayGridMonth',

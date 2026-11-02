@@ -12,11 +12,20 @@ class UnidadMedidaController extends Controller
 
         abort_if(Gate::denies('unidad_medida_index'), 403);
 
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'unidad_medida');
+        $direction = $request->get('direction', 'asc');
 
-        $search =trim($request->get('search'));
-        $unidad_medidas = DB::table('unidad_medidas')->select('id', 'unidad_medida')->where('unidad_medida', 'LIKE', '%'.$search.'%')->orderBy('unidad_medida', 'asc')->paginate(5);
-        return view('administracion.unidad_medidas.index', compact('unidad_medidas', 'search'));
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
 
+        $unidad_medidas = DB::table('unidad_medidas')
+            ->select('id', 'unidad_medida')
+            ->where('unidad_medida', 'LIKE', '%'.$search.'%')
+            ->orderBy($sort, $direction)
+            ->paginate(15);
+
+        return view('administracion.unidad_medidas.index', compact('unidad_medidas', 'search', 'sort', 'direction'));
    }
     public function show(){
        return view('administracion.unidad_medidas.show', ['unidad_medidas' => UnidadMedida::get()]);

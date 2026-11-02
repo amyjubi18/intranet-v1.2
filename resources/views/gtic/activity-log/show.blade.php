@@ -1,9 +1,7 @@
-@extends('layouts.app')
-
+<x-app-layout>
 @section('title', 'Detalles de Actividad')
 @section('subtitle', 'Información detallada del cambio realizado')
 
-@section('content')
 <div class="container mx-auto px-4 py-8">
     <div class="bg-white rounded-lg shadow-md p-6">
         <div class="flex justify-between items-center mb-6">
@@ -104,4 +102,4 @@
         @endif
     </div>
 </div>
-@endsection
+</x-app-layout>

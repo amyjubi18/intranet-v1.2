@@ -107,8 +107,8 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
 
         // Agregar campos calculados a cada registro
         $salidas->each(function ($item) use ($sumaUnidadesPorArticulo) {
-            $item->stockTotalReal = $item->historico_unidades_disponibles ?? $item->unidades_disponibles ?? 0;
-            $item->sumaUnidades = $sumaUnidadesPorArticulo[$item->articulo_id] ?? 0;
+            $item->stockHistorico = $item->historico_unidades_disponibles ?? 0;
+            $item->stockRestante = max(0, $item->stockHistorico - $item->cantidad);
         });
 
         return $salidas;
@@ -117,7 +117,7 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
     public function headings(): array
     {
         return [
-            'ID',
+            'ITEM',
             'Fecha de Salida',
             'Artículo',
             'Unidad de Medida',
@@ -125,8 +125,8 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
             'Área',
             'Solicitante',
             'Cantidad',
-            'Stock Actual',
-            'Total Inicial',
+            'Unidades Disponibles',
+            'Histórico de Unidades',
             'Ajuste Inventario',
             'Fecha de Registro',
         ];
@@ -134,8 +134,8 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
 
     public function map($salida_oficina): array
     {
-        $stockTotalReal = $salida_oficina->stockTotalReal ?? 0;
-        $sumaUnidades = $salida_oficina->sumaUnidades ?? 0;
+        $stockHistorico = $salida_oficina->stockHistorico ?? 0;
+        $stockRestante = $salida_oficina->stockRestante ?? 0;
 
         return [
             str_pad($salida_oficina->id, 4, '0', STR_PAD_LEFT),
@@ -144,10 +144,10 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
             $salida_oficina->unidad_medidas ? $salida_oficina->unidad_medidas->unidad_medida : '',
             $salida_oficina->gerencias ? $salida_oficina->gerencias->gerencia : '',
             $salida_oficina->areas ? $salida_oficina->areas->area : '',
-            $salida_oficina->users ? $salida_oficina->users->name : '',
+            $salida_oficina->users ? $salida_oficina->users->username : '',
             $salida_oficina->cantidad,
-            $stockTotalReal,
-            $sumaUnidades,
+            $stockRestante,
+            $stockHistorico,
             $salida_oficina->ajuste_inventario ?? '',
             $salida_oficina->created_at ? $salida_oficina->created_at->format('d/m/Y H:i') : '',
         ];

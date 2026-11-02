@@ -70,7 +70,17 @@
                 <h3 class="text-sm text-blue-900 font-semibold mb-3">Impresoras con Stock Bajo</h3>
                 <div class="space-y-3 max-h-48 overflow-y-auto">
                     @if($stockBajoItems->count() > 0)
-                        @foreach($stockBajoItems->unique('impresora_id') as $item)
+                        @php
+                            // Obtener impresoras únicas con stock bajo y sus totales
+                            $impresorasStockBajo = $stockBajoItems->unique('impresora_id');
+                        @endphp
+                        @foreach($impresorasStockBajo as $item)
+                            @php
+                                $key = $item->impresora_id . '_' . $item->colore_id . '_' . $item->fecha_ingreso;
+                                $totalImpresora = isset($totalesPorImpresoraColor[$key])
+                                    ? $totalesPorImpresoraColor[$key]
+                                    : ['unidades_disponibles' => $item->unidades_disponibles];
+                            @endphp
                             <div class="flex items-center gap-3 p-2 rounded-lg bg-red-50 border border-red-200">
                                 <div class="w-12 h-12 rounded-lg flex items-center justify-center flex-shrink-0 bg-red-100">
                                     @if($item->impresoras && $item->impresoras->imagen)
@@ -81,7 +91,7 @@
                                 </div>
                                 <div class="flex-1 min-w-0">
                                     <p class="text-sm font-bold text-red-700 truncate">{{ $item->impresoras ? $item->impresoras->impresora : 'Impresora Desconocida' }}</p>
-                                    <p class="text-xs text-red-600">{{ $item->unidades_disponibles }} unidades restantes</p>
+                                    <p class="text-xs text-red-600">{{ $totalImpresora['unidades_disponibles'] }} unidades restantes</p>
                                 </div>
                             </div>
                         @endforeach
@@ -114,6 +124,7 @@
     <div class="px-6 mb-6">
         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
             <div class="flex flex-wrap items-center justify-between gap-4">
+                <!-- Filtros en el lado izquierdo -->
                 <div class="flex flex-wrap items-center gap-4">
                     <!-- Botón para mostrar filtros avanzados -->
                     <button type="button" onclick="toggleAdvancedFilters()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
@@ -148,7 +159,7 @@
                                 @endforeach
                             @elseif(request('filterType') == 'impresora_id')
                                 @foreach($impresoras as $impresora)
-                                    <option value="{{ $impresora->id }}" {{ request('secondFilter') == $impresora->id ? 'selected' : '' }}>{{ $impresora->impresora }}</option>
+                                    <option value="{{ $impresora->id }}" {{ request('secondFilter') == $impresora->id ? 'selected' : '' }}>{{ str_pad($impresora->id, 4, '0', STR_PAD_LEFT) }} - {{ $impresora->impresora }}</option>
                                 @endforeach
                             @elseif(request('filterType') == 'proveedore_id')
                                 @foreach($proveedores as $proveedor)
@@ -182,8 +193,9 @@
                         🗑️ Limpiar
                     </a>
                 </div>
-
-                <div class="flex items-center gap-3">
+            </div>
+                <!-- Botones de exportar y nuevo registro en el lado derecho -->
+                <div class="flex items-center gap-3 ml-auto">
                     <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
                         <option value="">📤 Exportar</option>
                         <option value="{{ route('administracion.almacenamiento_impresoras.export.excel', request()->all()) }}">Exportar a Excel</option>
@@ -192,11 +204,11 @@
                     @can('almacen_inv_create')
                     <a href="/administracion/almacenamiento_impresoras/create" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                         <span>➕</span>
-                        Nuevo Registro
+                        Nuevo
                     </a>
                     @endcan
                 </div>
-            </div>
+
         </div>
 
         <!-- Indicador de filtros activos -->
@@ -377,7 +389,9 @@
                                     @endphp
                                     <p class="text-xs px-2 py-1 rounded-full {{ $colorClass }} inline-block">{{ $item->colores ? $item->colores->colore : 'N/A' }}</p>
                                 </div>
-
+                                <div>
+                                    
+                                </div>
                                 <div>
                                     <p class="text-xs text-blue-900 font-semibold mb-1">Tipo de Impresora</p>
                                     <p class="text-sm px-2 py-1 rounded-full bg-blue-300/20 text-gray-500 inline-block">{{ $item->fabricantes ? $item->fabricantes->fabricante : 'N/A' }}</p>
@@ -391,15 +405,25 @@
                                 <!-- Stock -->
                                 <div class="text-right">
                                     <p class="text-sm text-black font-bold mb-1">Unidades Disponibles</p>
-                                    <div class="flex items-center gap-2">
+                                    @php
+                                        $key = $item->impresora_id . '_' . $item->colore_id . '_' . $item->fecha_ingreso;
+                                        $totalesImpresora = isset($totalesPorImpresoraColor[$key])
+                                            ? $totalesPorImpresoraColor[$key]
+                                            : ['unidades' => $item->unidades, 'unidades_disponibles' => $item->unidades_disponibles];
+                                    @endphp
+                                    <div class="flex justify-center text-center items-center gap-2">
                                         <span class="text-2xl font-bold {{ $unidadesDisponiblesBajoStock->contains($item->id) ? 'text-red-500' : 'text-green-400' }}">{{ $item->unidades_disponibles }}</span>
-                                        <span class="text-xs text-blue-900 font-semibold">de {{ $item->unidades }}</span>
+                                        <span class="text-xs text-blue-900 font-semibold ">de {{ $item['unidades'] }}</span>
                                     </div>
-                                    <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
-                                        <div class="{{ $unidadesDisponiblesBajoStock->contains($item->id) ? 'bg-red-500' : 'bg-green-500' }} h-2 rounded-full" style="width: {{ $item->unidades > 0 ? min(100, ($item->unidades_disponibles / $item->unidades) * 100) : 0 }}%"></div>
+                                    <div class="mt-2 text-xs text-gray-900">
+                                        <span class="font-semibold text-sm">{{ $totalesImpresora['unidades'] }}</span> registradas, en total hay
+                                        <span class="font-semibold {{ $unidadesDisponiblesBajoStock->contains($item->id) ? 'text-red-400' : 'text-green-600' }}">{{ $totalesImpresora['unidades_disponibles'] }}</span>
                                     </div>
+                                    {{-- <div class="w-full bg-gray-700 rounded-full h-2 mt-2">
+                                        <div class="{{ $unidadesDisponiblesBajoStock->contains($item->id) ? 'bg-red-500' : 'bg-green-500' }} h-2 rounded-full" style="width: {{ $totalesImpresora['unidades'] > 0 ? min(100, ($totalesImpresora['unidades_disponibles'] / $totalesImpresora['unidades']) * 100) : 0 }}%"></div>
+                                    </div> --}}
                                     @if($unidadesDisponiblesBajoStock->contains($item->id))
-                                    <span class="text-xs text-red-500 mt-1 inline-block">⚠️ Stock bajo</span>
+                                    <span class="text-xs p-2 bg-red-200 text-red-700 mt-1 inline-block rounded-md">⚠️ Stock bajo</span>
                                     @endif
                                 </div>
 
@@ -820,7 +844,6 @@
         });
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function confirmDelete(id) {
             Swal.fire({

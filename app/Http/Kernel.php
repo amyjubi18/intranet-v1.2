@@ -71,6 +71,6 @@ class Kernel extends HttpKernel
         // Security Middlewares
         'security.headers' => \App\Http\Middleware\SecurityHeaders::class,
         'account.lockout' => \App\Http\Middleware\AccountLockout::class,
-        // 'prevent.concurrent' => // // \App\Http\Middleware\PreventConcurrentSessions::class,
+        'prevent.concurrent' => \App\Http\Middleware\PreventConcurrentSessions::class,
     ];
 }

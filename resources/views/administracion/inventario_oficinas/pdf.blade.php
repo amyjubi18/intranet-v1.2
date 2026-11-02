@@ -109,29 +109,41 @@
     <table>
         <thead>
             <tr>
-                <th>ID</th>
+                <th>ITEM</th>
+                <th>Artículo</th>
                 <th>Fecha de Factura</th>
-                <th>Articulo</th>
                 <th>Unidad de Medida</th>
                 <th>Proveedor</th>
                 <th>Unidades</th>
-                <th>Unidades Disponibles</th>
-                <th> Nº Factura</th>
+                <th>Unidades Disp.</th>
+                <th>Total Disp.</th>
+                <th>Nº Factura</th>
                 <th>Fecha de Ingreso</th>
             </tr>
         </thead>
         <tbody>
+            @php
+                // Calcular totales por artículo
+                $totalesPorArticulo = [];
+                foreach($inventario_oficinas as $item) {
+                    $articuloId = $item->articulo_id;
+                    if (!isset($totalesPorArticulo[$articuloId])) {
+                        $totalesPorArticulo[$articuloId] = $inventario_oficinas->where('articulo_id', $articuloId)->sum('unidades_disponibles');
+                    }
+                }
+            @endphp
             @foreach($inventario_oficinas as $item)
             <tr>
-                <td>{{ str_pad($item->id, 4, '0', STR_PAD_LEFT) }}</td>
-                <td>{{ \Carbon\Carbon::parse($item->fecha_ingreso)->format('d/m/Y') }}</td>
+                <td>{{ str_pad($item->articulo_id, 4, '0', STR_PAD_LEFT) }}</td>
                 <td>{{ $item->articulos ? $item->articulos->articulo : 'N/A' }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->fecha_ingreso)->format('d/m/Y') }}</td>
                 <td>{{ $item->unidad_medidas ? $item->unidad_medidas->unidad_medida : 'N/A' }}</td>
                 <td>{{ $item->proveedores ? $item->proveedores->proveedor : 'N/A' }}</td>
                 <td>{{ $item->unidades }}</td>
                 <td>{{ $item->unidades_disponibles }}</td>
+                <td>{{ $totalesPorArticulo[$item->articulo_id] ?? $item->unidades_disponibles }}</td>
                 <td>{{ $item->n_factura }}</td>
-                <td>{{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y') }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y H:i') }}</td>
             </tr>
             @endforeach
         </tbody>

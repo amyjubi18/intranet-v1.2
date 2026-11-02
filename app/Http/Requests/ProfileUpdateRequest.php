@@ -23,8 +23,7 @@ class ProfileUpdateRequest extends FormRequest
             'cedula' => ['nullable', 'string', 'max:50'],
             'fecha_nacimiento' => ['nullable', 'date'],
             'departamento' => ['nullable', 'string', 'max:255'],
-            'telefono' => ['nullable', 'string', 'max:50'],
-            'direccion' => ['nullable', 'string', 'max:500'],
+
         ];
     }
 
@@ -45,8 +44,7 @@ class ProfileUpdateRequest extends FormRequest
             'cedula.max' => 'La cédula no puede tener más de 50 caracteres.',
             'fecha_nacimiento.date' => 'Por favor ingresa una fecha válida.',
             'departamento.max' => 'El departamento no puede tener más de 255 caracteres.',
-            'telefono.max' => 'El teléfono no puede tener más de 50 caracteres.',
-            'direccion.max' => 'La dirección no puede tener más de 500 caracteres.',
+            
         ];
     }
 
@@ -65,8 +63,7 @@ class ProfileUpdateRequest extends FormRequest
             'cedula' => 'cédula de identidad',
             'fecha_nacimiento' => 'fecha de nacimiento',
             'departamento' => 'departamento',
-            'telefono' => 'teléfono',
-            'direccion' => 'dirección',
+
         ];
     }
 }

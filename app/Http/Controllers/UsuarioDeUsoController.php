@@ -13,31 +13,41 @@ class UsuarioDeUsoController extends Controller
 
         abort_if(Gate::denies('usuario_de_uso_index'), 403);
 
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'usuario_de_uso');
+        $direction = $request->get('direction', 'asc');
 
-        $usuario_de_uso = UsuarioDeUso::query()->with('unidad_administrativa');
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $query = UsuarioDeUso::query()->with('unidad_administrativa');
 
         //filtros específicos
         if ($request->has('usuario') && $request->usuario) {
-            $usuario_de_uso->where('id', $request->usuario);
+            $query->where('id', $request->usuario);
         }
         if ($request->has('unidad') && $request->unidad) {
-            $usuario_de_uso->where('unidad_administrativa_id', $request->unidad);
+            $query->where('unidad_administrativa_id', $request->unidad);
         }
-        //manejar búsqueda simple (fallback)
-        $usuario_de_uso->when(request('search'), function ($query) {
-            return $query->where('usuario_de_uso', 'LIKE', '%' . request('search') . '%')
-                ->orWhereHas('unidad_administrativa', function ($q) {
-                    $q->where('name', 'LIKE', '%' . request('search') . '%');
+
+        // Búsqueda simple
+        if ($search) {
+            $query->where('usuario_de_uso', 'LIKE', '%' . $search . '%')
+                ->orWhereHas('unidad_administrativa', function ($q) use ($search) {
+                    $q->where('name', 'LIKE', '%' . $search . '%');
                 });
-        });
-        $usuario_de_usos = $usuario_de_uso->orderBy('usuario_de_uso', 'asc')->paginate(10);
+        }
+
+        $usuario_de_usos = $query->orderBy($sort, $direction)->paginate(15);
 
         $todosLosUsuariosDeUso = UsuarioDeUso::orderBy('usuario_de_uso', 'asc')->get();
         $todasLasUnidadesAdministrativas = UnidadAdministrativa::orderBy('name', 'asc')->get();
 
         return view('administracion.usuario_de_uso.index',[
             'usuario_de_usos' => $usuario_de_usos,
-            'search' => $request->search,
+            'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction,
             'todasLasUnidadesAdministrativas' => $todasLasUnidadesAdministrativas,
             'todosLosUsuariosDeUso' => $todosLosUsuariosDeUso
         ]);

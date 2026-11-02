@@ -67,7 +67,7 @@
                 <svg viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" /> <polyline points="17 21 17 13 7 13 7 21" /> <polyline points="7 3 7 8 15 8" />
                 </svg> Guardar Cambios
             </button>
-            <button type="button" class="btn-cancel" onclick="handleCancel()">Cancelar</button>
+            <button type="button" class="btn-cancel" onclick="document.getElementById('current_password').value=''; document.getElementById('password').value=''; document.getElementById('password_confirmation').value='';">Cancelar</button>
         </div>
 
         @if (session('status') === 'password-updated')
@@ -82,91 +82,71 @@
     </form>
 </section>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    function handlePasswordChange(event) {
-        event.preventDefault();
+// Auto-hide success toast after 5 seconds
+document.addEventListener('DOMContentLoaded', function() {
+    const successToast = document.getElementById('successToast');
+    if (successToast) {
+        setTimeout(function() {
+            successToast.classList.remove('show');
+        }, 5000);
+    }
+});
 
-        const currentPassword = document.getElementById('current_password').value;
-        const newPassword = document.getElementById('password').value;
-        const confirmPassword = document.getElementById('password_confirmation').value;
+// Confirmar cambio de contraseña
+function handlePasswordChange(event) {
+    event.preventDefault();
 
-        if (!currentPassword || !newPassword || !confirmPassword) {
-            Swal.fire({
-                title: 'Campos incompletos',
-                text: 'Por favor completa todos los campos de contraseña.',
-                icon: 'warning',
-                confirmButtonColor: '#14368b',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
+    const form = event.target;
 
-        if (newPassword !== confirmPassword) {
-            Swal.fire({
-                title: 'Contraseñas no coinciden',
-                text: 'La nueva contraseña y la confirmación no son iguales.',
-                icon: 'error',
-                confirmButtonColor: '#14368b',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
+    const currentPassword = document.getElementById('current_password').value;
+    const newPassword = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('password_confirmation').value;
 
-        if (newPassword.length < 8) {
-            Swal.fire({
-                title: 'Contraseña muy corta',
-                text: 'La nueva contraseña debe tener al menos 8 caracteres.',
-                icon: 'warning',
-                confirmButtonColor: '#14368b',
-                confirmButtonText: 'Entendido'
-            });
-            return;
-        }
-
+    // Validación básica de longitud de contraseña
+    if (newPassword.length < 8) {
         Swal.fire({
-            title: '¿Estás seguro?',
-            text: '¿Deseas cambiar tu contraseña? Esta acción no se puede deshacer.',
+            title: 'Contraseña muy corta',
+            text: 'La nueva contraseña debe tener al menos 8 caracteres',
             icon: 'warning',
-            showCancelButton: true,
             confirmButtonColor: '#14368b',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Sí, cambiar contraseña',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                event.target.submit();
-            }
+            confirmButtonText: 'Entendido'
         });
+        return;
     }
 
-    function handleCancel() {
+    // Validación de coincidencia de contraseñas
+    if (newPassword !== confirmPassword) {
         Swal.fire({
-            title: '¿Cancelar cambio de contraseña?',
-            text: 'Se borrarán todos los campos ingresados.',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Sí, cancelar',
-            cancelButtonText: 'Seguir editando'
-        }).then((result) => {
-            if (result.isConfirmed) {
+            title: 'Contraseñas no coinciden',
+            text: 'La nueva contraseña y su confirmación no son iguales',
+            icon: 'error',
+            confirmButtonColor: '#14368b',
+            confirmButtonText: 'Entendido'
+        });
+        return;
+    }
+
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: '¿Deseas cambiar tu contraseña? Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#14368b',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Sí, cambiar contraseña',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+
+            // Limpiar campos después del envío exitoso
+            setTimeout(function() {
                 document.getElementById('current_password').value = '';
                 document.getElementById('password').value = '';
                 document.getElementById('password_confirmation').value = '';
-            }
-        });
-    }
-
-    // Auto-hide success toast after 5 seconds
-    document.addEventListener('DOMContentLoaded', function() {
-        const successToast = document.getElementById('successToast');
-        if (successToast) {
-            setTimeout(function() {
-                successToast.classList.remove('show');
-            }, 5000);
+            }, 1000);
         }
     });
+}
 </script>
-

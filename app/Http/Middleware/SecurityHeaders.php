@@ -24,9 +24,8 @@ class SecurityHeaders
         // XSS Protection
         $response->headers->set('X-XSS-Protection', '1; mode=block');
 
-        // Content Security Policy
-        $csp = config('security.csp_policy', "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self'");
-        $response->headers->set('Content-Security-Policy', $csp);
+
+        // $response->headers->set('Content-Security-Policy', $csp);
 
         // Referrer Policy
         $response->headers->set('Referrer-Policy', 'strict-origin-when-cross-origin');

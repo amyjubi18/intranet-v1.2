@@ -22,6 +22,12 @@ class UserController extends Controller
 
         abort_if(Gate::denies('user_index'), 403);
 
+        $sort = $request->get('sort', 'name');
+        $direction = $request->get('direction', 'desc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
+
         $users = User::query()->with('roles');
 
         // Filtro avanzado por tipo de campo
@@ -94,14 +100,16 @@ class UserController extends Controller
             });
         }
 
-        $users = $users->latest()->paginate(10);
+        $users = $users->orderBy($sort, $direction)->paginate(10);
 
         // Obtener roles para el filtro
         $roles = Role::all()->pluck('name', 'id');
 
         return view('users.index', [
             'users' => $users,
-            'roles' => $roles
+            'roles' => $roles,
+            'sort' => $sort,
+            'direction' => $direction
         ]);
     }
 
@@ -112,7 +120,7 @@ class UserController extends Controller
         }
 
         abort_if(Gate::denies('user_create'), 403);
-        $roles = Role::all()->pluck('name', 'id');
+        $roles = Role::orderBy('name')->pluck('name', 'id');
 
         // Lista de departamentos para el formulario
         $departamentos = [
@@ -151,17 +159,20 @@ class UserController extends Controller
         ]);
 
         // Asignar roles - sincronizar por nombre, no por ID
-        $roles = $request->input('roles', []);
+        $roles = $request->input('roles');
         if (!empty($roles)) {
-            // Convertir ID a nombre de rol
+            // Convertir ID a nombre de rol (maneja integer o array)
             $roleNames = [];
-            foreach ((array) $roles as $roleId) {
+            $roleIds = is_array($roles) ? $roles : [$roles];
+            foreach ($roleIds as $roleId) {
                 $role = Role::findById($roleId, 'web');
                 if ($role) {
                     $roleNames[] = $role->name;
                 }
             }
             $user->syncRoles($roleNames);
+        } else {
+            $user->syncRoles([]);
         }
 
         // Manejar foto de perfil si se subió
@@ -190,7 +201,7 @@ class UserController extends Controller
         }
 
         abort_if(Gate::denies('user_edit'), 403);
-        $roles = Role::all()->pluck('name', 'id');
+        $roles = Role::orderBy('name')->pluck('name', 'id');
         $user->load('roles');
 
         // Lista de departamentos para el formulario
@@ -237,11 +248,12 @@ class UserController extends Controller
         $user->update($data);
 
         // Actualizar roles - convertir IDs a nombres de rol
-        $roles = $request->input('roles', []);
+        $roles = $request->input('roles');
         if (!empty($roles)) {
-            // Convertir ID a nombre de rol
+            // Convertir ID a nombre de rol (maneja integer o array)
             $roleNames = [];
-            foreach ((array) $roles as $roleId) {
+            $roleIds = is_array($roles) ? $roles : [$roles];
+            foreach ($roleIds as $roleId) {
                 $role = Role::findById($roleId, 'web');
                 if ($role) {
                     $roleNames[] = $role->name;

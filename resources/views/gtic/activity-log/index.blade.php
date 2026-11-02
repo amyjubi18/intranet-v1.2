@@ -1,9 +1,7 @@
-@extends('layouts.app')
 
 @section('title', 'Registro de Actividades')
 @section('subtitle', 'Historial de cambios en el sistema')
-
-@section('content')
+<x-app-layout>
 <div class="container mx-auto px-4 py-8">
     <div class="bg-white rounded-lg shadow-md p-6">
         <h1 class="text-2xl font-bold mb-6">Registro de Actividades</h1>
@@ -25,7 +23,7 @@
                     <tr class="hover:bg-gray-50">
                         <td class="px-4 py-2 whitespace-nowrap">{{ $activity->created_at->format('d/m/Y h:i:s A') }}</td>
                         <td class="px-4 py-2 whitespace-nowrap text-bold text-blue-900">
-                           <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->name : 'Sistema' }} </b>
+                           <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->username : 'Sistema' }} </b>
                         </td>
                         <td class="px-4 py-2 whitespace-nowrap">
                             <span class="px-2 py-1 text-xs rounded-full
@@ -49,11 +47,11 @@
                                 {{ Str::limit($activity->description, 50) }}
                             @else --}}
                                 @if($activity->event == 'created')
-                                   <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->name : 'Sistema' }}</b> hizo un registro en el modelo {{ class_basename($activity->subject_type ?? 'N/A') }}
+                                   <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->username : 'Sistema' }}</b> hizo un registro en el modelo {{ class_basename($activity->subject_type ?? 'N/A') }}
                                 @elseif($activity->event == 'updated')
-                                    <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->name : 'Sistema' }} </b> realizó un cambio en el modelo {{ class_basename($activity->subject_type ?? 'N/A') }}
+                                    <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->username : 'Sistema' }} </b> realizó un cambio en el modelo {{ class_basename($activity->subject_type ?? 'N/A') }}
                                 @elseif($activity->event == 'deleted')
-                                    <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->name : 'Sistema' }}</b> hizo una eliminación en  {{ class_basename($activity->subject_type ?? 'N/A') }}
+                                    <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->username : 'Sistema' }}</b> hizo una eliminación en  {{ class_basename($activity->subject_type ?? 'N/A') }}
                                 @else
                                     {{ $activity->properties['url'] ?? request()->getPathInfo() }}
                                 @endif
@@ -84,4 +82,4 @@
         </div>
     </div>
 </div>
-@endsection
+</x-app-layout>

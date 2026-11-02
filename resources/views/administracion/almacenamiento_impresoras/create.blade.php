@@ -255,7 +255,6 @@
                                             <label class="block text-sm font-medium mb-1 text-black">Número de Factura:</label>
                                             <input type="text" name="n_factura[]" class="w-full px-3 border-none bg-blue-100 py-2 rounded-lg focus:ring-blue-900 " required>
                                         </div>
-                                    </div>
                                 </div>
                                 <button type="button" class="remove-row-consumible flex mt-2 bg-red-500 hover:bg-red-600 text-white px-3 py-3 rounded-lg transition-all hidden"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"></path></svg> Remover</button>
                             </div>
@@ -274,7 +273,6 @@
                         </div>
                     </form>
                 </div>
-        </div>
 
     <script>
         // Data from Laravel
@@ -700,7 +698,7 @@
                 const selectedCartuchoId = target.value;
                 const coloreSelect = rowConsumible.querySelector('.colore-select-consumible');
                 const fabricanteSelect = rowConsumible.querySelector('.fabricante-select-consumible');
-                const impresoraSelect = rowConsumible.querySelector('.impresora-select-consumible');
+                const impresraSelect = rowConsumible.querySelector('.impresora-select-consumible');
 
                 coloreSelect.innerHTML = '<option value="">Seleccione</option>';
                 fabricanteSelect.innerHTML = '<option value="">Seleccione</option>';
@@ -726,18 +724,22 @@
                             fabricanteSelect.value = selectedCartucho.fabricante.id;
                         }
                         // Set the specific impresora associated with the cartucho
-                        const impresoraId = selectedCartucho.impresora_id;
-                        impresoraSelect.value = impresoraId;
+                        const impresraId = selectedCartucho.impresora_id;
+                        if (impresraSelect.tomselect) {
+                            impresraSelect.tomselect.setValue(impresraId);
+                        } else {
+                            impresraSelect.value = impresraId;
+                        }
 
                         // Show image
-                        const impresoraImage = rowConsumible.querySelector('.impresora-image');
-                        const selectedOption = impresoraSelect.selectedOptions[0];
+                        const impresraImage = rowConsumible.querySelector('.impresora-image');
+                        const selectedOption = impresraSelect.selectedOptions[0];
                         const imageUrl = selectedOption ? selectedOption.getAttribute('data-imagen') : null;
                         if (imageUrl) {
-                            impresoraImage.src = imageUrl;
-                            impresoraImage.style.display = 'block';
+                            impresraImage.src = imageUrl;
+                            impresraImage.style.display = 'block';
                         } else {
-                            impresoraImage.style.display = 'none';
+                            impresraImage.style.display = 'none';
                         }
                     }
                 } else {
@@ -749,14 +751,14 @@
             }
 
             if (rowConsumible && target.classList.contains('impresora-select-consumible')) {
-                const impresoraImage = rowConsumible.querySelector('.impresora-image');
+                const impresraImage = rowConsumible.querySelector('.impresora-image');
                 const selectedOption = target.selectedOptions[0];
                 const imageUrl = selectedOption ? selectedOption.getAttribute('data-imagen') : null;
                 if (imageUrl) {
-                    impresoraImage.src = imageUrl;
-                    impresoraImage.style.display = 'block';
+                    impresraImage.src = imageUrl;
+                    impresraImage.style.display = 'block';
                 } else {
-                    impresoraImage.style.display = 'none';
+                    impresraImage.style.display = 'none';
                 }
                 updatePendingRecordsConsumible();
             }

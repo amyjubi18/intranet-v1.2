@@ -32,6 +32,7 @@ class Crear extends Component
     public $area_nombre; // Para almacenar el nombre del área
     public $ajuste_inventario;
     public $unidad_medida_nombre; // Para almacenar el nombre de la unidad de medida
+    public $unidades_total; // Total de unidades (para mostrar "de X")
 
 
 
@@ -60,6 +61,7 @@ class Crear extends Component
 
     if (!$inventario_oficina) {
         $this->unidades = 0;
+        $this->unidades_total = 0;
         $this->inventario_oficina_id = null;
         $this->fecha_ingreso = null;
         $this->unidad_medida_id = null;
@@ -82,6 +84,11 @@ class Crear extends Component
         $this->articulo_id,
         $this->unidad_medida_id
     );
+
+    // Calcular el total de unidades (suma de unidades originales de todos los registros)
+    $this->unidades_total = InventarioOficina::where('articulo_id', $this->articulo_id)
+        ->where('unidad_medida_id', $this->unidad_medida_id)
+        ->sum('unidades');
 }
 
     public function updatedGerenciaId()

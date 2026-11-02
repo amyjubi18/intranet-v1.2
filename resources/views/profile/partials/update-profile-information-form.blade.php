@@ -34,7 +34,7 @@
                 <div class="flex items-center gap-5">
                     <!-- Foto Actual -->
                     <div class="relative">
-                        <div class="w-28 h-28 rounded-xl overflow-hidden ring-4 ring-blue-100 bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                        <div class="w-28 h-28 rounded-xl overflow-hidden ring-4 ring-blue-100 bg-gradient-to-br from-blue-500 to-blue-100 flex items-center justify-center">
                             @if($user->profile_photo)
                                 <img src="{{ asset('archivos/avatars/' . $user->profile_photo) }}" alt="{{ $user->name }}" class="w-full h-full object-cover profile-photo">
                             @else
@@ -83,13 +83,16 @@
 
             <div class="p-5 grid grid-cols-1 md:grid-cols-2 gap-4">
                 <!-- Nombre -->
-                <div>
-                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Nombre') }} <span class="text-red-500">*</span></label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div class="block">
+                    <div class="flex items-center gap-2 mb-1">
+                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
+                    <label for="name" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Nombre') }} <span class="text-red-500">*</span></label>
+                    </div>
+                    <div class="relative flex">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+
                         </div>
                         <input type="text" id="name" name="name" value="{{ old('name', $user->name) }}" required
                             class="pl-9 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
@@ -102,12 +105,15 @@
 
                 <!-- Apellido -->
                 <div>
-                    <label for="lastname" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Apellido') }}</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-2 mb-1">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                             </svg>
+                    <label for="lastname" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Apellido') }}</label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+
                         </div>
                         <input type="text" id="lastname" name="lastname" value="{{ old('lastname', $user->lastname) }}"
                             class="pl-9 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
@@ -120,12 +126,15 @@
 
                 <!-- Cédula de Identidad -->
                 <div>
-                    <label for="cedula" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Cédula de Identidad') }}</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-2 mb-1">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V8a2 2 0 00-2-2h-5m-4 0V5a2 2 0 114 0v1m-4 0a2 2 0 104 0"/>
                             </svg>
+                    <label for="cedula" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Cédula de Identidad') }}</label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+
                         </div>
                         <input type="text" id="cedula" name="cedula" value="{{ old('cedula', $user->cedula) }}"
                             class="pl-9 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
@@ -138,15 +147,18 @@
 
                 <!-- Fecha de Nacimiento -->
                 <div>
-                    <label for="fecha_nacimiento" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Fecha de Nacimiento') }}</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-2 mb-1">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
                             </svg>
+                        <label for="fecha_nacimiento" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Fecha de Nacimiento') }}</label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+
                         </div>
                         <input type="date" id="fecha_nacimiento" name="fecha_nacimiento"
-                            value="{{ old('fecha_nacimiento', $user->fecha_nacimiento ? $user->fecha_nacimiento->format('Y-m-d') : '') }}"
+                            value="{{ old('fecha_nacimiento', isset($user->fecha_nacimiento) ? (is_string($user->fecha_nacimiento) ? $user->fecha_nacimiento : $user->fecha_nacimiento->format('Y-m-d')) : '') }}"
                             class="pl-9 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
                     </div>
                     @error('fecha_nacimiento')
@@ -156,12 +168,15 @@
 
                 <!-- Departamento -->
                 <div>
-                    <label for="departamento" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Departamento') }}</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-2 mb-1">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
                             </svg>
+                    <label for="departamento" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Departamento') }}</label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+
                         </div>
                         <input type="text" id="departamento" name="departamento" value="{{ old('departamento', $user->departamento) }}"
                             class="pl-9 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500" disabled
@@ -174,12 +189,15 @@
 
                 <!-- Correo Electrónico -->
                 <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Correo Electronico') }}</label>
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="flex items-center gap-2 mb-1">
+                        <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                             </svg>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-1">{{ __('Correo Electronico') }}</label>
+                    </div>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+
                         </div>
                         <input type="email" id="email" name="email" value="{{ old('email', $user->email) }}"
                             class="pl-9 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500"
@@ -291,112 +309,129 @@
     </div>
 </section>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // Preview de la imagen de perfil
-    function previewImage(event) {
-        const file = event.target.files[0];
-        const preview = document.getElementById('photoPreview');
-        const previewImg = document.getElementById('previewImg');
-        const avatarImg = document.querySelector('.profile-photo');
+// Preview de la imagen de perfil
+function previewImage(event) {
+    const file = event.target.files[0];
+    const preview = document.getElementById('photoPreview');
+    const previewImg = document.getElementById('previewImg');
+    const avatarImg = document.querySelector('.profile-photo');
 
-        if (file) {
-            if (!file.type.match('image.*')) {
-                alert('Por favor selecciona un archivo de imagen válido (PNG, JPG, GIF)');
-                event.target.value = '';
-                return;
-            }
-
-            if (file.size > 2 * 1024 * 1024) {
-                alert('El archivo no debe superar los 2MB');
-                event.target.value = '';
-                return;
-            }
-
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                // Actualizar el preview
-                previewImg.src = e.target.result;
-                preview.classList.remove('hidden');
-
-                // Actualizar la imagen principal del avatar
-                if (avatarImg) {
-                    avatarImg.src = e.target.result;
-                }
-            };
-            reader.readAsDataURL(file);
-        } else {
-            preview.classList.add('hidden');
+    if (file) {
+        if (!file.type.match('image.*')) {
+            Swal.fire({
+                title: 'Archivo no válido',
+                text: 'Por favor selecciona un archivo de imagen válido (PNG, JPG, GIF)',
+                icon: 'warning',
+                confirmButtonColor: '#14368b',
+                confirmButtonText: 'Entendido'
+            });
+            event.target.value = '';
+            return;
         }
-    }
 
-    // Modal de permisos
-    function togglePermissions() {
-        const modal = document.getElementById('permissionsModal');
+        if (file.size > 2 * 1024 * 1024) {
+            Swal.fire({
+                title: 'Archivo muy grande',
+                text: 'El archivo no debe superar los 2MB',
+                icon: 'warning',
+                confirmButtonColor: '#14368b',
+                confirmButtonText: 'Entendido'
+            });
+            event.target.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            previewImg.src = e.target.result;
+            preview.classList.remove('hidden');
+
+            if (avatarImg) {
+                avatarImg.src = e.target.result;
+            }
+        };
+        reader.readAsDataURL(file);
+    } else {
+        preview.classList.add('hidden');
+    }
+}
+
+// Modal de permisos
+function togglePermissions() {
+    const modal = document.getElementById('permissionsModal');
+    if (modal) {
         modal.classList.add('show');
     }
+}
 
-    function closePermissionsModal() {
-        const modal = document.getElementById('permissionsModal');
+function closePermissionsModal() {
+    const modal = document.getElementById('permissionsModal');
+    if (modal) {
         modal.classList.remove('show');
     }
+}
 
-    // Cerrar modal al hacer clic fuera del contenido
-    document.addEventListener('click', function(event) {
-        const modal = document.getElementById('permissionsModal');
-        if (event.target === modal) {
-            closePermissionsModal();
-        }
-    });
-
-    // Cerrar modal con la tecla ESC
-    document.addEventListener('keydown', function(event) {
-        if (event.key === 'Escape') {
-            closePermissionsModal();
-        }
-    });
-
-    // Confirmar actualización de perfil
-    function handleProfileUpdate(event) {
-        event.preventDefault();
-
-        const form = event.target;
-
-        Swal.fire({
-            title: '¿Estás seguro?',
-            text: '¿Deseas guardar los cambios realizados en tu perfil?',
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#14368b',
-            cancelButtonColor: '#64748b',
-            confirmButtonText: 'Sí, guardar cambios',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                form.submit();
-            }
-        });
+// Cerrar modal al hacer clic fuera del contenido
+document.addEventListener('click', function(event) {
+    const modal = document.getElementById('permissionsModal');
+    if (event.target === modal) {
+        closePermissionsModal();
     }
+});
+
+// Cerrar modal con la tecla ESC
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape') {
+        closePermissionsModal();
+    }
+});
+
+// Confirmar actualización de perfil
+function handleProfileUpdate(event) {
+    event.preventDefault();
+
+    const form = event.target;
+
+    Swal.fire({
+        title: '¿Estás seguro?',
+        text: '¿Deseas guardar los cambios realizados en tu perfil?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#14368b',
+        cancelButtonColor: '#64748b',
+        confirmButtonText: 'Sí, guardar cambios',
+        cancelButtonText: 'Cancelar'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            form.submit();
+        }
+    });
+}
+
+// Inicializar cuando el DOM esté listo
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Profile form loaded successfully');
+});
 </script>
 
 <style>
-    .view-permissions-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.5rem;
-        padding: 0.625rem 1rem;
-        background: white;
-        color: #053e7e;
-        border: 2px solid #051b7e;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.3s ease;
-    }
-    .view-permissions-btn:hover {
-        background: #053e7e;
-        color: white;
-    }
+.view-permissions-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.625rem 1rem;
+    background: white;
+    color: #053e7e;
+    border: 2px solid #051b7e;
+    border-radius: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+.view-permissions-btn:hover {
+    background: #053e7e;
+    color: white;
+}
 </style>
-

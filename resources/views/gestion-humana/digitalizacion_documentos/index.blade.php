@@ -75,8 +75,29 @@
                             <input type="hidden" name="fecha_hasta" id="fecha_hasta" value="{{ request('fecha_hasta') }}">
                         </div>
                         <input type="text" id="textFilter" name="search" placeholder="Buscar..." class="w-64 px-4 py-2 text-sm bg-white border rounded-xl {{ request('search') ? 'bg-blue-100 border-blue-500' : '' }}" value="{{ request('search') }}" style="{{ in_array(request('filterType'), ['cedula', 'nombre_apellido']) ? '' : 'display:none;' }}">
-                        <input type="text" id="generalSearch" name="search_general" placeholder="Búsqueda general..." class="w-64 px-4 py-2 text-sm bg-white border rounded-xl {{ request('search_general') ? 'bg-blue-100 border-blue-500' : '' }}" value="{{ request('search_general') }}">
+<input type="text" id="generalSearch" name="search_general" placeholder="Búsqueda general..." class="w-64 px-4 py-2 text-sm bg-white border rounded-xl {{ request('search_general') ? 'bg-blue-100 border-blue-500' : '' }}" value="{{ request('search_general') }}">
                         <a href="{{ route('gestion-humana.digitalizacion_documentos.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 text-sm">🗑️ Limpiar</a>
+
+                        <!-- Selector de ordenamiento -->
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs text-gray-500">Ordenar:</span>
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'cedula', 'direction' => $sort === 'cedula' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'cedula' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                Cédula @if($sort === 'cedula'){{ $direction === 'asc' ? '⬆️' : '⬇️' }}@endif
+                            </a>
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'nombre_apellido', 'direction' => $sort === 'nombre_apellido' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'nombre_apellido' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                Nombre @if($sort === 'nombre_apellido'){{ $direction === 'asc' ? '⬆️' : '⬇️' }}@endif
+                            </a>
+                           {{--  <a href="{{ request()->fullUrlWithQuery(['sort' => 'created_at', 'direction' => $sort === 'created_at' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'created_at' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                Fecha @if($sort === 'created_at'){{ $direction === 'asc' ? '⬆️' : '⬇️' }}@endif
+                            </a>
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'id', 'direction' => $sort === 'id' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'id' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                ID @if($sort === 'id'){{ $direction === 'asc' ? '⬆️' : '⬇️' }}@endif
+                            </a> --}}
+                        </div>
                     </div>
                     <div class="flex items-center gap-3">
                         @can('digitalizaciones_create')
@@ -200,7 +221,6 @@
         </div>
     </div>
 </div>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast'), icon = document.getElementById('toastIcon'), msgEl = document.getElementById('toastMsg');

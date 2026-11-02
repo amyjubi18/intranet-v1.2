@@ -164,49 +164,55 @@ class UnifiedInventoryController extends Controller
         // Poblar lowStockItems
         $lowStockItems = collect();
 
-        // Items de almacenamiento con stock bajo
+        // Items de almacenamiento con stock bajo (usando GREATEST para evitar negativos)
         $almacenamientoItems = AlmacenamientoImpresora::with('cartuchos')
-            ->select('*', DB::raw('(unidades - COALESCE((SELECT SUM(cantidad) FROM salida_almacenamiento_impresoras WHERE almacenamiento_impresora_id = almacenamiento_impresoras.id), 0)) as stock_disponible'))
+            ->select('*', DB::raw('GREATEST(0, unidades - COALESCE((SELECT SUM(cantidad) FROM salida_almacenamiento_impresoras WHERE almacenamiento_impresora_id = almacenamiento_impresoras.id), 0)) as stock_disponible'))
             ->having('stock_disponible', '<', 5)
             ->get();
         foreach ($almacenamientoItems as $item) {
-            $stock = $item->stock_disponible;
-            $lowStockItems->push([
-                'nombre' => $item->cartuchos->cartucho ?? 'N/A',
-                'stock' => $stock,
-                'tipo' => 'almacenamiento',
-                'color' => $stock < 3 ? 'red' : 'yellow'
-            ]);
+            $stock = max(0, $item->stock_disponible);
+            if ($stock < 5) {
+                $lowStockItems->push([
+                    'nombre' => $item->cartuchos->cartucho ?? 'N/A',
+                    'stock' => $stock,
+                    'tipo' => 'almacenamiento',
+                    'color' => $stock < 3 ? 'red' : 'yellow'
+                ]);
+            }
         }
 
         // Items de inventario impresora con stock bajo
         $impresoraItems = InventarioImpresora::with('cartuchos')
-            ->select('*', DB::raw('(unidades - COALESCE((SELECT SUM(cantidad) FROM salida_impresoras WHERE inventario_impresora_id = inventario_impresoras.id), 0)) as stock_disponible'))
+            ->select('*', DB::raw('GREATEST(0, unidades - COALESCE((SELECT SUM(cantidad) FROM salida_impresoras WHERE inventario_impresora_id = inventario_impresoras.id), 0)) as stock_disponible'))
             ->having('stock_disponible', '<', 5)
             ->get();
         foreach ($impresoraItems as $item) {
-            $stock = $item->stock_disponible;
-            $lowStockItems->push([
-                'nombre' => $item->cartuchos->cartucho ?? 'N/A',
-                'stock' => $stock,
-                'tipo' => 'artículo',
-                'color' => $stock < 3 ? 'red' : 'yellow'
-            ]);
+            $stock = max(0, $item->stock_disponible);
+            if ($stock < 5) {
+                $lowStockItems->push([
+                    'nombre' => $item->cartuchos->cartucho ?? 'N/A',
+                    'stock' => $stock,
+                    'tipo' => 'artículo',
+                    'color' => $stock < 3 ? 'red' : 'yellow'
+                ]);
+            }
         }
 
         // Items de inventario oficina con stock bajo
         $oficinaItems = InventarioOficina::with('articulos')
-            ->select('*', DB::raw('(unidades - COALESCE((SELECT SUM(cantidad) FROM salida_oficinas WHERE inventario_oficina_id = inventario_oficinas.id), 0)) as stock_disponible'))
+            ->select('*', DB::raw('GREATEST(0, unidades - COALESCE((SELECT SUM(cantidad) FROM salida_oficinas WHERE inventario_oficina_id = inventario_oficinas.id), 0)) as stock_disponible'))
             ->having('stock_disponible', '<', 5)
             ->get();
         foreach ($oficinaItems as $item) {
-            $stock = $item->stock_disponible;
-            $lowStockItems->push([
-                'nombre' => $item->articulos->articulo ?? 'N/A',
-                'stock' => $stock,
-                'tipo' => 'artículo',
-                'color' => $stock < 3 ? 'red' : 'yellow'
-            ]);
+            $stock = max(0, $item->stock_disponible);
+            if ($stock < 5) {
+                $lowStockItems->push([
+                    'nombre' => $item->articulos->articulo ?? 'N/A',
+                    'stock' => $stock,
+                    'tipo' => 'artículo',
+                    'color' => $stock < 3 ? 'red' : 'yellow'
+                ]);
+            }
         }
 
         $totalTipos = Cartucho::distinct('id')->count() + Articulo::distinct('id')->count();
@@ -404,7 +410,7 @@ public function exportExcel(Request $request)
                     $queryImpresora->where('proveedore_id', $secondFilter);
                     $queryOficina->where('proveedore_id', $secondFilter);
                     break;
-                
+
                 case 'cartucho_id':
                     $queryImpresora->where('cartucho_id', $secondFilter);
                     break;
@@ -520,15 +526,18 @@ public function exportExcel(Request $request)
         abort_if(Gate::denies('inventarioimpre_index') && Gate::denies('inventarioofic_index'), 403);
 
         // Todos los consumibles utilizados basados en salidas del almacén
+        // Ahora incluyendo el nombre de la impresora
         $consumibles = SalidaAlmacenamientoImpresora::join('almacenamiento_impresoras', 'salida_almacenamiento_impresoras.almacenamiento_impresora_id', '=', 'almacenamiento_impresoras.id')
             ->join('cartuchos', 'almacenamiento_impresoras.cartucho_id', '=', 'cartuchos.id')
-            ->selectRaw('cartuchos.cartucho as name, SUM(salida_almacenamiento_impresoras.cantidad) as total_salidas')
-            ->groupBy('cartuchos.id', 'cartuchos.cartucho')
+            ->leftJoin('impresoras', 'cartuchos.impresora_id', '=', 'impresoras.id')
+            ->selectRaw('cartuchos.cartucho as name, COALESCE(impresoras.impresora, "Sin asignar") as printer_name, SUM(salida_almacenamiento_impresoras.cantidad) as total_salidas')
+            ->groupBy('cartuchos.id', 'cartuchos.cartucho', 'impresoras.impresora')
             ->orderBy('total_salidas', 'desc')
             ->get()
             ->map(function($item) {
                 return [
                     'name' => $item->name,
+                    'printer_name' => $item->printer_name,
                     'value' => $item->total_salidas
                 ];
             });
@@ -574,55 +583,61 @@ public function exportExcel(Request $request)
         // Poblar lowStockItems
         $lowStockItems = collect();
 
-        // Items de almacenamiento con stock bajo
+        // Items de almacenamiento con stock bajo (usando GREATEST para evitar negativos)
         $almacenamientoItems = AlmacenamientoImpresora::with('cartuchos')
-            ->select('*', DB::raw('(unidades - COALESCE((SELECT SUM(cantidad) FROM salida_almacenamiento_impresoras WHERE almacenamiento_impresora_id = almacenamiento_impresoras.id), 0)) as stock_disponible'))
+            ->select('*', DB::raw('GREATEST(0, unidades - COALESCE((SELECT SUM(cantidad) FROM salida_almacenamiento_impresoras WHERE almacenamiento_impresora_id = almacenamiento_impresoras.id), 0)) as stock_disponible'))
             ->having('stock_disponible', '<', 5)
             ->get();
         foreach ($almacenamientoItems as $item) {
-            $stock = $item->stock_disponible;
-            $lowStockItems->push([
-                'nombre' => $item->cartuchos->cartucho ?? 'N/A',
-                'stock' => $stock,
-                'tipo' => 'Consumible',
-                'categoria' => 'Almacenamiento',
-                'color' => $stock < 3 ? 'red' : 'yellow',
-                'fecha_ingreso' => $item->fecha_ingreso ?? null,
-            ]);
+            $stock = max(0, $item->stock_disponible);
+            if ($stock < 5) {
+                $lowStockItems->push([
+                    'nombre' => $item->cartuchos->cartucho ?? 'N/A',
+                    'stock' => $stock,
+                    'tipo' => 'Consumible',
+                    'categoria' => 'Almacenamiento',
+                    'color' => $stock < 3 ? 'red' : 'yellow',
+                    'fecha_ingreso' => $item->fecha_ingreso ?? null,
+                ]);
+            }
         }
 
         // Items de inventario impresora con stock bajo
         $impresoraItems = InventarioImpresora::with('cartuchos')
-            ->select('*', DB::raw('(unidades - COALESCE((SELECT SUM(cantidad) FROM salida_impresoras WHERE inventario_impresora_id = inventario_impresoras.id), 0)) as stock_disponible'))
+            ->select('*', DB::raw('GREATEST(0, unidades - COALESCE((SELECT SUM(cantidad) FROM salida_impresoras WHERE inventario_impresora_id = inventario_impresoras.id), 0)) as stock_disponible'))
             ->having('stock_disponible', '<', 5)
             ->get();
         foreach ($impresoraItems as $item) {
-            $stock = $item->stock_disponible;
-            $lowStockItems->push([
-                'nombre' => $item->cartuchos->cartucho ?? 'N/A',
-                'stock' => $stock,
-                'tipo' => 'Consumible',
-                'categoria' => 'Inventario Impresora',
-                'color' => $stock < 3 ? 'red' : 'yellow',
-                'fecha_ingreso' => $item->fecha_ingreso ?? null,
-            ]);
+            $stock = max(0, $item->stock_disponible);
+            if ($stock < 5) {
+                $lowStockItems->push([
+                    'nombre' => $item->cartuchos->cartucho ?? 'N/A',
+                    'stock' => $stock,
+                    'tipo' => 'Consumible',
+                    'categoria' => 'Inventario Impresora',
+                    'color' => $stock < 3 ? 'red' : 'yellow',
+                    'fecha_ingreso' => $item->fecha_ingreso ?? null,
+                ]);
+            }
         }
 
         // Items de inventario oficina con stock bajo
         $oficinaItems = InventarioOficina::with('articulos')
-            ->select('*', DB::raw('(unidades - COALESCE((SELECT SUM(cantidad) FROM salida_oficinas WHERE inventario_oficina_id = inventario_oficinas.id), 0)) as stock_disponible'))
+            ->select('*', DB::raw('GREATEST(0, unidades - COALESCE((SELECT SUM(cantidad) FROM salida_oficinas WHERE inventario_oficina_id = inventario_oficinas.id), 0)) as stock_disponible'))
             ->having('stock_disponible', '<', 5)
             ->get();
         foreach ($oficinaItems as $item) {
-            $stock = $item->stock_disponible;
-            $lowStockItems->push([
-                'nombre' => $item->articulos->articulo ?? 'N/A',
-                'stock' => $stock,
-                'tipo' => 'Artículo',
-                'categoria' => 'Inventario Oficina',
-                'color' => $stock < 3 ? 'red' : 'yellow',
-                'fecha_ingreso' => $item->fecha_ingreso ?? null,
-            ]);
+            $stock = max(0, $item->stock_disponible);
+            if ($stock < 5) {
+                $lowStockItems->push([
+                    'nombre' => $item->articulos->articulo ?? 'N/A',
+                    'stock' => $stock,
+                    'tipo' => 'Artículo',
+                    'categoria' => 'Inventario Oficina',
+                    'color' => $stock < 3 ? 'red' : 'yellow',
+                    'fecha_ingreso' => $item->fecha_ingreso ?? null,
+                ]);
+            }
         }
 
         // Ordenar por stock disponible ascendente (más crítico primero)

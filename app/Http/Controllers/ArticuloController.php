@@ -15,24 +15,33 @@ class ArticuloController extends Controller
 
         abort_if(Gate::denies('articulo_index'), 403);
 
-    $articulos = Articulo::query()->with('unidad_medida')
-        ->when($request->input('articulo_id'), function($query) use ($request) {
-            return $query->where('id', $request->input('articulo_id'));
-        })
-        ->when($request->input('unidad_medida_id'), function($query) use ($request) {
-            return $query->where('unidad_medida_id', $request->input('unidad_medida_id'));
-        })
-        ->when($request->input('search'), function($query) use ($request) {
-            return $query->where('articulo', 'LIKE', '%'. $request->input('search') . '%')
-                ->orWhere('id', 'LIKE', '%'. $request->input('search') . '%') // Búsqueda por ID
-                ->orWhereHas('unidad_medida', function ($q) use ($request) {
-                    $q->where('unidad_medida', 'LIKE', '%' . $request->input('search') . '%');
-                });
-        })->orderBy('id', 'desc')->latest()->paginate(15);
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'id');
+        $direction = $request->get('direction', 'desc');
 
-    $all_articulos = Articulo::with('unidad_medida')->get();
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
 
-        return view('administracion.articulos.index', ['articulos'=> $articulos, 'all_articulos' => $all_articulos]);
+        $articulos = Articulo::query()->with('unidad_medida')
+            ->when($request->input('articulo_id'), function($query) use ($request) {
+                return $query->where('id', $request->input('articulo_id'));
+            })
+            ->when($request->input('unidad_medida_id'), function($query) use ($request) {
+                return $query->where('unidad_medida_id', $request->input('unidad_medida_id'));
+            })
+            ->when($search, function($query) use ($search) {
+                return $query->where('articulo', 'LIKE', '%'. $search . '%')
+                    ->orWhere('id', 'LIKE', '%'. $search . '%')
+                    ->orWhereHas('unidad_medida', function ($q) use ($search) {
+                        $q->where('unidad_medida', 'LIKE', '%' . $search . '%');
+                    });
+            })
+            ->orderBy($sort, $direction)
+            ->paginate(15);
+
+        $all_articulos = Articulo::with('unidad_medida')->get();
+
+        return view('administracion.articulos.index', ['articulos'=> $articulos, 'all_articulos' => $all_articulos, 'search' => $search, 'sort' => $sort, 'direction' => $direction]);
    }
     public function show(){
        return view('administracion.articulos.show', ['articulos' => Articulo::get()]);
@@ -45,9 +54,19 @@ class ArticuloController extends Controller
    public function store(Request $request)
 {
     $request->validate([
-        'articulo' => 'required',
-        'unidad_medida_id' => 'required',
-        'stock_min' => 'required',
+        'articulo' => 'required|string|min:2|max:100|unique:articulos,articulo',
+        'unidad_medida_id' => 'required|exists:unidad_medidas,id',
+        'stock_min' => 'required|integer|min:0',
+    ], [
+        'articulo.required' => 'El nombre del artículo es obligatorio',
+        'articulo.min' => 'El artículo debe tener al menos 2 caracteres',
+        'articulo.max' => 'El artículo no puede exceder 100 caracteres',
+        'articulo.unique' => 'Este artículo ya existe',
+        'unidad_medida_id.required' => 'Debe seleccionar una unidad de medida',
+        'unidad_medida_id.exists' => 'La unidad de medida seleccionada no existe',
+        'stock_min.required' => 'El stock mínimo es obligatorio',
+        'stock_min.integer' => 'El stock mínimo debe ser un número entero',
+        'stock_min.min' => 'El stock mínimo no puede ser negativo',
     ]);
 
     // Generar un nuevo ID para el artículo
@@ -67,7 +86,7 @@ class ArticuloController extends Controller
     $articulo->unidad_medida_id = $request->unidad_medida_id;
     $articulo->save();
 
-    return redirect()->route('administracion.articulos.index')->with('status', 'Articulo creado');
+    return redirect()->route('administracion.articulos.index')->with('status', 'Artículo creado correctamente');
 }
    public function edit($id)
    {
@@ -78,10 +97,19 @@ class ArticuloController extends Controller
    public function update(Request $request, $id)
 {
     $request->validate([
-        'articulo' => 'required',
-        'unidad_medida_id' => 'required',
-        'stock_min' => 'required',
-        //'id' => 'required|unique:articulos,id,' . $id, // Asegúrate de que el nuevo ID sea único
+        'articulo' => 'required|string|min:2|max:100|unique:articulos,articulo,' . $id,
+        'unidad_medida_id' => 'required|exists:unidad_medidas,id',
+        'stock_min' => 'required|integer|min:0',
+    ], [
+        'articulo.required' => 'El nombre del artículo es obligatorio',
+        'articulo.min' => 'El artículo debe tener al menos 2 caracteres',
+        'articulo.max' => 'El artículo no puede exceder 100 caracteres',
+        'articulo.unique' => 'Este artículo ya existe',
+        'unidad_medida_id.required' => 'Debe seleccionar una unidad de medida',
+        'unidad_medida_id.exists' => 'La unidad de medida seleccionada no existe',
+        'stock_min.required' => 'El stock mínimo es obligatorio',
+        'stock_min.integer' => 'El stock mínimo debe ser un número entero',
+        'stock_min.min' => 'El stock mínimo no puede ser negativo',
     ]);
 
     // Buscar el artículo por su ID
@@ -89,11 +117,10 @@ class ArticuloController extends Controller
 
     // Verificar si el artículo existe
     if (!$articulo) {
-        return redirect()->route('administracion.articulos.index')->with('error', 'Articulo no encontrado');
+        return redirect()->route('administracion.articulos.index')->with('error', 'Artículo no encontrado');
     }
 
     // Actualizar los campos del artículo
-    //$articulo->id = sprintf('%04d', $request->input('id')); // Actualizar el ID
     $articulo->articulo = $request->input('articulo');
     $articulo->unidad_medida_id = $request->input('unidad_medida_id');
     $articulo->stock_min = $request->input('stock_min');
@@ -101,7 +128,7 @@ class ArticuloController extends Controller
     // Guardar los cambios
     $articulo->save();
 
-    return redirect()->route('administracion.articulos.index')->with('success', 'Articulo actualizado correctamente');
+    return redirect()->route('administracion.articulos.index')->with('success', 'Artículo actualizado correctamente');
 }
    public function destroy($id)
    {

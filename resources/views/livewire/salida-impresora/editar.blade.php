@@ -22,7 +22,7 @@
             <label for="gerencia_id" class="block text-sm font-medium text-gray-700 mb-2">Gerencia</label>
             <select wire:model.live="gerencia_id" id="gerencia_id" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
                 <option value="">Seleccionar Gerencia</option>
-                @foreach($gerencias as $gerencia)
+                @foreach($gerencias->sortBy('gerencia') as $gerencia)
                     <option value="{{ $gerencia->id }}">{{ $gerencia->gerencia }}</option>
                 @endforeach
             </select>

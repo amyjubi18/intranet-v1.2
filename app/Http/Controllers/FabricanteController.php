@@ -9,13 +9,31 @@ use Illuminate\Http\Request;
 
 class FabricanteController extends Controller
 {
-    public function index(Request $request){
+public function index(Request $request){
 
         abort_if(Gate::denies('fabricante_index'), 403);
 
-      $fabricantes = Fabricante::paginate(5);
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'fabricante');
+        $direction = $request->get('direction', 'asc');
 
-       return view('administracion.tipo_impresoras.index', ['fabricantes'=> $fabricantes]);
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $query = Fabricante::query();
+
+        if ($search) {
+            $query->where('fabricante', 'LIKE', '%'.$search.'%');
+        }
+
+        $fabricantes = $query->orderBy($sort, $direction)->paginate(15);
+
+       return view('administracion.tipo_impresoras.index', [
+           'fabricantes'=> $fabricantes,
+           'search' => $search,
+           'sort' => $sort,
+           'direction' => $direction
+       ]);
    }
 
    public function create(){

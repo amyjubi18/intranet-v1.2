@@ -181,7 +181,7 @@
     <!-- Formulario de edición -->
     <div class="px-6 pb-8">
         <div class="max-w-4xl mx-auto">
-            <form id="editForm" method="POST" action="{{ route('users.update', $user->id) }}" enctype="multipart/form-data" class="glass rounded-2xl p-8 fade-in">
+            <form id="editForm" method="POST" action="{{ route('users.update', $user->id) }}" enctype="multipart/form-data" class="glass rounded-2xl p-8 fade-in" onsubmit="handleFormSubmit(event)">
                 @csrf
                 @method('PUT')
 
@@ -230,10 +230,10 @@
                                     @enderror
                                 </div>
 
-<!-- Fecha de nacimiento -->
+                                <!-- Fecha de nacimiento -->
                                 <div class="form-group">
-                                    <label class="form-label" for="fecha_nacimiento">Fecha de Nacimiento</label>
-                                    <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-input" value="{{ old('fecha_nacimiento', $user->fecha_nacimiento) }}">
+                                    <label class="form-label" for="fecha_nacimiento">Fech. de Nacimiento</label>
+                                    <input type="date" id="fecha_nacimiento" name="fecha_nacimiento" class="form-input" value="{{ old('fecha_nacimiento', isset($user->fecha_nacimiento) ? (is_string($user->fecha_nacimiento) ? $user->fecha_nacimiento : $user->fecha_nacimiento->format('Y-m-d')) : '') }}">
                                     @error('fecha_nacimiento')
                                         <div class="text-red-500 text-xs mt-1">{{ $message }}</div>
                                     @enderror

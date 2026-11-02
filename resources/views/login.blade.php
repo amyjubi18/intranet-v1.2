@@ -12,7 +12,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 @vite(['resources/css/app.css'])
 </head>
-<body class="flex items-center justify-center">
+<body class="flex items-center justify-center login-page">
 
 <!-- Fondo de red tecnológica -->
 <div class="network-bg">
@@ -35,7 +35,7 @@
 </div>
 
 <!-- Tarjeta de login -->
-<div class="glass rounded-2xl p-8 fade-in bg-white">
+<div class=" rounded-2xl p-8 fade-in glass" style="background-color:rgba(255, 255, 255, 0.62)">
 <div class="text-center mb-6 ">
 <h2 class="text-xl font-bold text-black mb-2">¡Bienvenido al Sistema!</h2>
 <p class="text-sm text-slate-700">Ingresa tus credenciales para continuar</p>
@@ -67,6 +67,7 @@ name="email"
 class="form-input bg-blue-100 border-none text-gray-700"
 placeholder="usuario@codecyt.com"
 value="{{ old('email') }}"
+style="color: black"
 required
 autofocus
 autocomplete="username"
@@ -86,6 +87,7 @@ name="password"
 id="passwordInput"
 class="form-input pr-12 bg-blue-100 border-none text-gray-700"
 placeholder="••••••••"
+style="color: black"
 required
 autocomplete="current-password"
 >
@@ -117,7 +119,7 @@ title="Mostrar/Ocultar contraseña"
 <!-- Enlace de contraseña olvidada -->
 <div class="text-right mt-4">
 @if (Route::has('password.request'))
-<a href="{{ route('password.request') }}" class="btn-link text-blue-500">
+<a href="{{ route('password.request') }}" class=" text-blue-900">
 ¿Olvidó su contraseña?
 </a>
 @endif
@@ -144,10 +146,7 @@ Iniciar Sesión
 
 <!-- Toast de notificaciones -->
 <div id="toast" class="toast">
-<div class="glass rounded-xl px-4 py-3 flex items-center gap-3 min-w-[300px]">
-<div id="toastIcon">ℹ️</div>
-<div id="toastMsg" class="text-sm flex-1"></div>
-</div>
+
 </div>
 
 <script>
@@ -182,7 +181,6 @@ networkBg.appendChild(line);
 // Sistema de toast
 function showToast(message, type = 'info') {
 const toast = document.querySelector('#toast');
-const icon = document.querySelector('#toastIcon');
 const msg = document.querySelector('#toastMsg');
 
 const icons = {
@@ -254,33 +252,6 @@ submitBtn.disabled = true;
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
 createNetworkBackground();
-
-// Mostrar demo si es necesario, pero en producción quitar
-// setTimeout(() => {
-// showToast('Demo: admin@codecyt.com / admin123', 'info');
-// }, 3000);
-});
-
-// Efecto de partículas en movimiento del mouse (opcional)
-document.addEventListener('mousemove', function(e) {
-const nodes = document.querySelectorAll('.network-node');
-nodes.forEach((node, index) => {
-if (index % 3 === 0) { // Solo algunos nodos reaccionan
-const rect = node.getBoundingClientRect();
-const distance = Math.sqrt(
-Math.pow(e.clientX - rect.left, 2) +
-Math.pow(e.clientY - rect.top, 2)
-);
-
-if (distance < 100) {
-node.style.transform = `scale(${1.5 - distance/100})`;
-node.style.opacity = Math.max(0.3, 1 - distance/100);
-} else {
-node.style.transform = 'scale(1)';
-node.style.opacity = '0.3';
-}
-}
-});
 });
 </script>
 </body>

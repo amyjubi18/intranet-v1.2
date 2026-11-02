@@ -372,9 +372,9 @@
                         <div class="text-center">
                             <p class="text-sm text-black font-bold mb-1">Unidades Asignadas</p>
                             <div class="flex items-center justify-center gap-2">
-                                Quedan
+                                QUEDAN
                                 <span class="text-3xl font-bold {{ $unidadesDisponiblesBajoStock->contains($distribucion->almacenamiento_impresora_id) ? 'text-red-500' : 'text-green-400' }}">{{ $distribucion->unidades_asignadas }}</span>
-                                de
+                                DE
                                 <span class="text-3xl font-bold {{ $unidadesDisponiblesBajoStock->contains($distribucion->almacenamiento_impresora_id) ? 'text-red-500' : 'text-green-400' }}">{{ $distribucion->unidades_asignadas_originales }}</span>
                             </div>
                             @if($unidadesDisponiblesBajoStock->contains($distribucion->almacenamiento_impresora_id))
@@ -428,7 +428,7 @@
                 type: 'select',
                 options: [
                     { value: '', text: 'Todas las gerencias' },
-                    @foreach($gerencias as $gerencia)
+                    @foreach($gerencias->sortBy('gerencia') as $gerencia)
                     { value: '{{ $gerencia->id }}', text: '{{ $gerencia->gerencia }} ({{ $gerencia->area->area ?? "N/A" }})' },
                     @endforeach
                 ]
@@ -769,7 +769,6 @@
 
 
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function confirmDelete(id) {
             Swal.fire({

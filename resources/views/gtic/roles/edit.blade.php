@@ -306,7 +306,7 @@
                         <p style="color: #64748b; font-size: 0.95rem;">Modifica el nombre y los permisos del rol</p>
                     </div>
 
-                    <form id="roleForm" method="POST" action="{{ route('gtic.roles.update', $role->id) }}" onsubmit="saveRole(event)">
+                    <form id="roleForm" data-role-id="{{ $role->id }}" method="POST" action="{{ route('gtic.roles.update', $role->id) }}" onsubmit="saveRole(event)">
                         @csrf
                         @method('PUT')
 

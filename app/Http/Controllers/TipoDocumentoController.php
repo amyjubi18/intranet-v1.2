@@ -12,9 +12,20 @@ class TipoDocumentoController extends Controller
 
         abort_if(Gate::denies('tipo_documento_index'), 403);
 
-        $search =trim($request->get('search'));
-        $tipo_documentos = DB::table('tipo_documentos')->select('id', 'tipo_documento')->where('tipo_documento', 'LIKE', '%'.$search.'%')->orderBy('tipo_documento', 'asc')->paginate(5);
-        return view('gestion-humana.tipo_documentos.index', compact('tipo_documentos', 'search'));
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'tipo_documento');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $tipo_documentos = DB::table('tipo_documentos')
+            ->select('id', 'tipo_documento')
+            ->where('tipo_documento', 'LIKE', '%'.$search.'%')
+            ->orderBy($sort, $direction)
+            ->paginate(15);
+
+        return view('gestion-humana.tipo_documentos.index', compact('tipo_documentos', 'search', 'sort', 'direction'));
 
     }
     public function create(TipoDocumento $tipo_documento){

@@ -13,15 +13,21 @@ class CondicionController extends Controller
 
         abort_if(Gate::denies('condicion_index'), 403);
 
-        $search = trim($request->get('search'));
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'condicion');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
         $condicions = DB::table('condicions')
             ->select('id', 'condicion')
             ->where('condicion', 'LIKE', '%'.$search.'%')
-            ->orderBy('condicion', 'asc')
+            ->orderBy($sort, $direction)
             ->paginate(15);
-        $todasLasCondiciones = Condicion::all();
-        return view('administracion.condicion_fisica.index', compact('condicions', 'search', 'todasLasCondiciones'));
 
+        $todasLasCondiciones = Condicion::all();
+        return view('administracion.condicion_fisica.index', compact('condicions', 'search', 'sort', 'direction', 'todasLasCondiciones'));
     }
      public function show(){
         return view('administracion.condicion_fisica.show', ['condicions' => Condicion::get()]);

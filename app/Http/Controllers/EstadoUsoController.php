@@ -15,15 +15,21 @@ class EstadoUsoController extends Controller
 
         abort_if(Gate::denies('estado_uso_index'), 403);
 
-        $search = trim($request->get('search'));
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'estado_del_uso');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
         $estado_del_usos = DB::table('estado_del_usos')
             ->select('id', 'estado_del_uso')
             ->where('estado_del_uso', 'LIKE', '%'.$search.'%')
-            ->orderBy('estado_del_uso', 'asc')
+            ->orderBy($sort, $direction)
             ->paginate(15);
-        $todosLosEstadosDelUso = EstadoDelUso::all();
-        return view('administracion.estado_del_uso.index', compact('estado_del_usos', 'search', 'todosLosEstadosDelUso'));
 
+        $todosLosEstadosDelUso = EstadoDelUso::all();
+        return view('administracion.estado_del_uso.index', compact('estado_del_usos', 'search', 'sort', 'direction', 'todosLosEstadosDelUso'));
     }
      public function show(){
         return view('administracion.estado_del_uso.show', ['estado_del_usos' => EstadoDelUso::get()]);

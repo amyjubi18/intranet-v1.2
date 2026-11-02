@@ -16,15 +16,21 @@ class FormaAdquisicionController extends Controller
         abort_if(Gate::denies('forma_adquisicion_index'), 403);
 
         // Aceptar tanto 'search' como 'forma_adquisicion' como parámetros de búsqueda
-        $search = trim($request->get('search')) ?: trim($request->get('forma_adquisicion'));
+        $search = trim($request->get('search', '')) ?: trim($request->get('forma_adquisicion', ''));
+        $sort = $request->get('sort', 'forma_adquisicion');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
         $forma_adquisicions = DB::table('forma_adquisicions')
             ->select('id', 'forma_adquisicion')
             ->where('forma_adquisicion', 'LIKE', '%'.$search.'%')
-            ->orderBy('forma_adquisicion', 'asc')
+            ->orderBy($sort, $direction)
             ->paginate(15);
-        $todasLasFormasAdquisicion = FormaAdquisicion::all();
-        return view('administracion.forma_adquisicion.index', compact('forma_adquisicions', 'search', 'todasLasFormasAdquisicion'));
 
+        $todasLasFormasAdquisicion = FormaAdquisicion::all();
+        return view('administracion.forma_adquisicion.index', compact('forma_adquisicions', 'search', 'sort', 'direction', 'todasLasFormasAdquisicion'));
     }
      public function show(){
         return view('administracion.forma_adquisicion.show', ['forma_adquisicions' => FormaAdquisicion::get()]);

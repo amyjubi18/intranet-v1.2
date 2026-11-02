@@ -41,9 +41,39 @@
         </div>
         <div>
             <label class="block text-sm font-medium mb-1 text-black">Unidades Disponibles:</label>
-            <input type="text"
-                class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900 font-bold text-green-600"
-                name="unidades" id="unidades" wire:model="unidades" readonly>
+            @if($articulo_id && $unidades > 0)
+                @php
+                    // Obtener el artículo para verificar stock mínimo
+                    $articuloModel = null;
+                    if(isset($articulos) && $articulo_id) {
+                        $articuloModel = $articulos->find($articulo_id);
+                    }
+                    $hasLowStock = $articuloModel && $unidades < $articuloModel->stock_min;
+                    $percentage = $unidades_total > 0 ? min(100, ($unidades / $unidades_total) * 100) : 0;
+                @endphp
+                <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-4 hover:scale-105 transition-transform duration-200">
+                    <div class="flex flex-col items-center">
+                        <!-- Stock -->
+                        <div class="text-center w-full">
+                            <p class="text-sm text-black font-bold mb-1">Unidades Disponibles</p>
+                            <div class="flex items-center justify-center gap-2">
+                                <span class="text-3xl font-bold {{ $hasLowStock ? 'text-red-400' : 'text-green-400' }}">{{ $unidades }}</span>
+                                <span class="text-sm text-blue-900 font-semibold">de {{ $unidades_total }}</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-3 mt-3">
+                                <div class="{{ $hasLowStock ? 'bg-red-500' : 'bg-green-500' }} h-3 rounded-full transition-all duration-300" style="width: {{ $percentage }}%"></div>
+                            </div>
+                            @if($hasLowStock)
+                                <span class="text-xs text-red-500 mt-2 inline-block font-semibold">⚠️ Stock bajo (mínimo: {{ $articuloModel->stock_min }})</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            @else
+                <div class="bg-gray-100 border border-gray-300 rounded-xl p-4 text-center">
+                    <span class="text-gray-500 font-semibold">Sin stock disponible</span>
+                </div>
+            @endif
             <x-input-error :messages="$errors->get('unidades')" class="mt-2" />
         </div>
 
@@ -72,11 +102,21 @@
             <select
                 class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
                 name="gerencia_id" id="gerencia_id" wire:model="gerencia_id">
-                <option value="">Seleccione</option>
-                @foreach ($gerencias as $gerencia)
-                    <option value="{{ $gerencia->id }}">
-                        {{ $gerencia->gerencia }} - ({{ optional($gerencia->area)->area }})
-                    </option>
+                <option value="">Seleccione gerencia</option>
+                @php
+                    $groupdegerencias = \App\Models\Gerencia::with('area')->get()->sortBy('gerencia')->groupBy('gerencia');
+                @endphp
+                @foreach($groupdegerencias as $gerenciaName => $gerencias)
+                    @php
+                        $gerenciaModel = $gerencias->first();
+                    @endphp
+                    <optgroup label="{{ $gerenciaModel ? $gerenciaModel->gerencia : 'Gerencia Desconocida' }} ">
+                        @foreach($gerencias as $gerencia)
+                            <option value="{{ $gerencia->id }}" {{ $gerencia_id == $gerencia->id ? 'selected' : '' }}>
+                                {{ $gerencia->gerencia ?? 'N/A' }} - Area: {{ $gerencia->area->area ?? 'N/A' }}
+                            </option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </select>
             <x-input-error :messages="$errors->get('gerencia_id')" class="mt-2" />
@@ -110,7 +150,7 @@
     </div>
     </div>
     <!-- Botones -->
-    <div class="flex mt-4 justify-evenly">
+    <div class="flex mt-4 justify-evenly gap-2">
 
         <x-primary-link href="{{ route('administracion.salida_oficina.index') }}">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;"><path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path></svg>

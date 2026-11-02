@@ -64,7 +64,7 @@
                             <table class="">
                                 <thead class="text-white" style="background: #3B3F5C">
                                     <tr>
-                                        <th class="table-fixed text-white text-center">SEDE</th>
+                                        <th class="table-fixed text-white text-center text-bold">SEDE</th>
                                         <th class="table-fixed text-white text-center">UNIDAD ADMINISTRATIVA</th>
                                         <th  class="table-fixed text-white text-center">USUARIO ADMINISTRATIVO</th>
                                         <th class="table-fixed text-white text-center">USUARIO DE USO</th>

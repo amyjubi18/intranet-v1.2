@@ -52,12 +52,13 @@
             <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div class="flex flex-wrap items-center gap-4">
+                        <button type="button" onclick="startQrScanner()" class="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50">
+                            📷 Escanear QR
+                        </button>
                         <button type="button" onclick="toggleAdvancedFilters()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
                             Filtros Avanzados
                         </button>
-                        <button type="button" onclick="startQrScanner()" class="bg-green-600 hover:bg-green-700 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50">
-                            📷 Escanear QR
-                        </button>
+
                         <select id="filterType" name="filterType" onchange="updateSecondFilter()" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm" style="display:none;">
                             <option value="">Seleccionar filtro</option>
                             <option value="n_interno_bien" {{ request('filterType') == 'n_interno_bien' ? 'selected' : '' }}>N° Interno</option>
@@ -116,19 +117,20 @@
     </form>
 
     <!-- Listado de bienes -->
-    <div class="px-6 mb-8">
+    <div class="px-6 mb-8 sm:justify-center">
         <div class="space-y-4">
             @forelse($bienes ?? [] as $item)
                 <!-- Card de bien -->
                 <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
-                    <div class="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+                    <div class="flex flex-col md:flex-row items-start gap-4 md:gap-4">
                         <!-- Icono/Imagen del bien -->
                         <div class="flex items-center justify-center flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-to-br from-blue-500 to-blue-900">
                             <span class="text-3xl">{{ $item->getIconForDescription() }}</span>
                         </div>
 
                         <!-- Información principal -->
-                        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 w-20
+                        ">
                             <div>
                                 <p class="text-xs text-blue-900 font-semibold mb-1">Sede</p>
                                 <p class="font-semibold">{{ $item->sede }}</p>
@@ -152,32 +154,18 @@
                             <div>
 
                             </div>
+
                         </div>
 
                         <!-- Información secundaria -->
-                        <div class="flex-1 grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <p class="text-xs text-blue-900 font-semibold mb-1">Estado</p>
                                 @php $estadoColorClass = $item->estado_del_uso_id == 6 ? 'bg-green-100 text-green-800 border-green-200' : 'bg-gray-100 text-gray-800 border-gray-200'; @endphp
                                 <span class="inline-flex items-center p-3 rounded-md text-xs font-medium border {{ $estadoColorClass }}">{{ $item->estado_del_usos ? $item->estado_del_usos->estado_del_uso : 'N/A' }}</span>
                                 <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Condición</p>
                                 <p class="text-sm">{{ $item->condicions ? $item->condicions->condicion : 'N/A' }}</p>
-                            </div>
-                            <div>
-                                <p class="text-xs text-blue-900 font-semibold mb-1">Marca / Modelo</p>
-                                <p class="text-sm">{{ $item->marca }} / {{ $item->modelo }}</p>
-                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Serial</p>
-                                <p class="font-mono text-sm">{{ $item->serial }}</p>
-                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Color</p>
-                                <p class="flex items-center gap-2 text-sm">
-                                    <span class="w-4 h-4 border border-gray-300 rounded-full" style="background-color: {{ $item->color_css ?? '#cccccc' }}"></span>
-                                    {{ $item->colors ? $item->colors->color : 'N/A' }}
-                                </p>
-                            </div>
-                            <div>
-                                
-                            </div>
-                            <div>
+                                <div>
                                 <p class="text-xs text-blue-900 font-semibold mb-1">Código QR</p>
                                 @php
                                     // Verificar si qr_code es una imagen guardada (base64/Data URL) o una URL
@@ -204,6 +192,23 @@
                                 <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Valor (Bs.)</p>
                                 <p class="text-sm font-bold text-green-600">{{ number_format((float) $item->valor_factura, 2) }}</p>
                             </div>
+                            </div>
+
+                            <div>
+                                <p class="text-xs text-blue-900 font-semibold mb-1">Marca / Modelo</p>
+                                <p class="text-sm">{{ $item->marca }} / {{ $item->modelo }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Serial</p>
+                                <p class="font-mono text-sm">{{ $item->serial }}</p>
+                                <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Color</p>
+                                <p class="flex items-center gap-2 text-sm">
+                                    <span class="w-4 h-4 border border-gray-300 rounded-full" style="background-color: {{ $item->color_css ?? '#cccccc' }}"></span>
+                                    {{ $item->colors ? $item->colors->color : 'N/A' }}
+                                </p>
+                            </div>
+                            <div>
+
+                            </div>
+
                         </div>
 
                         <!-- Acciones -->
@@ -253,7 +258,6 @@
     </div>
 
     <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function confirmDelete(id) {
             Swal.fire({

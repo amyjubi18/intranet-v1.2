@@ -13,15 +13,21 @@ class ColorController extends Controller
 
         abort_if(Gate::denies('color_index'), 403);
 
-        $search = trim($request->get('search'));
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'color');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
         $colors = DB::table('colors')
             ->select('id', 'color')
             ->where('color', 'LIKE', '%'.$search.'%')
-            ->orderBy('color', 'asc')
+            ->orderBy($sort, $direction)
             ->paginate(15);
-        $todosLosColors = Color::all();
-        return view('administracion.colors.index', compact('colors', 'search', 'todosLosColors'));
 
+        $todosLosColors = Color::all();
+        return view('administracion.colors.index', compact('colors', 'search', 'sort', 'direction', 'todosLosColors'));
     }
      public function show(){
         return view('administracion.colors.show', ['colors' => Color::get()]);

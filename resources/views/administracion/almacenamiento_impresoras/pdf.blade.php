@@ -120,15 +120,33 @@
                 <th>Stock Min</th>
                 <th>Unidades</th>
                 <th>Unidades Disponibles</th>
+                <th>Total Disp. (Impresora)</th>
                 <th>Factura</th>
             </tr>
         </thead>
         <tbody>
+            @php
+                // Calcular totales por impresora, color y fecha
+                $totalesPorImpresoraColor = [];
+                foreach($almacenamiento_impresoras as $item) {
+                    $impresoraId = $item->impresora_id;
+                    $colorId = $item->colore_id;
+                    $fechaIngreso = $item->fecha_ingreso;
+                    $key = $impresoraId . '_' . $colorId . '_' . $fechaIngreso;
+                    if (!isset($totalesPorImpresoraColor[$key])) {
+                        $totalesPorImpresoraColor[$key] = $almacenamiento_impresoras->where('impresora_id', $impresoraId)->where('colore_id', $colorId)->where('fecha_ingreso', $fechaIngreso)->sum('unidades_disponibles');
+                    }
+                }
+            @endphp
             @foreach($almacenamiento_impresoras as $item)
+            @php
+                $key = $item->impresora_id . '_' . $item->colore_id . '_' . $item->fecha_ingreso;
+                $totalDisp = $totalesPorImpresoraColor[$key] ?? $item->unidades_disponibles;
+            @endphp
             <tr>
                 <td>{{ str_pad($item->impresoras->id, 4, '0', STR_PAD_LEFT) }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->fecha_ingreso)->format('d/m/Y') }}</td>
-                <td>{{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y') }}</td>
+                <td>{{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y H:i') }}</td>
                 <td>{{ $item->cartuchos ? $item->cartuchos->cartucho : 'N/A' }}</td>
                 <td>{{ $item->colores ? $item->colores->colore : 'N/A' }}</td>
                 <td>{{ $item->impresoras ? $item->impresoras->impresora : 'N/A' }}</td>
@@ -137,6 +155,7 @@
                 <td>{{ $item->cartuchos ? $item->cartuchos->stock_min : 'N/A' }}</td>
                 <td>{{ $item->unidades }}</td>
                 <td>{{ $item->unidades_disponibles }}</td>
+                <td>{{ $totalDisp }}</td>
                 <td>{{ $item->n_factura }}</td>
             </tr>
             @endforeach

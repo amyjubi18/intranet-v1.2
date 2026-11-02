@@ -182,49 +182,7 @@
             flex: 1;
         }
 
-        /* Pagination */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 0.25rem;
-            margin-top: 1.5rem;
-            padding: 1rem;
-        }
-
-        .pagination a,
-        .pagination span {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 2rem;
-            height: 2rem;
-            padding: 0 0.5rem;
-            border-radius: 0.5rem;
-            font-size: 0.75rem;
-            font-weight: 500;
-            transition: all 0.2s ease;
-            background: var(--card-bg);
-            border: 1px solid var(--card-border);
-            color: var(--text);
-            text-decoration: none;
-        }
-
-        .pagination a:hover {
-            background: rgba(59, 130, 246, 0.1);
-            border-color: var(--color-primary);
-        }
-
-        .pagination .active span {
-            background: var(--color-primary);
-            color: white;
-            border-color: var(--color-primary);
-        }
-
-        .pagination .disabled {
-            opacity: 0.5;
-            pointer-events: none;
-        }
+       
 
         /* Grid */
         .roles-grid {
@@ -242,27 +200,42 @@
             <div class="glass rounded-xl p-4 mb-4 sm:mb-6">
                 <div class="flex flex-wrap items-center justify-between gap-4">
                     <div class="flex flex-wrap items-center gap-3">
-                        <!-- Búsqueda rápida -->
+<!-- Búsqueda rápida con debounce -->
                         <div class="relative">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400">
                                 <circle cx="10" cy="10" r="7"/>
                                 <path d="M21 21l-4.35-4.35"/>
                             </svg>
-                            <input type="search" name="search" placeholder="Buscar rol..." value="{{ request('search') }}" class="form-input pl-8 text-xs" style="width: 200px;">
+                            <input type="search" name="search" id="rolesSearchInput" placeholder="Buscar rol..." value="{{ request('search') }}" class="form-input pl-8 text-xs" style="width: 200px;">
                         </div>
-                        <button type="submit" class="btn btn-primary text-xs">
-                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <circle cx="10" cy="10" r="7"/>
-                                <path d="M21 21l-4.35-4.35"/>
-                            </svg>
-                        </button>
-
-                       
 
                         <!-- Botón para limpiar filtros -->
                         <a href="{{ route('gtic.roles.index') }}" class="btn btn-secondary text-xs">
                             🗑️ Limpiar
                         </a>
+
+                        <!-- Selector de ordenamiento -->
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs text-slate-500">Ordenar:</span>
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'name', 'direction' => $sort === 'name' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'name' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-slate-600 hover:bg-slate-100' }}">
+                                Nombre
+                                @if($sort === 'name')
+                                    @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                                @else
+                                    <span class="text-slate-400">⇅</span>
+                                @endif
+                            </a>
+                            {{-- <a href="{{ request()->fullUrlWithQuery(['sort' => 'id', 'direction' => $sort === 'id' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'id' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-slate-600 hover:bg-slate-100' }}">
+                                ID
+                                @if($sort === 'id')
+                                    @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                                @else
+                                    <span class="text-slate-400">⇅</span>
+                                @endif
+                            </a> --}}
+                        </div>
                     </div>
 
                     <!-- Botón Añadir Rol -->
@@ -313,10 +286,10 @@
                                 </svg>
                                 Editar
                             </a>
-                            <form action="{{ route('gtic.roles.destroy', $role->id) }}" method="POST" onsubmit="return confirm('¿Estás seguro que quieres eliminar el rol {{ $role->name }}?')">
+<form action="{{ route('gtic.roles.destroy', $role->id) }}" method="POST" class="delete-role-form" data-role-id="{{ $role->id }}" data-role-name="{{ $role->name }}">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-danger">
+                                <button type="button" class="btn btn-danger btn-delete-role">
                                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                         <path d="M6 7H5v13a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7H6zm4 12H8v-9h2v9zm6 0h-2v-9h2v9zm.618-15L15 2H9L7.382 4H3v2h18V4z"/>
                                     </svg>
@@ -382,6 +355,50 @@
                     toast.classList.remove('show');
                 }, 3000);
             }
+
+            // ==========================================
+            // BUSCADOR CON DEBOUNCE - ROLES
+            // ==========================================
+            const searchInput = document.getElementById('rolesSearchInput');
+            const filterForm = document.getElementById('filterForm');
+
+            if (searchInput && filterForm) {
+                let searchTimeout;
+
+                searchInput.addEventListener('input', function() {
+                    clearTimeout(searchTimeout);
+
+                    // Debounce: esperar 300ms antes de buscar (más rápido)
+                    searchTimeout = setTimeout(function() {
+                        filterForm.submit();
+                    }, 300);
+                });
+            }
+
+            // Confirmar eliminación de rol con SweetAlert2
+            document.addEventListener('click', function(e) {
+                if (e.target.closest('.btn-delete-role')) {
+                    const button = e.target.closest('.btn-delete-role');
+                    const form = button.closest('.delete-role-form');
+                    const roleId = form.getAttribute('data-role-id');
+                    const roleName = form.getAttribute('data-role-name');
+
+                    Swal.fire({
+                        title: '¿Estás seguro?',
+                        text: `¿Deseas eliminar el rol "${roleName}"? Esta acción no se puede deshacer.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc2626',
+                        cancelButtonColor: '#64748b',
+                        confirmButtonText: 'Sí, eliminar',
+                        cancelButtonText: 'Cancelar'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            form.submit();
+                        }
+                    });
+                }
+            });
         });
     </script>
 </x-app-layout>

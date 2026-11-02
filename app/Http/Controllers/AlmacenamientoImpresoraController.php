@@ -98,6 +98,25 @@ class AlmacenamientoImpresoraController extends Controller
         // Apply pagination to the query directly
         $almacenamiento_impresoras = $query->paginate(5);
 
+        // Calculate totals per printer, color AND date for display in index
+        $allItems = $query->get();
+        $totalesPorImpresoraColor = [];
+        foreach($allItems as $item) {
+            $impresoraId = $item->impresora_id;
+            $colorId = $item->colore_id;
+            $fechaIngreso = $item->fecha_ingreso;
+            $key = $impresoraId . '_' . $colorId . '_' . $fechaIngreso;
+            if (!isset($totalesPorImpresoraColor[$key])) {
+                $totalesPorImpresoraColor[$key] = [
+                    'impresora_id' => $impresoraId,
+                    'colore_id' => $colorId,
+                    'fecha_ingreso' => $fechaIngreso,
+                    'unidades' => $allItems->where('impresora_id', $impresoraId)->where('colore_id', $colorId)->where('fecha_ingreso', $fechaIngreso)->sum('unidades'),
+                    'unidades_disponibles' => $allItems->where('impresora_id', $impresoraId)->where('colore_id', $colorId)->where('fecha_ingreso', $fechaIngreso)->sum('unidades_disponibles'),
+                ];
+            }
+        }
+
         // Calculate stats
         $totalMateriales = AlmacenamientoImpresora::sum('unidades');
         $totalConsumiblesRegistrados = AlmacenamientoImpresora::count();
@@ -131,7 +150,7 @@ class AlmacenamientoImpresoraController extends Controller
 
         return view('administracion.almacenamiento_impresoras.index', compact(
             'almacenamiento_impresoras', 'totalMateriales', 'totalConsumiblesRegistrados', 'porcentajeConsumibles', 'consumiblesEsteMes', 'stockBajo', 'stockBajoItems', 'totalImpresoras', 'ultimasFechas', 'impresorasEsteMes',
-            'cartuchos', 'colores', 'impresoras', 'fabricantes', 'proveedores', 'unidadesDisponiblesBajoStock'
+            'cartuchos', 'colores', 'impresoras', 'fabricantes', 'proveedores', 'unidadesDisponiblesBajoStock', 'totalesPorImpresoraColor'
         ));
     }
 
@@ -244,8 +263,19 @@ class AlmacenamientoImpresoraController extends Controller
             'fabricante_id' => 'required',
             'proveedore_id' => 'required',
             'n_factura' => 'required',
+            'unidades' => 'required|integer|min:1',
         ]);
         $almacenamiento_impresora = AlmacenamientoImpresora::find($id);
+
+        // Calcular la diferencia de unidades para ajustar unidades_disponibles
+        $unidadesOriginales = $almacenamiento_impresora->unidades;
+        $nuevasUnidades = $request->input('unidades');
+        $diferencia = $nuevasUnidades - $unidadesOriginales;
+
+        // Actualizar unidades y ajustar unidades_disponibles
+        $almacenamiento_impresora->unidades = $nuevasUnidades;
+        $almacenamiento_impresora->unidades_disponibles = $almacenamiento_impresora->unidades_disponibles + $diferencia;
+
         $almacenamiento_impresora->fecha_ingreso = $request->input('fecha_ingreso');
         $almacenamiento_impresora->cartucho_id = $request->input('cartucho_id');
         $almacenamiento_impresora->colore_id = $request->input('colore_id');
@@ -253,8 +283,6 @@ class AlmacenamientoImpresoraController extends Controller
         $almacenamiento_impresora->fabricante_id = $request->input('fabricante_id');
         $almacenamiento_impresora->proveedore_id = $request->input('proveedore_id');
         $almacenamiento_impresora->n_factura = $request->input('n_factura');
-
-        // No actualizar unidades ni unidades_disponibles para mantener el historial
         $almacenamiento_impresora->user_id = auth()->id();
 
         $almacenamiento_impresora->save();

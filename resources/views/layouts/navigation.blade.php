@@ -3,7 +3,9 @@
     <!-- Header -->
     <div class="sidebar-header flex items-center justify-between p-6 border-b border-blue-700">
         <div class="sidebar-header-content flex items-center gap-3">
-            <img src="{{asset('img/Logo.png')}}" class="h-20 w-auto" alt="Logo">
+            <a href="{{ route('inicio') }}" class="transition-transform hover:scale-105">
+                <img src="{{asset('img/Logo.png')}}" class="h-20 w-auto" alt="Logo">
+            </a>
 
         </div>
         <div class="flex items-center gap-2">
@@ -146,41 +148,56 @@
                     <span>Registros</span>
                 </a>
                 @endcan
-                @can('unidad_adminis_index')
-                <a href="{{ route('administracion.unidad_administrativa.index') }}" class="sidebar-item {{ request()->routeIs('administracion.unidad_administrativa.index') ? 'active' : '' }}">
-                    <span>Unidad Administrativa</span>
-                </a>
-                @endcan
-                @can('usuario_de_uso_index')
-                <a href="{{ route('administracion.usuario_de_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_de_uso.index') ? 'active' : '' }}">
-                    <span>Usuarios de Uso</span>
-                </a>
-                @endcan
-                @can('usuario_administrativo_index')
-                <a href="{{ route('administracion.usuario_administrativo.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_administrativo.index') ? 'active' : '' }}">
-                    <span>Usuarios Administrativo</span>
-                </a>
-                @endcan
-                @can('forma_adquisicion_index')
-                <a href="{{ route('administracion.forma_adquisicion.index') }}" class="sidebar-item {{ request()->routeIs('administracion.forma_adquisicion.index') ? 'active' : '' }}">
-                    <span>Forma de Adquisición</span>
-                </a>
-                @endcan
-                @can('estado_uso_index')
-                <a href="{{ route('administracion.estado_del_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.estado_del_uso.index') ? 'active' : '' }}">
-                    <span>Estado del Uso</span>
-                </a>
-                @endcan
-                @can('color_index')
-                <a href="{{ route('administracion.colors.index') }}" class="sidebar-item {{ request()->routeIs('administracion.colors.index') ? 'active' : '' }}">
-                    <span>Color</span>
-                </a>
-                @endcan
-                @can('condicion_index')
-                <a href="{{ route('administracion.condicion_fisica.index') }}" class="sidebar-item {{ request()->routeIs('administracion.condicion_fisica.index') ? 'active' : '' }}">
-                    <span>Condición Física</span>
-                </a>
-                @endcan
+                <div class="sidebar-item" onclick="toggleSubmenu('carga-previa-bienes')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                        <line x1="16" y1="13" x2="8" y2="13"/>
+                        <line x1="16" y1="17" x2="8" y2="17"/>
+                        <polyline points="10,9 9,9 8,9"/>
+                    </svg>
+                    <span>Carga Previa</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-bienes-arrow">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                <div class="submenu ml-4 hidden" id="carga-previa-bienes-submenu">
+                    @can('unidad_adminis_index')
+                    <a href="{{ route('administracion.unidad_administrativa.index') }}" class="sidebar-item {{ request()->routeIs('administracion.unidad_administrativa.index') ? 'active' : '' }}">
+                        <span>Unidad Administrativa</span>
+                    </a>
+                    @endcan
+                    @can('usuario_de_uso_index')
+                    <a href="{{ route('administracion.usuario_de_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_de_uso.index') ? 'active' : '' }}">
+                        <span>Usuarios de Uso</span>
+                    </a>
+                    @endcan
+                    @can('usuario_administrativo_index')
+                    <a href="{{ route('administracion.usuario_administrativo.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_administrativo.index') ? 'active' : '' }}">
+                        <span>Usuarios Administrativo</span>
+                    </a>
+                    @endcan
+                    @can('forma_adquisicion_index')
+                    <a href="{{ route('administracion.forma_adquisicion.index') }}" class="sidebar-item {{ request()->routeIs('administracion.forma_adquisicion.index') ? 'active' : '' }}">
+                        <span>Forma de Adquisición</span>
+                    </a>
+                    @endcan
+                    @can('estado_uso_index')
+                    <a href="{{ route('administracion.estado_del_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.estado_del_uso.index') ? 'active' : '' }}">
+                        <span>Estado del Uso</span>
+                    </a>
+                    @endcan
+                    @can('color_index')
+                    <a href="{{ route('administracion.colors.index') }}" class="sidebar-item {{ request()->routeIs('administracion.colors.index') ? 'active' : '' }}">
+                        <span>Color</span>
+                    </a>
+                    @endcan
+                    @can('condicion_index')
+                    <a href="{{ route('administracion.condicion_fisica.index') }}" class="sidebar-item {{ request()->routeIs('administracion.condicion_fisica.index') ? 'active' : '' }}">
+                        <span>Condición Física</span>
+                    </a>
+                    @endcan
+                </div>
             </div>
             @endcan
 
@@ -407,7 +424,7 @@
                      alt="{{ Auth::user()->name }}"
                      class="w-10 h-10 rounded-lg object-cover">
             @else
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-green-600 flex items-center justify-center">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-blue-100 flex items-center justify-center">
                     <span class="text-white font-bold">{{ substr(Auth::user()->name, 0, 2) }}</span>
                 </div>
             @endif
@@ -454,7 +471,7 @@
 
     // Función para alternar submenús
     function toggleSubmenu(menuId) {
-        const submenus = ['gtic', 'oga', 'ogh', 'documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina','ogh-documentos'];
+        const submenus = ['gtic', 'oga', 'ogh', 'documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina', 'carga-previa-bienes', 'ogh-documentos'];
         const parentMap = {
             'documentos': 'oga',
             'bienes': 'oga',
@@ -462,6 +479,7 @@
             'carga-previa-oficina': 'inv-oficina',
             'inv-consumibles': 'oga',
             'carga-previa': 'inv-consumibles',
+            'carga-previa-bienes': 'bienes',
             'ogh-documentos': 'ogh'
         };
 
@@ -522,7 +540,8 @@
             'inv-consumibles': 'oga',
             'ogh-documentos': 'ogh',
             'carga-previa': 'inv-consumibles',
-            'carga-previa-oficina': 'inv-oficina'
+            'carga-previa-oficina': 'inv-oficina',
+            'carga-previa-bienes': 'bienes'
         };
 
         // Obtener el parámetro 'from' de la URL
@@ -534,10 +553,12 @@
             targetCargaPrevia = 'carga-previa';
         } else if (fromParam === 'oficina') {
             targetCargaPrevia = 'carga-previa-oficina';
+        } else if (fromParam === 'bienes') {
+            targetCargaPrevia = 'carga-previa-bienes';
         }
 
         // Primero verificar submenús de nivel 2 (los más profundos)
-        const level2Submenus = ['documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina', 'ogh-documentos'];
+        const level2Submenus = ['documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina', 'carga-previa-bienes', 'ogh-documentos'];
         level2Submenus.forEach(menuId => {
             const submenu = document.getElementById(menuId + '-submenu');
             if (submenu) {
@@ -635,7 +656,7 @@
 
     // Función para expandir todos los submenús en la página de inicio
     function expandAllSubmenusOnHome() {
-        const allSubmenus = ['gtic', 'oga', 'ogh', 'documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina', 'ogh-documentos'];
+        const allSubmenus = ['gtic', 'oga', 'ogh', 'documentos', 'bienes', 'inv-oficina', 'inv-consumibles', 'carga-previa', 'carga-previa-oficina', 'carga-previa-bienes', 'ogh-documentos'];
         allSubmenus.forEach(id => {
             const submenu = document.getElementById(id + '-submenu');
             if (submenu) {

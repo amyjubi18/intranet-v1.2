@@ -24,8 +24,13 @@ class DocsController extends Controller
     {
         abort_if(Gate::denies('documentos_index'), 403);
 
-        // Búsqueda general
+        // Parámetros de búsqueda y ordenamiento
         $searchGeneral = $request->get('search_general');
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
 
         // Filtros avanzados
         $filterType = $request->get('filterType');
@@ -62,12 +67,16 @@ class DocsController extends Controller
             ->when($estanteriaId, function ($query) use ($estanteriaId) {
                 return $query->where('estanteria_id', $estanteriaId);
             })
-            ->latest()->paginate(10);
+            ->orderBy($sort, $direction)
+            ->paginate(10);
 
         return view('administracion.documentos.index', [
             'documentos' => $documentos,
             'categorias' => Categoria::all(),
-            'estanterias' => Estanteria::all()
+            'estanterias' => Estanteria::all(),
+            'sort' => $sort,
+            'direction' => $direction,
+            'search_general' => $searchGeneral
         ]);
     }
 
@@ -78,7 +87,7 @@ class DocsController extends Controller
     {
         abort_if(Gate::denies('documentos_create'), 403);
         return view('administracion.documentos.create', [
-            "categorias" => Categoria::all(),
+            "categorias" => Categoria::orderBy('name')->get(),
             "estanterias" => Estanteria::all()
         ]);
     }
@@ -102,6 +111,7 @@ class DocsController extends Controller
             $documento->fecha = $request->get('fecha');
             $documento->user_id = $request->user()->id;
             $documento->estanteria_id = $request->get('estanteria_id');
+            $documento->categoria_id = $request->get('categoria_id');
             $documento->save();
 
             // Guardar múltiples PDFs
@@ -152,10 +162,10 @@ class DocsController extends Controller
     public function edit($id)
     {
         abort_if(Gate::denies('documentos_edit'), 403);
-        $documento = Documento::with('archivos.categoria')->find($id);
+        $documento = Documento::with('archivos.categoria', 'estanteria', 'categoria')->find($id);
         return view('administracion.documentos.edit', [
             'documento' => $documento,
-            'categorias' => Categoria::all(),
+            'categorias' => Categoria::orderBy('name')->get(),
             'estanterias' => Estanteria::all()
         ]);
     }
@@ -174,6 +184,7 @@ class DocsController extends Controller
                 'description' => $request->get('description'),
                 'fecha' => $request->get('fecha'),
                 'estanteria_id' => $request->get('estanteria_id'),
+                'categoria_id' => $request->get('categoria_id'),
             ]);
 
             // Actualizar categorías de archivos existentes

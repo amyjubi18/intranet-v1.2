@@ -12,9 +12,20 @@ class AreaAdscritaController extends Controller
 
         abort_if(Gate::denies('area_adscrita_index'), 403);
 
-        $search =trim($request->get('search'));
-        $area_adscritas = DB::table('area_adscritas')->select('id', 'area_adscrita')->where('area_adscrita', 'LIKE', '%'.$search.'%')->orderBy('area_adscrita', 'asc')->paginate(15);
-        return view('gestion-humana.area_adscrita.index', compact('area_adscritas', 'search'));
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'area_adscrita');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $area_adscritas = DB::table('area_adscritas')
+            ->select('id', 'area_adscrita')
+            ->where('area_adscrita', 'LIKE', '%'.$search.'%')
+            ->orderBy($sort, $direction)
+            ->paginate(15);
+
+        return view('gestion-humana.area_adscrita.index', compact('area_adscritas', 'search', 'sort', 'direction'));
 
     }
     public function create(AreaAdscrita $area_adscrita){

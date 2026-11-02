@@ -176,25 +176,7 @@
             display: none;
         }
 
-        /* Paginador */
-        .pagination .page-link {
-            background-color: #1e40af;
-            color: white;
-            border-color: #1e40af;
-        }
-        .pagination .page-link:hover {
-            background-color: #1d4ed8;
-            border-color: #1d4ed8;
-            color: white;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #1e40af;
-            border-color: #1e40af;
-        }
-        .pagination .page-item.disabled .page-link {
-            background-color: #6b7280;
-            border-color: #6b7280;
-        }
+        
     </style>
 <style>
     .swal2-popup .swal2-actions {
@@ -237,7 +219,7 @@
                         <input type="hidden" name="articulo_id" id="articulo_id" value="{{ request('articulo_id') }}">
                         <input type="hidden" name="unidad_medida_id" id="unidad_medida_id" value="{{ request('unidad_medida_id') }}">
                         <select id="secondFilter" onchange="submitFilter()" class="glass bg-blue-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" disabled>
-                            <option value="">Primero selecciona un filtro</option>
+                            <option value=""> selecciona un filtro</option>
                         </select>
 
                         <!-- Filtro con buscador personalizado -->
@@ -263,17 +245,34 @@
                         <input type="text" id="textFilter" placeholder="Buscar..." class="glass rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 hidden">
                     </div>
 
-                    <!-- Botón para limpiar filtros -->
+<!-- Botón para limpiar filtros -->
                     <button onclick="clearFilters()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                         🗑️ Limpiar
                     </button>
+
+<!-- Selector de ordenamiento -->
+                    <div class="flex items-center gap-1">
+                        <span class="text-xs text-gray-500">Ordenar:</span>
+                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'id', 'direction' => $sort === 'id' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'id' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            ITEM @if($sort === 'id'){{ $direction === 'asc' ? '⬆️' : '⬇️' }}@endif
+                        </a>
+                        <a href="{{ request()->fullUrlWithQuery(['sort' => 'articulo', 'direction' => $sort === 'articulo' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'articulo' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            Artículo @if($sort === 'articulo'){{ $direction === 'asc' ? '⬆️' : '⬇️' }}@endif
+                        </a>
+                       {{--  <a href="{{ request()->fullUrlWithQuery(['sort' => 'stock_min', 'direction' => $sort === 'stock_min' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                           class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'stock_min' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                            Stock @if($sort === 'stock_min'){{ $direction === 'asc' ? '⬆️' : '⬇️' }}@endif
+                        </a> --}}
+                    </div>
                 </div>
 
                     <div class="flex items-center gap-3">
                         @can('articulo_create')
                         <a href="{{ route('administracion.articulos.create') }}" class="btn inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                             <span>➕</span>
-                            Nuevo Registro
+                            Nuevo
                         </a>
                         @endcan
                     </div>
@@ -349,7 +348,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Estado de la aplicación
         let stockChart, distributionChart;

@@ -9,17 +9,26 @@ use Illuminate\Http\Request;
 
 class UnidadAdministrativaController extends Controller
 {
-    
+
 
     public function index(Request $request){
 
         abort_if(Gate::denies('unidad_adminis_index'), 403);
 
-        $search =trim($request->get('search'));
-        
-        $unidad_administrativas = DB::table('unidad_administrativas')->select('id', 'name')->where('name', 'LIKE', '%'.$search.'%')->orderBy('name', 'asc')->paginate(15);
-        return view('administracion.unidad_administrativa.index', compact('unidad_administrativas', 'search'));
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'name');
+        $direction = $request->get('direction', 'asc');
 
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $unidad_administrativas = DB::table('unidad_administrativas')
+            ->select('id', 'name')
+            ->where('name', 'LIKE', '%'.$search.'%')
+            ->orderBy($sort, $direction)
+            ->paginate(15);
+
+        return view('administracion.unidad_administrativa.index', compact('unidad_administrativas', 'search', 'sort', 'direction'));
     }
      public function show(){
         return view('administracion.unidad_administrativa.show', ['unidad_administrativas' => UnidadAdministrativa::get()]);

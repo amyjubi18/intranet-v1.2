@@ -13,39 +13,44 @@ class UsuarioAdministrativoController extends Controller
 
         abort_if(Gate::denies('usuario_administrativo_index'), 403);
 
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'usuario_administrativo');
+        $direction = $request->get('direction', 'asc');
 
-        $usuario_administrativo = UsuarioAdministrativo::query()->with('unidad_administrativa');
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $query = UsuarioAdministrativo::query()->with('unidad_administrativa');
 
         //filtros específicos
         if ($request->has('usuario') && $request->usuario) {
-            $usuario_administrativo->where('id', $request->usuario);
+            $query->where('id', $request->usuario);
         }
         if ($request->has('unidad') && $request->unidad) {
-            $usuario_administrativo->where('unidad_administrativa_id', $request->unidad);
+            $query->where('unidad_administrativa_id', $request->unidad);
         }
-        //manejar búsqueda simple (fallback)
-        $usuario_administrativo->when(request('search'), function ($query) {
-            return $query->where('usuario_administrativo', 'LIKE', '%' . request('search') . '%')
-                ->orWhereHas('unidad_administrativa', function ($q) {
-                    $q->where('name', 'LIKE', '%' . request('search') . '%');
+
+        // Búsqueda simple
+        if ($search) {
+            $query->where('usuario_administrativo', 'LIKE', '%' . $search . '%')
+                ->orWhereHas('unidad_administrativa', function ($q) use ($search) {
+                    $q->where('name', 'LIKE', '%' . $search . '%');
                 });
-        });
-        $usuario_administrativos = $usuario_administrativo->orderBy('usuario_administrativo', 'asc')->paginate(10);
+        }
+
+        $usuario_administrativos = $query->orderBy($sort, $direction)->paginate(15);
 
         $todosLosUsuariosAdministrativos = UsuarioAdministrativo::orderBy('usuario_administrativo', 'asc')->get();
         $todasLasUnidadAdministrativas = UnidadAdministrativa::orderBy('name', 'asc')->get();
-        /* $usuario_administrativos = UsuarioAdministrativo::query()->with('unidad_administrativa')->when(request('search'), function ($query) {
-            return $query->where('usuario_administrativo', 'LIKE', '%' . request('search') . '%')
-                ->orWhereHas('unidad_administrativa', function ($q) {
-                    $q->where('name', 'LIKE', '%' . request('search') . '%');
-                });
-        })->latest()->paginate(15); */
-
 
         return view('administracion.usuario_administrativo.index',[
-            'usuario_administrativos' => $usuario_administrativos, 'todasLasUnidadesAdministrativas' => $todasLasUnidadAdministrativas, 'todosLosUsuariosAdministrativos' => $todosLosUsuariosAdministrativos
+            'usuario_administrativos' => $usuario_administrativos,
+            'todasLasUnidadesAdministrativas' => $todasLasUnidadAdministrativas,
+            'todosLosUsuariosAdministrativos' => $todosLosUsuariosAdministrativos,
+            'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction
         ]);
-
     }
      public function show(){
         return view('administracion.usuario_administrativo.show', ['usuario_administrativos' => UsuarioAdministrativo::get()]);

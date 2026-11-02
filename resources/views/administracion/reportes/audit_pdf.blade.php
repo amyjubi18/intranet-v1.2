@@ -138,13 +138,12 @@
                 <th>Tipo</th>
                 <th>Artículo</th>
                 <th>Unidad de Medida</th>
-                <th>Stock Min</th>
                 <th>Unidades</th>
                 <th>Unidades Disponibles</th>
+                <th>Stock Min</th>
                 <th>Factura</th>
                 <th>Fecha Ingreso</th>
                 <th>Proveedor</th>
-
                 <th>Usuario</th>
             </tr>
         </thead>
@@ -160,8 +159,8 @@
                 <td>{{ $item->n_factura }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->fecha_ingreso)->format('d/m/Y') }}</td>
                 <td>{{ $item->proveedores ? $item->proveedores->proveedor : 'N/A' }}</td>
-                
-                <td>{{ $item->users ? $item->users->name : 'N/A' }}</td>
+
+                <td>{{ $item->users ? $item->users->username : 'N/A' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -181,10 +180,10 @@
                 <th>Unidades Ingresadas</th>
                 <th>Unidades Disponibles</th>
                 <th>Fecha Salida</th>
-                <th>Usuario</th>
                 <th>Proveedor</th>
                 <th>Gerencia</th>
                 <th>Área</th>
+                 <th>Usuario</th>
             </tr>
         </thead>
         <tbody>
@@ -198,10 +197,11 @@
                 <td style="text-align: center;">{{ $item->historico_unidades_disponibles }}</td>
                 <td style="text-align: center;">{{ $item->inventario_oficinas->unidades_disponibles }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->fecha_salida)->format('d/m/Y') }}</td>
-                <td>{{ $item->users ? $item->users->name : 'N/A' }}</td>
+
                 <td>{{ $item->inventario_oficinas && $item->inventario_oficinas->proveedores ? $item->inventario_oficinas->proveedores->proveedor : 'N/A' }}</td>
                 <td>{{ $item->gerencias ? $item->gerencias->gerencia : 'N/A' }}</td>
                 <td>{{ $item->areas ? $item->areas->area : 'N/A' }}</td>
+                <td>{{ $item->users ? $item->users->username : 'N/A' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -222,9 +222,10 @@
                 <th>Unidades Disponibles</th>
                 <th>Stock Min</th>
                 <th>Factura</th>
-                <th>Usuario</th>
                 <th>Fecha Ingreso</th>
                 <th>Proveedor</th>
+                <th>Usuario</th>
+
             </tr>
         </thead>
         <tbody>
@@ -239,9 +240,9 @@
                 <td style="text-align: center;">{{ $item->unidades_disponibles }}</td>
                 <td style="text-align: center;">{{ $item->cartuchos ? $item->cartuchos->stock_min : 'N/A' }}</td>
                 <td>{{ $item->n_factura }}</td>
-                <td>{{ $item->users ? $item->users->name : 'N/A' }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->fecha_ingreso)->format('d/m/Y') }}</td>
                 <td>{{ $item->proveedores ? $item->proveedores->proveedor : 'N/A' }}</td>
+                <td>{{ $item->users ? $item->users->username : 'N/A' }}</td>
             </tr>
             @endforeach
         </tbody>
@@ -258,12 +259,13 @@
                 <th>Impresora</th>
                 <th>Color</th>
                 <th>Tipo de Consumible</th>
-                <th>Unidades Asignadas</th>
-                <th>Unidades Disponibles</th>
+                <th style="text-align: center;">Unidades Originales</th>
+                <th style="text-align: center;">Unidades Asignadas</th>
+                <th style="text-align: center;">Unidades Disponibles</th>
                 <th>Fecha Dist.</th>
-                <th>Usuario</th>
                 <th>Gerencia</th>
                 <th>Área</th>
+                <th>Usuario</th>
             </tr>
         </thead>
         <tbody>
@@ -276,10 +278,12 @@
                 <td>{{ $item->almacenamientoImpresora && $item->almacenamientoImpresora->cartuchos && $item->almacenamientoImpresora->cartuchos->fabricante ? $item->almacenamientoImpresora->cartuchos->fabricante->fabricante : 'N/A' }}</td>
                 <td style="text-align: center;">{{ $item->unidades_asignadas_originales }}</td>
                 <td style="text-align: center;">{{ $item->unidades_asignadas }}</td>
+                <td style="text-align: center;">{{ $item->almacenamientoImpresora ? $item->almacenamientoImpresora->unidades_disponibles : 'N/A' }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->created_at)->format('d/m/Y') }}</td>
-                <td>{{ $item->users ? $item->users->name : 'N/A' }}</td>
+
                 <td>{{ $item->gerencia ? $item->gerencia->gerencia : 'N/A' }}</td>
                 <td>{{ $item->area ? $item->area->area : 'N/A' }}</td>
+                <td>{{ $item->users ? $item->users->username : 'N/A' }}</td>
 
             </tr>
             @endforeach
@@ -302,9 +306,10 @@
                 <th>Unidades Asignadas Restantes</th>
                 <th>Unidades Totales Disponibles</th>
                 <th>Fecha Salida</th>
-                <th>Usuario</th>
                 <th>Gerencia</th>
                 <th>Área</th>
+                <th>Usuario</th>
+
             </tr>
         </thead>
         <tbody>
@@ -318,11 +323,11 @@
                 <td style="text-align: center;">{{ $item->cantidad }}</td>
                 <td style="text-align: center;">{{ $item->historico_unidades_asignadas_originales }}</td>
                 <td style="text-align: center;">{{ $item->historico_unidades_asignadas_restantes }}</td>
-                <td style="text-align: center;">{{ $item->historico_unidades_disponibles }}</td>
+                <td style="text-align: center;">{{ $item->almacenamientoImpresora ? $item->almacenamientoImpresora->unidades_disponibles : 'N/A' }}</td>
                 <td>{{ \Carbon\Carbon::parse($item->fecha_salida)->format('d/m/Y') }}</td>
-                <td>{{ $item->users ? $item->users->name : 'N/A' }}</td>
                 <td>{{ $item->distribucionAlmacenamientoImpresora && $item->distribucionAlmacenamientoImpresora->gerencia ? $item->distribucionAlmacenamientoImpresora->gerencia->gerencia : 'N/A' }}</td>
                 <td>{{ $item->distribucionAlmacenamientoImpresora && $item->distribucionAlmacenamientoImpresora->area ? $item->distribucionAlmacenamientoImpresora->area->area : 'N/A' }}</td>
+                <td>{{ $item->users ? $item->users->username : 'N/A' }}</td>
             </tr>
             @endforeach
         </tbody>

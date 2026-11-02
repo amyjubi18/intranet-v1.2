@@ -435,7 +435,7 @@
                     </div>
                 </div>
 
-                <div class="flex items-center justify-between mt-6">
+                <div class="flex items-center justify-between mt-6 gap-2">
                     <x-primary-link href="{{ route('administracion.bienes_publicos.index') }}">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);"><path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95z"></path></svg>
                         Regresar
@@ -449,7 +449,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Inicializar Tom Select para descripción

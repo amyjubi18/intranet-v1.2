@@ -72,7 +72,7 @@
 }
 
 .login-page .glass{
-background-color: #ffffff47;
+background-color: #ffffffbc;
   border:1px solid var(--card-border);
   backdrop-filter:blur(12px);
   position: relative;

@@ -9,23 +9,31 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Fuente Inter -->
+
+    {{-- Fuentes externas deshabilitadas por CSP - usando fuentes del sistema --}}
+    {{--
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
+    --}}
 
     <script type="text/javascript">
     var baseURL = {!!json_encode(url('/'))!!}
     </script>
 
+    {{-- Fuentes externas deshabilitadas por CSP - usando fuentes del sistema --}}
+    {{--
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
+    --}}
     <link rel="icon" href="{{asset('img/Logo.png')}}" type="image/png">
 
     <!-- Scripts -->
      @yield('scripts')
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+@vite(['resources/css/app.css', 'resources/js/app.js'])
+<script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <style>
         body {
@@ -242,61 +250,7 @@
         .searchable-select-option.hidden {
             display: none;
         }
-        /* Pagination Light Theme - More Specific */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
-            list-style: none;
-            padding: 0;
-        }
-        .pagination .page-item {
-            display: inline-block;
-        }
-        .pagination .page-link,
-        .pagination .page-item.active .page-link,
-        .pagination .page-item.disabled .page-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 2.5rem;
-            height: 2.5rem;
-            padding: 0.5rem 0.75rem;
-            border: 1px solid #e2e8f0 !important;
-            background-color: #ffffff !important;
-            color: #64748b !important;
-            text-decoration: none;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
-            font-weight: 500;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .pagination .page-link:hover {
-            background-color: #f8fafc !important;
-            border-color: #cbd5e1 !important;
-            color: #1e293b !important;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #1e3a8a !important;
-            border-color: #1e3a8a !important;
-            color: #ffffff !important;
-            font-weight: 600;
-        }
-        .pagination .page-item.disabled .page-link {
-            background-color: #f8fafc !important;
-            color: #94a3b8 !important;
-            cursor: not-allowed !important;
-            opacity: 0.6;
-        }
-        .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
-            background-color: #f8fafc !important;
-            border-color: #cbd5e1 !important;
-            color: #1e293b !important;
-        }
+       
         .sidebar.collapsed .sidebar-header-content{
             display:none;
         }

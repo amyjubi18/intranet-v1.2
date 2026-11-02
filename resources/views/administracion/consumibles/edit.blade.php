@@ -181,11 +181,11 @@
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                    <!-- Tipo Consumible -->
+                    <!-- Fabricante -->
                     <div>
-                        <label class="form-label">Tipo Consumible:</label>
-                        <select name="fabricante_id" class="form-select border-none bg-blue-100 " required>
-                            <option value="">Seleccione un tipo</option>
+                        <label class="form-label">Fabricante:</label>
+                        <select name="fabricante_id" id="fabricante_id" class="form-select border-none bg-blue-100 " required>
+                            <option value="">Seleccione un fabricante</option>
                             @foreach ($fabricantes as $fabricante)
                                 <option value="{{ $fabricante->id }}" {{ old('fabricante_id', $cartucho->fabricante_id) == $fabricante->id ? 'selected' : '' }}>
                                     {{ $fabricante->fabricante }}
@@ -241,7 +241,7 @@
                             <polyline points="7,3 7,8 15,8"/>
                         </svg>
                         Actualizar
-                        
+
                     </x-primary-button>
                 </div>
             </form>
@@ -256,7 +256,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Elementos del DOM
         const form = document.getElementById('editarConsumibleForm');

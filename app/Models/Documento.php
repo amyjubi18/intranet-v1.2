@@ -9,7 +9,7 @@ class Documento extends Model
 {
     use HasFactory;
     protected $table ='documentos';
-    protected $fillable = ['name', 'description', 'documento', 'fecha', 'user_id', 'estanteria_id'];
+    protected $fillable = ['name', 'description', 'documento', 'fecha', 'user_id', 'estanteria_id', 'categoria_id'];
 
     public function user()
     {
@@ -30,6 +30,14 @@ class Documento extends Model
     public function estanteria()
     {
         return $this->belongsTo(Estanteria::class);
+    }
+
+    /**
+     * Relación con la categoría
+     */
+    public function categoria()
+    {
+        return $this->belongsTo(Categoria::class);
     }
 }
 

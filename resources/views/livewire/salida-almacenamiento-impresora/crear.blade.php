@@ -2,34 +2,44 @@
 <form wire:submit.prevent="submit" class="space-y-4">
 
 
-        <div>
-            <label class="block text-sm font-medium mb-1 text-black">Almacenamiento Impresora:</label>
-            <select
-                class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
-                name="almacenamiento_impresora_id" id="almacenamiento_impresora_id" wire:model="almacenamiento_impresora_id">
-                <option value="">Seleccione</option>
-                @foreach ($almacenamiento_impresoras as $almacenamiento)
-                    <option value="{{ $almacenamiento->id }}">
-                     Impresora: {{ $almacenamiento->impresoras->impresora ?? '' }} - Consumible {{ $almacenamiento->cartuchos->cartucho ?? '' }} </option>
-                @endforeach
-            </select>
-            <x-input-error :messages="$errors->get('almacenamiento_impresora_id')" class="mt-2" />
-        </div>
+        <!-- Almacenamiento -->
+<div>
+    <label class="block text-sm font-medium mb-1 text-black">Almacenamiento:</label>
+    <select
+        class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
+        name="almacenamiento_impresora_id" id="almacenamiento_impresora_id" wire:model.live="almacenamiento_impresora_id">
+        <option value="">Seleccione almacenamiento</option>
+        @foreach($almacenamientos as $almacenamiento)
+            <option value="{{ $almacenamiento['id'] }}" {{ $almacenamiento_impresora_id == $almacenamiento['id'] ? 'selected' : '' }}>
+                {{ $almacenamiento['impresora'] }} - {{ $almacenamiento['cartucho'] }} ({{ $almacenamiento['color'] }}) - Disponibles: {{ $almacenamiento['unidades_disponibles'] }}
+            </option>
+        @endforeach
+    </select>
+    @error('almacenamiento_impresora_id')
+        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+    @enderror
+</div>
 
-        <div>
-            <label class="block text-sm font-medium mb-1 text-black">Distribución (Gerencia):</label>
-            <select
-                class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
-                name="distribucion_almacenamiento_impresora_id" id="distribucion_almacenamiento_impresora_id" wire:model="distribucion_almacenamiento_impresora_id">
-                <option value="">Seleccione</option>
-                @foreach ($distribuciones as $distribucion)
-                    <option value="{{ $distribucion->id }}">
-                        {{ $distribucion->gerencia->gerencia ?? '' }} - {{ $distribucion->gerencia->area->area ?? '' }}</option>
-                @endforeach
-            </select>
-            <x-input-error :messages="$errors->get('distribucion_almacenamiento_impresora_id')" class="mt-2" />
 
-    </div>
+        blade
+<!-- Distribución -->
+<div>
+    <label class="block text-sm font-medium mb-1 text-black">Distribución (Gerencia):</label>
+    <select
+        class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
+        name="distribucion_almacenamiento_impresora_id" id="distribucion_almacenamiento_impresora_id" wire:model.live="distribucion_almacenamiento_impresora_id">
+        <option value="">Seleccione distribución</option>
+        @foreach($distribuciones as $dist)
+            <option value="{{ $dist['id'] }}" {{ $distribucion_almacenamiento_impresora_id == $dist['id'] ? 'selected' : '' }}>
+                {{ $dist['impresora'] }} - {{ $dist['cartucho'] }} ({{ $dist['color'] }}) - {{ $dist['gerencia'] }} ({{ $dist['area'] }}) - Asignadas: {{ $dist['unidades_asignadas'] }}
+            </option>
+        @endforeach
+    </select>
+    @error('distribucion_almacenamiento_impresora_id')
+        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+    @enderror
+</div>
+
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-2">
     @if($almacenamiento_impresora_id)
     <div>
@@ -40,6 +50,7 @@
         <div class="w-36 h-36 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0 self-center md:self-start mt-2">
                 @if($imagen_impresora)
                     <img src="{{ asset('storage/' . $imagen_impresora) }}" alt="Impresora" class="w-36 h-36 object-cover rounded-xl">
+
                 @else
                     <span class="text-blue-400" style="font-size: 32px;">🖨️</span>
                 @endif
@@ -103,7 +114,7 @@
         </div>
     </div>
 
-    <div class="flex mt-4 justify-evenly">
+    <div class="flex mt-4 justify-evenly gap-2">
         <x-primary-link href="{{ route('administracion.salida_almacen.index') }}">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24"
                 style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;">

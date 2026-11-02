@@ -15,7 +15,7 @@
         <!-- Scripts -->
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
-    <body class="font-sans antialiased text-gray-900 ">
+<body class="font-sans antialiased text-gray-900 login-page">
         <section class="flex flex-col items-center h-screen  rounded md:flex-row ">
             <div class="hidden h-screen bg-blue-600 lg:block md:w-1/2 xl:w-2/3">
                  <img src="../img/fondo-intranet.jpg" class="object-cover w-full h-full" alt="">

@@ -385,10 +385,63 @@
                             <input type="text" id="generalSearch" name="search_general" placeholder="Búsqueda general..." class="w-64 px-4 py-2 text-sm bg-white border border-white/20 backdrop-blur-md rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('search_general') ? 'bg-blue-100 border-blue-500' : '' }}" value="{{ request('search_general') }}">
                         </div>
 
+<!-- Script para debounce en búsqueda general -->
+                        <script>
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const generalSearch = document.getElementById('generalSearch');
+                                const filterForm = document.getElementById('filterForm');
+
+                                if (generalSearch && filterForm) {
+                                    let searchTimeout;
+
+                                    generalSearch.addEventListener('input', function() {
+                                        clearTimeout(searchTimeout);
+
+                                        // Debounce: esperar 500ms antes de buscar
+                                        searchTimeout = setTimeout(function() {
+                                            filterForm.submit();
+                                        }, 500);
+                                    });
+                                }
+                            });
+                        </script>
+
                         <!-- Botón para limpiar filtros -->
                         <a href="{{ route('administracion.documentos.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                             🗑️ Limpiar
                         </a>
+
+                        <!-- Selector de ordenamiento -->
+                        <div class="flex items-center gap-1">
+                            <span class="text-xs text-gray-500">Ordenar:</span>
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'name', 'direction' => $sort === 'name' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'name' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                Expediente
+                                @if($sort === 'name')
+                                    @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                                @else
+                                    <span class="text-gray-400">⇅</span>
+                                @endif
+                            </a>
+                            <a href="{{ request()->fullUrlWithQuery(['sort' => 'description', 'direction' => $sort === 'description' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'description' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                Descripcion
+                                @if($sort === 'fecha')
+                                    @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                                @else
+                                    <span class="text-gray-400">⇅</span>
+                                @endif
+                            </a>
+                            {{-- <a href="{{ request()->fullUrlWithQuery(['sort' => 'created_at', 'direction' => $sort === 'created_at' && $direction === 'asc' ? 'desc' : 'asc']) }}"
+                               class="inline-flex items-center gap-1 px-2 py-1 text-xs rounded {{ $sort === 'created_at' ? 'bg-blue-100 text-blue-800 font-semibold' : 'text-gray-600 hover:bg-gray-100' }}">
+                                Creado
+                                @if($sort === 'created_at')
+                                    @if($direction === 'asc') ⬆️ @else ⬇️ @endif
+                                @else
+                                    <span class="text-gray-400">⇅</span>
+                                @endif
+                            </a> --}}
+                        </div>
                     </div>
 
                     <div class="flex items-center gap-3">
@@ -680,7 +733,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         // Toast
         function showToast(msg, type = 'success') {

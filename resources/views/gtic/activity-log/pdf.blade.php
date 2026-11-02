@@ -41,7 +41,7 @@
             <tr>
                 <td>{{ $activity->id }}</td>
                 <td>{{ $activity->created_at->format('d/m/Y h:i:s A') }}</td>
-                <td>{{ $activity->causer ? $activity->causer->name : 'Sistema' }}</td>
+                <td>{{ $activity->causer ? $activity->causer->username : 'Sistema' }}</td>
                 <td class="action-{{ $activity->event }}">
                     @if($activity->event == 'created') Registro
                     @elseif($activity->event == 'updated') Actualización

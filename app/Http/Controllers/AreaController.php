@@ -13,19 +13,31 @@ class AreaController extends Controller
 
         abort_if(Gate::denies('area_index'), 403);
 
-        $areas = Area::query();
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'area');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $query = Area::query();
 
         // Filtros específicos
         if ($request->has('area') && $request->area) {
-            $areas->where('id', $request->area);
+            $query->where('id', $request->area);
         }
 
-        $areas = $areas->orderBy('area', 'asc')->paginate(5);
+        // Búsqueda general
+        if ($search) {
+            $query->where('area', 'LIKE', '%'.$search.'%');
+        }
+
+        $areas = $query->orderBy($sort, $direction)->paginate(15);
 
         // Obtener todas las áreas sin paginar para los filtros
         $todasLasAreas = Area::orderBy('area', 'asc')->get();
 
-       return view('administracion.areas.index', ['areas'=> $areas, 'todasLasAreas' => $todasLasAreas]);
+       return view('administracion.areas.index', ['areas'=> $areas, 'todasLasAreas' => $todasLasAreas, 'search' => $search, 'sort' => $sort, 'direction' => $direction]);
    }
     public function show(){
        return view('administracion.areas.show', ['areas' => Area::get()]);
@@ -55,8 +67,12 @@ class AreaController extends Controller
    }
    public function update(Request $request, Area $area)
    {
-      $area->update($request->only('area'));
-       return redirect()->route('administracion.areas.index');
+       $request->validate([
+           'area' => 'required|unique:areas,area,' . $area->id,
+       ]);
+
+       $area->update($request->only('area'));
+       return redirect()->route('administracion.areas.index')->with('status', 'Área actualizada correctamente');
    }
    public function destroy(Area $area)
    {

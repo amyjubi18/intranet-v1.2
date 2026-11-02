@@ -87,9 +87,21 @@ class PermissionSeeder extends Seeder
             'salidaofic_edit',
             'salidaofic_destroy',
 
+            // Permisos de inventario impresoras
+            'inventarioimpre_index',
+            'inventarioimpre_create',
+            'inventarioimpre_edit',
+            'inventarioimpre_destroy',
+
+            // Permisos de inventario oficina
+            'inventarioofic_index',
+            'inventarioofic_create',
+            'inventarioofic_edit',
+            'inventarioofic_destroy',
+
         ];
         foreach ($permissions as $permission) {
-            Permission::create([
+            \Spatie\Permission\Models\Permission::firstOrCreate([
                 'name'=>$permission
             ]);
         }

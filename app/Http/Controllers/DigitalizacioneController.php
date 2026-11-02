@@ -18,19 +18,25 @@ class DigitalizacioneController extends Controller
     {
         abort_if(Gate::denies('digitalizaciones_index'), 403);
 
+        $search_general = $request->get('search_general', '');
+        $sort = $request->get('sort', 'created_at');
+        $direction = $request->get('direction', 'desc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
+
         $query = Digitalizacione::query()
             ->with('area_adscrita')
             ->with('documentos.tipo_documento');
 
         // Filtro por búsqueda general
-        if (request('search_general')) {
-            $search = request('search_general');
-            $query->where(function ($q) use ($search) {
-                $q->where('cedula', 'LIKE', '%' . $search . '%')
-                    ->orWhere('nombre_apellido', 'LIKE', '%' . $search . '%')
-                    ->orWhere('salud', 'LIKE', '%' . $search . '%')
-                    ->orWhereHas('area_adscrita', function ($q2) use ($search) {
-                        $q2->where('area_adscrita', 'LIKE', '%' . $search . '%');
+        if ($search_general) {
+            $query->where(function ($q) use ($search_general) {
+                $q->where('cedula', 'LIKE', '%' . $search_general . '%')
+                    ->orWhere('nombre_apellido', 'LIKE', '%' . $search_general . '%')
+                    ->orWhere('salud', 'LIKE', '%' . $search_general . '%')
+                    ->orWhereHas('area_adscrita', function ($q2) use ($search_general) {
+                        $q2->where('area_adscrita', 'LIKE', '%' . $search_general . '%');
                     });
             });
         }
@@ -54,12 +60,15 @@ class DigitalizacioneController extends Controller
             $query->whereBetween('created_at', [request('fecha_desde'), request('fecha_hasta')]);
         }
 
-        $digitalizaciones = $query->latest()->paginate(5);
+        $digitalizaciones = $query->orderBy($sort, $direction)->paginate(15);
 
         return view('gestion-humana.digitalizacion_documentos.index', [
             'digitalizaciones' => $digitalizaciones,
             'areas_adscritas' => AreaAdscrita::all(),
-            'tipo_documentos' => TipoDocumento::all()
+            'tipo_documentos' => TipoDocumento::all(),
+            'search_general' => $search_general,
+            'sort' => $sort,
+            'direction' => $direction
         ]);
     }
 

@@ -1,5 +1,4 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\UnidadMedida;
@@ -14,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 use Exception;
 use App\Http\Livewire;
 use App\Models\InventarioOficina;
+use Illuminate\Support\Facades\Hash;
 
 class InventarioOficController extends Controller
 {
@@ -73,12 +73,11 @@ class InventarioOficController extends Controller
                         $query->where('n_factura', 'like', '%' . $request->n_factura . '%');
                     }
                     break;
-                case 'busqueda':
+case 'busqueda':
                     if ($request->filled('busqueda')) {
                         $search = $request->busqueda;
                         $query->where(function($q) use ($search) {
-                            $q->where('descripcion', 'like', '%' . $search . '%')
-                              ->orWhere('n_factura', 'like', '%' . $search . '%')
+                            $q->where('n_factura', 'like', '%' . $search . '%')
                               ->orWhereHas('proveedores', function($subQ) use ($search) {
                                   $subQ->where('proveedor', 'like', '%' . $search . '%');
                               })
@@ -100,6 +99,19 @@ class InventarioOficController extends Controller
         // Determinar si estamos filtrando por artículo específico (para mostrar todos los registros individuales)
         $mostrarTodosRegistros = $request->filled('filterType') && $request->filterType === 'articulo_id' && $request->filled('secondFilter');
 
+        // Calcular totales por artículo ANTES de cualquier agrupación
+        $totalesPorArticulo = [];
+        $tempCollection = collect($inventario_oficinas_paginated->items());
+        foreach ($tempCollection as $item) {
+            $articuloId = $item->articulo_id;
+            if (!isset($totalesPorArticulo[$articuloId])) {
+                $totalesPorArticulo[$articuloId] = [
+                    'unidades' => $tempCollection->where('articulo_id', $articuloId)->sum('unidades'),
+                    'unidades_disponibles' => $tempCollection->where('articulo_id', $articuloId)->sum('unidades_disponibles'),
+                ];
+            }
+        }
+
         // Agrupar por articulo_id y sumar unidades disponibles (solo si NO estamos filtrando por un artículo específico)
         if ($mostrarTodosRegistros) {
             // Cuando filtramos por artículo específico, mostrar cada registro individualmente
@@ -111,7 +123,6 @@ class InventarioOficController extends Controller
                 $totalUnidadesDisponibles = $items->sum('unidades_disponibles');
                 $totalUnidades = $items->sum('unidades');
 
-                // Crear un objeto con los datos agrupados
                 return (object) [
                     'id' => $firstItem->id,
                     'articulo_id' => $firstItem->articulo_id,
@@ -124,15 +135,15 @@ class InventarioOficController extends Controller
                     'n_factura' => $firstItem->n_factura,
                     'unidades' => $totalUnidades,
                     'unidades_disponibles' => $totalUnidadesDisponibles,
+                    'suma_unidades' => $totalUnidades,
                     'created_at' => $firstItem->created_at,
                     'user_id' => $firstItem->user_id,
-                    'items_count' => $items->count(), // Número de registros agrupados
-                    'original_items' => $items, // Mantener todos los items originales para mostrar detalles
-                    'articulos' => $firstItem->articulos // Relación del artículo
+                    'items_count' => $items->count(),
+                    'original_items' => $items,
+                    'articulos' => $firstItem->articulos
                 ];
             })->values();
 
-            // Crear una nueva colección paginada con los items agrupados
             $inventario_oficinas = new \Illuminate\Pagination\LengthAwarePaginator(
                 $groupedItems,
                 $inventario_oficinas_paginated->total(),
@@ -142,7 +153,6 @@ class InventarioOficController extends Controller
             );
         }
 
-        // Estadísticas para las tarjetas
         $ultimaFecha = InventarioOficina::orderBy('fecha_ingreso', 'desc')->first();
         $ultimasFechas = $ultimaFecha ? \Carbon\Carbon::parse($ultimaFecha->fecha_ingreso)->format('d/m/Y') : 'N/A';
 
@@ -150,7 +160,6 @@ class InventarioOficController extends Controller
         $itemsEsteMes = InventarioOficina::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->sum('unidades');
         $porcentajeItems = $totalItemsRegistrados > 0 ? round(($itemsEsteMes / $totalItemsRegistrados) * 100, 1) : 0;
 
-        // Obtener artículos con stock bajo (al menos 2)
         $articulosStockBajo = InventarioOficina::select('articulo_id', DB::raw('SUM(unidades_disponibles) as total_disponibles'), DB::raw('MIN((SELECT stock_min FROM articulos WHERE articulos.id = inventario_oficinas.articulo_id)) as stock_min'))
             ->with('articulos')
             ->groupBy('articulo_id')
@@ -161,14 +170,12 @@ class InventarioOficController extends Controller
 
         $stockBajo = $articulosStockBajo->count();
 
-        // Artículo con más registros
         $articuloMasRegistros = InventarioOficina::select('articulo_id', DB::raw('count(*) as total_registros'))
             ->with('articulos')
             ->groupBy('articulo_id')
             ->orderBy('total_registros', 'desc')
             ->first();
 
-        // Datos para filtros
         $proveedores = Proveedore::all();
         $articulos = Articulo::all();
         $unidad_medidas = UnidadMedida::all();
@@ -184,7 +191,7 @@ class InventarioOficController extends Controller
             'articulosStockBajo',
             'articuloMasRegistros',
             'mostrarTodosRegistros',
-
+            'totalesPorArticulo',
             'proveedores',
             'articulos',
             'unidad_medidas',
@@ -192,13 +199,9 @@ class InventarioOficController extends Controller
         ));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         abort_if(Gate::denies('inventarioofic_create'), 403);
-
         return view('administracion.inventario_oficinas.create', [
             "unidad_medidas" => UnidadMedida::all(),
             "articulos" => Articulo::all(),
@@ -207,12 +210,8 @@ class InventarioOficController extends Controller
         ]);
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
     public function store(Request $request)
     {
-
         $request->validate([
             'fecha_ingreso' =>'required|array',
             'unidad_medida_id' => 'required|array',
@@ -223,7 +222,6 @@ class InventarioOficController extends Controller
         ]);
 
         $count = 0;
-        //este foreach re corre la
         foreach ($request->fecha_ingreso as $index => $fecha) {
             if (!empty($request->articulo_id[$index]) && !empty($request->unidades[$index])) {
                 $inventario_oficina = new InventarioOficina;
@@ -246,76 +244,49 @@ class InventarioOficController extends Controller
         } else {
             return redirect()->back()->with('error', 'No se pudo guardar ningún registro');
         }
-
     }
 
-    /**
-     * Display the specified resource.
-     */
-
-
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit($id)
     {
         abort_if(Gate::denies('inventarioofic_edit'), 403);
-
         $inventario_oficina = InventarioOficina::find($id);
-
-        return view('administracion.inventario_oficinas.edit', ['inventario_oficina' =>
-        $inventario_oficina,
-        'unidad_medidas' => UnidadMedida::all(),
-        'articulos' => Articulo::all(),
-        'proveedores' => Proveedore::all(),
-        'ubicacions' => Ubicacion::all(),
-    ]);
+        return view('administracion.inventario_oficinas.edit', [
+            'inventario_oficina' => $inventario_oficina,
+            'unidad_medidas' => UnidadMedida::all(),
+            'articulos' => Articulo::all(),
+            'proveedores' => Proveedore::all(),
+            'ubicacions' => Ubicacion::all(),
+        ]);
     }
 
     public function show()
     {
-        //abort_if(Gate::denies('user_show'), 403);
-        // $user = User::findOrFail($id);
-        // dd($user);
-
         return view('administracion.inventario_oficinas.show', ['inventario_oficina' => InventarioOficina::get()]);
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
     public function update(Request $request, $id)
     {
         $request->validate([
-
             'fecha_ingreso' =>'required|date|before_or_equal:today',
             'unidad_medida_id' => 'required',
             'articulo_id' => 'required',
             'proveedore_id' => 'required',
-
             'unidades' => 'required|integer|min:1',
             'n_factura' => 'required',
-
         ]);
-        $inventario_oficina =InventarioOficina::find($id);
-        //dd($inventario_oficina);
-        $inventario_oficina->fecha_ingreso =$request->input('fecha_ingreso');
-        $inventario_oficina->unidad_medida_id =$request->input('unidad_medida_id');
-        $inventario_oficina->articulo_id =$request->input('articulo_id');
-        $inventario_oficina->proveedore_id =$request->input('proveedore_id');
-
-        $inventario_oficina->n_factura =$request->input('n_factura');
-        $inventario_oficina->unidades =$request->input('unidades');
+        $inventario_oficina = InventarioOficina::find($id);
+        $inventario_oficina->fecha_ingreso = $request->input('fecha_ingreso');
+        $inventario_oficina->unidad_medida_id = $request->input('unidad_medida_id');
+        $inventario_oficina->articulo_id = $request->input('articulo_id');
+        $inventario_oficina->proveedore_id = $request->input('proveedore_id');
+        $inventario_oficina->n_factura = $request->input('n_factura');
+        $inventario_oficina->unidades = $request->input('unidades');
         $inventario_oficina->user_id = auth()->id();
-
         $inventario_oficina->save();
 
-        return redirect()->route('administracion.inventario_oficinas.index', $inventario_oficina->id)->with('success', 'Excel actualizado correctamente');
+        return redirect()->route('administracion.inventario_oficinas.index', $inventario_oficina->id)->with('success', 'Registro actualizado correctamente');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
     public function destroy($id)
     {
         abort_if(Gate::denies('inventarioofic_destroy'), 403);
@@ -324,26 +295,72 @@ class InventarioOficController extends Controller
         return redirect()->route('administracion.inventario_oficinas.index')->with('success', 'Registro eliminado correctamente');
     }
 
-    /**
-     * Export to Excel
-     */
+    public function destroyMultiple(Request $request)
+    {
+        abort_if(Gate::denies('inventarioofic_destroy'), 403);
+
+        $request->validate([
+            'ids' => 'required|string',
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $ids = json_decode($request->ids, true);
+        if (!is_array($ids) || count($ids) === 0) {
+            return redirect()->back()->with('error', 'No se seleccionaron registros para eliminar.');
+        }
+
+        $count = count($ids);
+
+        try {
+            DB::transaction(function () use ($ids) {
+                InventarioOficina::whereIn('id', $ids)->delete();
+            });
+            return redirect()->route('administracion.inventario_oficinas.index')->with('datos', "Se eliminaron {$count} registro(s) correctamente.");
+        } catch (\Exception $e) {
+            return redirect()->route('administracion.inventario_oficinas.index')->with('error', 'Error al eliminar los registros: ' . $e->getMessage());
+        }
+    }
+
+    public function destroyAll(Request $request)
+    {
+        abort_if(Gate::denies('inventarioofic_destroy'), 403);
+
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $count = InventarioOficina::count();
+
+        try {
+            DB::transaction(function () {
+                InventarioOficina::query()->delete();
+            });
+            return redirect()->route('administracion.inventario_oficinas.index')->with('datos', "Se eliminaron todos los registros ({$count}) correctamente.");
+        } catch (\Exception $e) {
+            return redirect()->route('administracion.inventario_oficinas.index')->with('error', 'Error al eliminar los registros: ' . $e->getMessage());
+        }
+    }
+
     public function exportExcel(Request $request)
     {
         abort_if(Gate::denies('inventarioofic_index'), 403);
-
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\InventarioOficinaExport($request->all()), 'inventario_oficinas.xlsx');
     }
 
-    /**
-     * Export to PDF
-     */
     public function exportPdf(Request $request)
     {
         abort_if(Gate::denies('inventarioofic_index'), 403);
 
         $query = InventarioOficina::with(['proveedores']);
 
-        // Aplicar los mismos filtros que en index
         if ($request->filled('filterType')) {
             switch ($request->filterType) {
                 case 'fecha':
@@ -384,7 +401,6 @@ class InventarioOficController extends Controller
                         $query->where('unidad_medida_id', $request->secondFilter);
                     }
                     break;
-
                 case 'n_factura':
                     if ($request->filled('secondFilter')) {
                         $query->where('n_factura', $request->secondFilter);
@@ -396,8 +412,7 @@ class InventarioOficController extends Controller
                     if ($request->filled('busqueda')) {
                         $search = $request->busqueda;
                         $query->where(function($q) use ($search) {
-                            $q->where('descripcion', 'like', '%' . $search . '%')
-                              ->orWhere('n_factura', 'like', '%' . $search . '%')
+                            $q->where('n_factura', 'like', '%' . $search . '%')
                               ->orWhereHas('proveedores', function($subQ) use ($search) {
                                   $subQ->where('proveedor', 'like', '%' . $search . '%');
                               })
@@ -414,8 +429,6 @@ class InventarioOficController extends Controller
         }
 
         $inventario_oficinas = $query->get();
-
-        // Calculate aggregate stats for the PDF header
         $totalItems = $inventario_oficinas->count();
         $totalUnidades = $inventario_oficinas->sum('unidades');
         $totalUnidadesDisponibles = $inventario_oficinas->sum('unidades_disponibles');

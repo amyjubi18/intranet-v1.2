@@ -1,5 +1,5 @@
 
-@can('inventarioimpre_index')
+@canany(['inventarioimpre_index', 'inventarioofic_index'])
 <x-app-layout>
     @section('title', 'Inventario de Consumibles')
     @section('subtitle', 'Historial de consumibles de impresoras')
@@ -119,7 +119,7 @@
                                     <option value="{{ $proveedor->id }}" {{ request('secondFilter') == $proveedor->id ? 'selected' : '' }}>{{ $proveedor->proveedor }}</option>
                                 @endforeach
                             @elseif(request('filterType') == 'gerencia_id')
-                                @foreach($gerencias as $gerencia)
+                                @foreach($gerencias->sortBy('gerencia') as $gerencia)
                                     <option value="{{ $gerencia->id }}" {{ request('secondFilter') == $gerencia->id ? 'selected' : '' }}>{{ $gerencia->gerencia }}</option>
                                 @endforeach
                             @elseif(request('filterType') == 'area_id')
@@ -631,7 +631,6 @@
         });
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         function confirmDelete(id) {
             Swal.fire({

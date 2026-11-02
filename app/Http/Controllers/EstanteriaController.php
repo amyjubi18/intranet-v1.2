@@ -18,17 +18,26 @@ class EstanteriaController extends Controller
     {
         abort_if(Gate::denies('estanterias_index'), 403);
 
-        $searchGeneral = $request->get('search_general');
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'nombre');
+        $direction = $request->get('direction', 'asc');
 
-        $estanterias = Estanteria::query()
-            ->when($searchGeneral, function ($query) use ($searchGeneral) {
-                return $query->where('nombre', 'LIKE', '%' . $searchGeneral . '%');
-            })
-            ->latest()
-            ->paginate(10);
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $query = Estanteria::query();
+
+        if ($search) {
+            $query->where('nombre', 'LIKE', '%' . $search . '%');
+        }
+
+        $estanterias = $query->orderBy($sort, $direction)->paginate(15);
 
         return view('administracion.estanterias.index', [
-            'estanterias' => $estanterias
+            'estanterias' => $estanterias,
+            'search' => $search,
+            'sort' => $sort,
+            'direction' => $direction
         ]);
     }
 

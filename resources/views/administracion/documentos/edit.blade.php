@@ -127,6 +127,7 @@
                     @error('fecha')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
                 </div>
 
+                 <div class="grid grid-cols-1 gap-2 lg:grid-cols-2">
                 <!-- Campo: Estantería -->
                 <div class="mb-6">
                     <label class="form-label">Estantería 📚:</label>
@@ -141,6 +142,20 @@
                     @error('estanteria_id')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
                 </div>
 
+                <!-- Campo: Categoría -->
+                <div class="mb-6">
+                    <label class="form-label">Categoría 📁:</label>
+                    <select name="categoria_id" class="bg-blue-100 border-none form-select">
+                        <option value="">Seleccionar categoría...</option>
+                        @foreach($categorias as $categoria)
+                            <option value="{{ $categoria->id }}" {{ old('categoria_id', $documento->categoria_id) == $categoria->id ? 'selected' : '' }}>
+                                {{ $categoria->name }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('categoria_id')<p class="mt-1 text-sm text-red-500">{{ $message }}</p>@enderror
+                </div>
+                 </div>
                 <!-- Área para agregar nuevos PDFs -->
                 <div class="mb-8">
                     <label class="form-label">Agregar Más Documentos PDF:</label>
@@ -220,7 +235,6 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         let newFiles = [];
 

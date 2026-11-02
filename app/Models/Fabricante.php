@@ -21,5 +21,11 @@ class Fabricante extends Model
     {
         return $this->hasMany(Cartucho::class);
     }
-    
+
+    // Relación muchos a muchos con colores
+    public function colores()
+    {
+        return $this->belongsToMany(Colore::class, 'fabricante_colore');
+    }
+
 }

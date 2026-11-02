@@ -333,6 +333,7 @@
                                         </svg>
                                     </button>
                                 </div>
+
                                 <div id="addedPermissions" class="added-permissions" style="min-height: 100px; max-height: 250px; overflow-y: auto;">
                                     @if(old('permissions'))
                                         @foreach(old('permissions') as $permId)

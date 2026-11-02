@@ -5,10 +5,21 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
+    <!-- Título dinámico de la página -->
+    <title>
+        @if(View::hasSection('title'))
+            @yield('title') - Intranet CODECYT
+        @else
+            Intranet CODECYT - Sistema de Inventario
+        @endif
+    </title>
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
+<!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <!-- Fuente Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -89,6 +100,27 @@
             padding:.75rem;
             margin:.25rem .5rem;
             justify-content:center;
+        }
+        .sidebar.collapsed .sidebar-item > svg{
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        .sidebar.collapsed .sidebar-nav .submenu > div:first-child svg:first-child{
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
+        }
+        .sidebar.collapsed .submenu-arrow{
+            width: 20px;
+            height: 20px;
+            flex-shrink: 0;
+        }
+        /* Iconos de los submenús cuando están colapsados */
+        .sidebar.collapsed .sidebar-item[onclick] > svg:first-child{
+            width: 28px;
+            height: 28px;
+            flex-shrink: 0;
         }
         .sidebar.collapsed .sidebar-item span{
             display:none;
@@ -242,61 +274,7 @@
         .searchable-select-option.hidden {
             display: none;
         }
-        /* Pagination Light Theme - More Specific */
-        .pagination {
-            display: flex;
-            justify-content: center;
-            gap: 0.5rem;
-            margin-top: 2rem;
-            list-style: none;
-            padding: 0;
-        }
-        .pagination .page-item {
-            display: inline-block;
-        }
-        .pagination .page-link,
-        .pagination .page-item.active .page-link,
-        .pagination .page-item.disabled .page-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            min-width: 2.5rem;
-            height: 2.5rem;
-            padding: 0.5rem 0.75rem;
-            border: 1px solid #e2e8f0 !important;
-            background-color: #ffffff !important;
-            color: #64748b !important;
-            text-decoration: none;
-            border-radius: 0.5rem;
-            transition: all 0.2s ease;
-            font-size: 0.875rem;
-            font-weight: 500;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-        }
-        .pagination .page-link:hover {
-            background-color: #f8fafc !important;
-            border-color: #cbd5e1 !important;
-            color: #1e293b !important;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15) !important;
-        }
-        .pagination .page-item.active .page-link {
-            background-color: #1e3a8a !important;
-            border-color: #1e3a8a !important;
-            color: #ffffff !important;
-            font-weight: 600;
-        }
-        .pagination .page-item.disabled .page-link {
-            background-color: #f8fafc !important;
-            color: #94a3b8 !important;
-            cursor: not-allowed !important;
-            opacity: 0.6;
-        }
-        .pagination .page-item:not(.active):not(.disabled) .page-link:hover {
-            background-color: #f8fafc !important;
-            border-color: #cbd5e1 !important;
-            color: #1e293b !important;
-        }
+
         .sidebar.collapsed .sidebar-header-content{
             display:none;
         }
@@ -372,12 +350,80 @@
             background: #a1a1a1;
         }
 
-        /* CORRECCIÓN: Dropdown del buscador - forzar z-index máximo */
+/* CORRECCIÓN: Dropdown del buscador - forzar z-index máximo */
         #searchResults {
             position: fixed !important;
             z-index: 9999999 !important;
             background: white !important;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        /* TODO EL SISTEMA EN MAYÚSCULAS (excepto inputs, contraseñas y página de login) */
+        body:not(.login-page) .uppercase-all,
+        body:not(.login-page) td,
+        body:not(.login-page) th,
+        body:not(.login-page) .text-sm,
+        body:not(.login-page) .text-xs,
+        body:not(.login-page) .text-base,
+        body:not(.login-page) p,
+        body:not(.login-page) span,
+        body:not(.login-page) a,
+        body:not(.login-page) label,
+        body:not(.login-page) h1,
+        body:not(.login-page) h2,
+        body:not(.login-page) h3,
+        body:not(.login-page) h4,
+        body:not(.login-page) h5,
+        body:not(.login-page) h6,
+        body:not(.login-page) .font-bold,
+        body:not(.login-page) .font-semibold,
+        body:not(.login-page) .font-medium,
+        body:not(.login-page) .font-normal {
+            text-transform: uppercase !important;
+        }
+
+/* EXCEPCIONES: NO mayúsculas (los selects se manejan por separado) */
+        body:not(.login-page) input[type="text"],
+        body:not(.login-page) input[type="email"],
+        body:not(.login-page) input[type="password"],
+        body:not(.login-page) input[type="number"],
+        body:not(.login-page) input[type="tel"],
+        body:not(.login-page) input[type="search"],
+        body:not(.login-page) textarea,
+        body:not(.login-page) .no-uppercase,
+        body:not(.login-page) input::placeholder,
+        body:not(.login-page) .placeholder-normal::placeholder {
+            text-transform: none !important;
+        }
+
+        /* Los SELECTS y sus opciones SÍ en mayúsculas (excepto login) */
+        body:not(.login-page) select,
+        body:not(.login-page) select option {
+            text-transform: uppercase !important;
+        }
+
+        /* Mantener campos de contraseña en minúsculas */
+        body:not(.login-page) input[type="password"] {
+            text-transform: none !important;
+        }
+
+        /* RESPONSIVE: Dropdown del buscador */
+        @media (max-width: 640px) {
+            #searchResults {
+                left: 10px !important;
+                right: 10px !important;
+                width: auto !important;
+                max-width: none !important;
+            }
+        }
+
+        @media (min-width: 641px) and (max-width: 1024px) {
+            #searchResults {
+                left: 20px !important;
+                right: 20px !important;
+                width: auto !important;
+                max-width: none !important;
+            }
         }
 
         @media (max-width: 1024px) {
@@ -393,6 +439,22 @@
             .sidebar.collapsed .sidebar-nav { padding: 1rem; }
             .sidebar.collapsed .sidebar-bottom { padding: 1rem; }
             .sidebar.collapsed .sidebar-bottom > div:not(.sidebar-item) { display: block; }
+        }
+
+        /* Responsive para pantallas pequeñas (500px) */
+        @media (max-width: 640px) {
+            .glass .flex.items-center.justify-between {
+                flex-direction: column;
+                gap: 1rem;
+            }
+            .glass .flex.items-center.justify-between .flex.items-center.gap-4:first-child {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            .glass .flex.items-center.justify-between .flex.items-center.gap-2 {
+                width: 100%;
+                justify-content: flex-end;
+            }
         }
     </style>
 </head>
@@ -413,8 +475,8 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
                     </svg>
                     <h3 class="font-semibold text-white">Notificaciones</h3>
-                    @if($totalNotificaciones > 0)
-                        <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{{ $totalNotificaciones }}</span>
+                    @if(isset($notificaciones) && count($notificaciones) > 0)
+                        <span class="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">{{ count($notificaciones) }}</span>
                     @endif
                 </div>
                 <button onclick="toggleNotificationDropdown(event)" class="text-white hover:text-gray-200">
@@ -433,15 +495,30 @@
                             <div class="flex items-center gap-2">
                                 <span class="text-lg">{{ $notif['icono'] }}</span>
                                 <span class="text-sm font-semibold text-gray-700">{{ $notif['titulo'] }}</span>
-                                @if($notif['cantidad'] > 0)
+                                @if(isset($notif['cantidad']) && $notif['cantidad'] > 0)
                                     <span class="ml-auto text-xs bg-orange-100 text-orange-700 px-2 py-0.5 rounded-full">{{ $notif['cantidad'] }}</span>
                                 @endif
                             </div>
                         </div>
 
+                        <!-- Cumpleaños - Felicitación de cumpleaños -->
+                        @if($notif['tipo'] == 'birthday_wish' && isset($notif['is_laravel_notification']) && $notif['is_laravel_notification'])
+                            <div class="p-4 border-b border-gray-100 bg-green-50">
+                                <div class="flex items-start gap-3">
+                                    <div class="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center text-xl">
+                                        🎂
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="text-sm font-medium text-gray-800">{{ $notif['mensaje'] }}</p>
+                                        @if(isset($notif['hora']))
+                                            <p class="text-xs text-gray-500 mt-1">{{ $notif['hora'] }}</p>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
                         <!-- Perfil Incompleto - Muestra campos faltantes -->
-                        @if($notif['tipo'] == 'perfil_incompleto' && isset($notif['campos_faltantes']))
-                            <div class="p-4 border-b border-gray-100" onclick="window.location.href='{{ $notif['ruta_ver_todas'] }}'">
+                        @elseif($notif['tipo'] == 'perfil_incompleto' && isset($notif['campos_faltantes']))
+                            <div class="p-4 border-b border-gray-100" style="cursor: pointer;" onclick="window.location.href='{{ route('profile.edit') }}'">
                                 <p class="text-sm text-gray-600 mb-2">{{ $notif['mensaje'] }}</p>
                                 <div class="space-y-1">
                                     @foreach($notif['campos_faltantes'] as $campo)
@@ -458,31 +535,110 @@
                         @elseif(isset($notif['items']) && $notif['items']->isNotEmpty())
                             <!-- Items individuales -->
                             @foreach($notif['items'] as $item)
-                                <div class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors border-l-4
-                                    @if($notif['color'] == 'orange') border-l-orange-500 @else border-l-yellow-500 @endif"
+                                @php
+                                    $tipoItem = $notif['tipo_item'] ?? 'default';
+                                    $borderColor = match($notif['color'] ?? 'orange') {
+                                        'red' => 'border-l-red-500',
+                                        'orange' => 'border-l-orange-500',
+                                        'yellow' => 'border-l-yellow-500',
+                                        'blue' => 'border-l-blue-500',
+                                        'purple' => 'border-l-purple-500',
+                                        'indigo' => 'border-l-indigo-500',
+                                        'gray' => 'border-l-gray-500',
+                                        default => 'border-l-orange-500'
+                                    };
+                                @endphp
+                                <div class="p-3 border-b border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors border-l-4 {{ $borderColor }}"
                                      onclick="window.location.href='{{ $notif['ruta_ver_todas'] }}'">
                                     <div class="flex items-center justify-between">
                                         <div class="flex-1">
-                                            @if(isset($item->cartucho))
-                                                <p class="text-sm font-medium text-gray-800">{{ $item->cartucho }} - {{ $item->color }}</p>
-                                            @else
-                                                <p class="text-sm font-medium text-gray-800">{{ $item->articulo }}</p>
-                                            @endif
-                                            <p class="text-xs text-gray-500">
-                                                Stock: {{ $item->total_disponible }} und.
-                                                @if($item->stock_min)
-                                                    <span class="text-orange-600">(Mín: {{ $item->stock_min }})</span>
-                                                @endif
-                                            </p>
+                                            @switch($tipoItem)
+                                                @case('consumible')
+                                                    <p class="text-sm font-medium text-gray-800">{{ $item->cartucho ?? 'N/A' }} - {{ $item->color ?? 'N/A' }}</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        Stock: {{ $item->total_disponible ?? 0 }} und.
+                                                        @if(isset($item->stock_min))
+                                                            <span class="text-orange-600">(Mín: {{ $item->stock_min }})</span>
+                                                        @endif
+                                                    </p>
+                                                    @break
+                                                @case('articulo')
+                                                    <p class="text-sm font-medium text-gray-800">{{ $item->articulo ?? 'N/A' }}</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        Stock: {{ $item->total_disponible ?? 0 }} und.
+                                                        @if(isset($item->stock_min))
+                                                            <span class="text-orange-600">(Mín: {{ $item->stock_min }})</span>
+                                                        @endif
+                                                    </p>
+                                                    @break
+                                                @case('usuario')
+                                                    <p class="text-sm font-medium text-gray-800">{{ $item->name ?? 'N/A' }} {{ $item->lastname ?? '' }}</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        @if(isset($item->cedula)){{ $item->cedula }}@endif
+                                                        @if(isset($item->email)) - {{ $item->email }}@endif
+                                                    </p>
+                                                    @break
+                                                @case('bien')
+                                                    <p class="text-sm font-medium text-gray-800">{{ $item->descripcion ?? 'N/A' }}</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        @if(isset($item->n_interno_bien)){{ $item->n_interno_bien }}@endif
+                                                        @if(isset($item->marca)) - {{ $item->marca }}@endif
+                                                        @if(isset($item->modelo)) {{ $item->modelo }}@endif
+                                                        @if(isset($item->condicion)) - <span class="text-red-600">{{ $item->condicion }}</span>@endif
+                                                    </p>
+                                                    @break
+                                                @case('impresora')
+                                                    <p class="text-sm font-medium text-gray-800">{{ $item->impresora ?? 'N/A' }}</p>
+                                                    <p class="text-xs text-gray-500">
+                                                        Stock: {{ $item->stock_total ?? 0 }} und.
+                                                    </p>
+                                                    @break
+                                                @default
+                                                    @if(isset($item->cartucho))
+                                                        <p class="text-sm font-medium text-gray-800">{{ $item->cartucho }} - {{ $item->color }}</p>
+                                                    @elseif(isset($item->articulo))
+                                                        <p class="text-sm font-medium text-gray-800">{{ $item->articulo }}</p>
+                                                    @else
+                                                        <p class="text-sm font-medium text-gray-800">{{ json_encode($item) }}</p>
+                                                    @endif
+                                                    <p class="text-xs text-gray-500">
+                                                        @if(isset($item->total_disponible))
+                                                            Stock: {{ $item->total_disponible }} und.
+                                                            @if(isset($item->stock_min))
+                                                                <span class="text-orange-600">(Mín: {{ $item->stock_min }})</span>
+                                                            @endif
+                                                        @endif
+                                                    </p>
+                                            @endswitch
                                         </div>
                                         <div class="flex-shrink-0 ml-2">
-                                            @if($item->total_disponible <= 2)
+                                            @if(isset($item->total_disponible))
+                                                @if($item->total_disponible <= 2)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                        Crítico
+                                                    </span>
+                                                @elseif($item->total_disponible <= 5)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                        Bajo
+                                                    </span>
+                                                @endif
+                                            @elseif(isset($item->stock_total))
+                                                @if($item->stock_total <= 2)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                        Crítico
+                                                    </span>
+                                                @elseif($item->stock_total <= 5)
+                                                    <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
+                                                        Bajo
+                                                    </span>
+                                                @endif
+                                            @elseif($tipoItem == 'bien' && isset($item->condicion))
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
-                                                    Crítico
+                                                    {{ $item->condicion }}
                                                 </span>
-                                            @elseif($item->total_disponible <= 5)
-                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-100 text-yellow-800">
-                                                    Bajo
+                                            @elseif($tipoItem == 'usuario')
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-800">
+                                                    Incompleto
                                                 </span>
                                             @endif
                                         </div>
@@ -508,8 +664,8 @@
                 @endif
             </div>
 
-            <!-- Footer -->
-            @if($totalNotificaciones > 0)
+            <!-- Footer - siempre visible si hay notificaciones -->
+            @if(isset($notificaciones) && count($notificaciones) > 0)
                 <div class="p-3 border-t border-gray-200 bg-gray-50">
                     <div class="flex items-center justify-center gap-4">
                         <button onclick="markNotificationsAsRead()" class="text-xs text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1">
@@ -538,16 +694,16 @@
     <div id="sidebarBackdrop" class=" inset-0 z-30 hidden bg-black/50 lg:hidden" onclick="closeSidebar()"></div>
 
     <!-- Dropdown del buscador (fuera del main-content para que aparezca sobre todo) -->
-    <div id="searchResults" class="hidden fixed bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto w-96 z-[99999]">
+    <div id="searchResults" class="hidden fixed bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto w-96 z-[99999] sm:w-20">
     </div>
 
     <!-- Contenido principal -->
     <main class="main-content bg-gradient-to-r from-slate-300 to-slate-500" id="mainContent">
         <!-- Header estilo tarjeta -->
         <div class="p-6">
-            <div class="p-6 mb-6 glass rounded-2xl">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-4">
+            <div class="p-6 mb-6 glass rounded-2xl header-container">
+                <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                    <div class="flex items-center gap-4 w-full sm:w-auto">
                         <!-- Botón de menú hamburguesa - solo visible en móvil y tablet -->
                         <button id="menuToggle" class="btn btn-secondary" style="display: none;" onclick="toggleSidebar()">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -562,20 +718,20 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center gap-4">
+                    <div class="flex items-center gap-2 sm:gap-4 w-full sm:w-auto justify-end">
                         <!-- Buscador -->
-                        <div class="relative" style="z-index: 50;">
+                        <div class="relative shrink-0" style="z-index: 50;">
                             <input type="text" id="searchInput" placeholder="Buscar..."
-                                class="w-64 px-4 py-2 pl-10 text-sm glass rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                class="w-32 sm:w-40 md:w-48 lg:w-64 px-2 sm:px-4 py-1.5 sm:py-2 pl-8 sm:pl-10 text-sm glass rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                 autocomplete="off">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute transform -translate-y-1/2 left-3 top-1/2 text-slate-400">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="absolute transform -translate-y-1/2 left-2 sm:left-3 top-1/2 text-slate-400">
                                 <circle cx="11" cy="11" r="8"/>
                                 <path d="M21 21l-4.35-4.35"/>
                             </svg>
 
                             <!-- Loading spinner -->
-                            <div id="searchLoading" class="hidden absolute right-3 top-1/2 transform -translate-y-1/2">
-                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <div id="searchLoading" class="hidden absolute right-2 sm:right-3 top-1/2 transform -translate-y-1/2">
+                                <svg class="animate-spin h-3 w-3 sm:h-4 sm:w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                                 </svg>
@@ -586,14 +742,14 @@
                         @php
                             $totalNotificaciones = $totalNotificaciones ?? 0;
                         @endphp
-                        <div class="relative ">
-                            <button class="relative btn btn-secondary p-2 text-blue-900" onclick="toggleNotificationDropdown(event)">
-                                <svg class="text-blue-900" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <div class="relative shrink-0">
+                            <button class="relative btn btn-secondary p-1.5 sm:p-2 text-blue-900" onclick="toggleNotificationDropdown(event)">
+                                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-900" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                     <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                                     <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                                 </svg>
                                 @if($totalNotificaciones > 0)
-                                    <span class="notification-badge absolute -top-1 -right-1 flex items-center justify-center w-5 h-5 text-xs text-white bg-red-500 rounded-full animate-pulse">
+                                    <span class="notification-badge absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 text-xs text-white bg-red-500 rounded-full animate-pulse">
                                         {{ $totalNotificaciones > 99 ? '99+' : $totalNotificaciones }}
                                     </span>
                                 @endif
@@ -601,16 +757,36 @@
                         </div>
 
                         <!-- Icono de usuario -->
-                        <div class="flex items-center justify-center w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-blue-600">
-                             @if(Auth::user()->profile_photo)
-                <img src="{{ asset('archivos/avatars/' . Auth::user()->profile_photo) }}"
-                     alt="{{ Auth::user()->name }}"
-                     class="w-10 h-10 rounded-lg object-cover">
-            @else
-                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-green-600 flex items-center justify-center">
-                    <span class="text-white font-bold">{{ substr(Auth::user()->name, 0, 2) }}</span>
-                </div>
-            @endif
+                        <div class="flex items-center gap-1 sm:gap-3 shrink-0">
+                            @auth
+                                <div class="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-lg bg-gradient-to-br from-blue-500 to-blue-100 flex items-center justify-center">
+                                    @if(Auth::user()->profile_photo)
+                                        <img src="{{ asset('archivos/avatars/' . Auth::user()->profile_photo) }}"
+                                             alt="{{ Auth::user()->name }}"
+                                             class="w-8 h-8 sm:w-10 sm:h-10 lg:w-11 lg:h-11 rounded-lg object-cover">
+                                    @else
+                                        <span class="text-white font-bold text-xs">{{ substr(Auth::user()->name, 0, 2) }}</span>
+                                    @endif
+                                </div>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="btn bg-red-600 hover:bg-red-700 text-white border-red-700 text-sm p-1.5 sm:p-2">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                                            <polyline points="16,17 21,12 16,7"/>
+                                            <line x1="21" y1="12" x2="9" y2="12"/>
+                                        </svg>
+                                    </button>
+                                </form>
+                            @else
+                                <a href="{{ route('login') }}" class="btn bg-blue-600 hover:bg-blue-700 text-white border-blue-700 text-sm p-1.5 sm:p-2">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                                        <polyline points="10,17 15,12 10,7"/>
+                                        <line x1="15" y1="12" x2="3" y2="12"/>
+                                    </svg>
+                                </a>
+                            @endauth
                         </div>
                     </div>
                 </div>
@@ -688,6 +864,31 @@
         // Modal de notificaciones
         let modalAbierto = false;
 
+        // Verificar si el usuario ya vio las notificaciones
+        function hasUserViewedNotifications() {
+            return localStorage.getItem('notifications_viewed') === 'true';
+        }
+
+        // Marcar como vistas las notificaciones
+        function markNotificationsAsViewed() {
+            localStorage.setItem('notifications_viewed', 'true');
+        }
+
+        // Ocultar badge de notificaciones si ya fueron vistas
+        function hideNotificationBadgeIfViewed() {
+            if (hasUserViewedNotifications()) {
+                const badge = document.querySelector('.notification-badge');
+                if (badge) {
+                    badge.style.display = 'none';
+                }
+            }
+        }
+
+        // Ejecutar al cargar la página
+        document.addEventListener('DOMContentLoaded', function() {
+            hideNotificationBadgeIfViewed();
+        });
+
         function toggleNotificationDropdown(event) {
             if (event) {
                 event.preventDefault();
@@ -696,6 +897,7 @@
 
             const modal = document.getElementById('notificationModal');
             const backdrop = document.getElementById('notificationBackdrop');
+            const badge = document.querySelector('.notification-badge');
 
             modalAbierto = !modalAbierto;
 
@@ -703,8 +905,11 @@
                 modal.classList.remove('hidden');
                 backdrop.classList.remove('hidden');
 
-                // Marcar todas las notificaciones como leídas al abrir el modal
-                markNotificationsAsRead();
+                // Marcar como vistas y ocultar el badge
+                markNotificationsAsViewed();
+                if (badge) {
+                    badge.style.display = 'none';
+                }
             } else {
                 modal.classList.add('hidden');
                 backdrop.classList.add('hidden');
@@ -741,6 +946,9 @@
                         footer.style.display = 'none';
                     }
 
+                    // Recargar la página para actualizar las notificaciones como leídas
+                    window.location.reload();
+
                     console.log('Notificaciones marcadas como leídas');
                 }
             })
@@ -771,67 +979,7 @@
         // Sistema de tracking de errores frontend
         window.errorsFrontend = [];
 
-        // Capturar errores de JavaScript no controlados
-        window.onerror = function(msg, url, lineNo, columnNo, error) {
-            const errorInfo = {
-                mensaje: msg,
-                url: url,
-                linea: lineNo,
-                columna: columnNo,
-                fecha: new Date().toISOString()
-            };
 
-            window.errorsFrontend.push(errorInfo);
-            showErrorNotification(errorInfo);
-            return false;
-        };
-
-        // Capturar errores de promesas no controladas
-        window.addEventListener('unhandledrejection', function(event) {
-            const errorInfo = {
-                mensaje: event.reason?.message || 'Error de promesa no manejada',
-                fecha: new Date().toISOString()
-            };
-
-            window.errorsFrontend.push(errorInfo);
-            showErrorNotification(errorInfo);
-        });
-
-        // Función para mostrar notificación de error
-        /* function showErrorNotification(error) {
-            let errorContainer = document.getElementById('frontendErrors');
-            if (!errorContainer) {
-                errorContainer = document.createElement('div');
-                errorContainer.id = 'frontendErrors';
-                errorContainer.className = 'fixed bottom-4 left-4 z-50 space-y-2';
-                document.body.appendChild(errorContainer);
-            }
-
-            const errorDiv = document.createElement('div');
-            errorDiv.className = 'bg-red-50 border border-red-200 rounded-lg p-4 shadow-lg max-w-sm fade-in';
-            errorDiv.innerHTML = `
-                <div class="flex items-start gap-3">
-                    <div class="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center">
-                        <svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                        </svg>
-                    </div>
-                    <div class="flex-1">
-                        <p class="text-sm font-medium text-red-800">Error en el sistema</p>
-                        <p class="text-xs text-red-600 mt-1">${error.mensaje}</p>
-                        <button onclick="this.parentElement.parentElement.remove()" class="text-xs text-red-500 hover:text-red-700 mt-2 underline">Cerrar</button>
-                    </div>
-                </div>
-            `;
-
-            errorContainer.appendChild(errorDiv);
-
-            setTimeout(() => {
-                if (errorDiv.parentElement) {
-                    errorDiv.remove();
-                }
-            }, 10000);
-        } */
 
         // Validar formularios antes del envío
         document.addEventListener('DOMContentLoaded', function() {
@@ -1115,6 +1263,9 @@
                 'ubicaciones': '{{ route("administracion.ubicacion.index") }}',
                 'documentos': '{{ route("administracion.documentos.index") }}',
                 'bienes': '{{ route("administracion.bienes_publicos.index") }}',
+                // Gestión Humana
+                'tipo_documentos': '{{ route("gestion-humana.tipo_documentos.index") }}',
+                'areas_adscritas': '{{ route("gestion-humana.area_adscrita.index") }}',
             };
 
             console.log('Navegando a:', tabla);
@@ -1155,5 +1306,7 @@
         });
     </script>
     <script src="{{asset('js/agenda.js')}}"></script>
+    <!-- Sistema de Validación de Formularios -->
+    <script src="{{ asset('js/validation.js') }}"></script>
 </body>
 </html>

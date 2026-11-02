@@ -13,9 +13,27 @@ class ColoresController extends Controller
 
         abort_if(Gate::denies('colores_index'), 403);
 
-      $colores = Colore::paginate(15);
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'colore');
+        $direction = $request->get('direction', 'asc');
 
-       return view('administracion.tipo_consumibles.index', ['colores'=> $colores]);
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $query = Colore::query();
+
+        if ($search) {
+            $query->where('colore', 'LIKE', '%'.$search.'%');
+        }
+
+        $colores = $query->orderBy($sort, $direction)->paginate(15);
+
+       return view('administracion.tipo_consumibles.index', [
+           'colores'=> $colores,
+           'search' => $search,
+           'sort' => $sort,
+           'direction' => $direction
+       ]);
    }
 
    public function create(){

@@ -14,9 +14,20 @@ class CategoriaController extends Controller
 
         abort_if(Gate::denies('categorias_index'), 403);
 
-        $search =trim($request->get('search'));
-        $categorias = DB::table('categorias')->select('id', 'name')->where('name', 'LIKE', '%'.$search.'%')->orderBy('name', 'asc')->paginate(15);
-        return view('administracion.categorias.index', compact('categorias', 'search'));
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'name');
+        $direction = $request->get('direction', 'asc');
+
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
+
+        $categorias = DB::table('categorias')
+            ->select('id', 'name')
+            ->where('name', 'LIKE', '%'.$search.'%')
+            ->orderBy($sort, $direction)
+            ->paginate(15);
+
+        return view('administracion.categorias.index', compact('categorias', 'search', 'sort', 'direction'));
     }
     public function show(){
         return view('administracion.categorias.show', ['categoria' => Categoria::get()]);

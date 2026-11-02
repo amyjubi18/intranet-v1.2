@@ -1,7 +1,7 @@
-@can('inventarioimpre_index')
+@canany(['inventarioimpre_index', 'inventarioofic_index'])
 <x-app-layout>
 
-@section('title', 'Salida de impresoras')
+@section('title', 'Reportes de Inventario y Consumo')
 @section('subtitle', 'Egresos de consumibles')
 
     <!-- Flatpickr CDN -->
@@ -170,15 +170,14 @@
                         <svg width="16" height="16" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3" /> <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1 1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
                         </svg> Plan de Mantenimiento
                     </button>
-                    <select id="areaGerenciaSelect" class="w-full px-3 py-3 font-semibold  border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
-                        <option class="font-bold" value="" selected>Reporte por Gerencia y Area </option>
-                       @foreach (\App\Models\Gerencia::with('area')->get() as $gerencia)
-                    <option value="{{ $gerencia->id }}">
-                        {{ $gerencia->gerencia }} ({{ $gerencia->area->area ?? 'N/A' }})
-                    </option>
-                    <option value="">Todas las Gerencias</option>
-                    @endforeach
-
+                    <select id="areaGerenciaSelect" class="w-full px-3 py-3 font-semibold border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4">
+                        <option class="font-bold" value="">Reporte por Gerencia y Area</option>
+                        <option value="all">Todas las Gerencias</option>
+                        @foreach (\App\Models\Gerencia::with('area')->get() as $gerencia)
+                            <option value="{{ $gerencia->id }}">
+                                {{ $gerencia->gerencia }} ({{ $gerencia->area->area ?? 'N/A' }})
+                            </option>
+                        @endforeach
                     </select>
                 </div>
             </div>
@@ -252,7 +251,7 @@
                         <tr class="table-row border-b border-slate-100">
                             <td class="p-3">{{ $activity->created_at->format('d/m/Y h:i:s A') }}</td>
                             <td class="p-3 text-bold text-blue-900">
-                               <b class="text-blue-900">{{ $activity->causer ? $activity->causer->name : 'Sistema' }}</b>
+                               <b class="text-blue-900">{{ $activity->causer ? $activity->causer->username : 'Sistema' }}</b>
                             </td>
                             <td class="p-3">
                                 <span class="px-2 py-1 text-xs rounded-full
@@ -273,11 +272,11 @@
                             <td class="p-3">{{ class_basename($activity->subject_type ?? 'N/A') }}</td>
                             <td class="p-3">
                                 @if($activity->event == 'created')
-                                   <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->name : 'Sistema' }}</b> hizo un registro en el modelo {{ class_basename($activity->subject_type ?? 'N/A') }}
+                                   <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->username : 'Sistema' }}</b> hizo un registro en el modelo {{ class_basename($activity->subject_type ?? 'N/A') }}
                                 @elseif($activity->event == 'updated')
-                                    <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->name : 'Sistema' }} </b> realizó un cambio en el modelo {{ class_basename($activity->subject_type ?? 'N/A') }}
+                                    <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->username : 'Sistema' }} </b> realizó un cambio en el modelo {{ class_basename($activity->subject_type ?? 'N/A') }}
                                 @elseif($activity->event == 'deleted')
-                                    <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->name : 'Sistema' }}</b> hizo una eliminación en  {{ class_basename($activity->subject_type ?? 'N/A') }}
+                                    <b class="text-blue-900"> {{ $activity->causer ? $activity->causer->username : 'Sistema' }}</b> hizo una eliminación en  {{ class_basename($activity->subject_type ?? 'N/A') }}
                                 @else
                                     {{ $activity->properties['url'] ?? request()->getPathInfo() }}
                                 @endif
@@ -305,6 +304,21 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
     <script>
+        // Verificar que Chart.js esté disponible antes de ejecutar
+        function waitForChart(callback, maxAttempts = 50) {
+            let attempts = 0;
+            const check = setInterval(function() {
+                if (typeof Chart !== 'undefined') {
+                    clearInterval(check);
+                    callback();
+                } else if (attempts >= maxAttempts) {
+                    clearInterval(check);
+                    console.error('Chart.js no se pudo cargar después de ' + maxAttempts + ' intentos');
+                }
+                attempts++;
+            }, 100);
+        }
+
         function showLocationReport() {
             const container = document.getElementById('areaGerenciaSelectContainer');
             if(container.style.display === 'none' || container.style.display === '') {
@@ -376,9 +390,11 @@
 
         // Variables globales para los gráficos
         let consumiblesChart = null;
+        let materialesChart = null;
         let currentChartType = 'pie'; // 'pie' o 'bar'
+        let currentChartTypeMateriales = 'pie'; // 'pie' o 'bar'
 
-        // Función para alternar tipo de gráfico de consumibles
+        // Función para alternar tipo de gráfico
         function toggleChartType(chartId) {
             if (chartId === 'consumibles') {
                 currentChartType = currentChartType === 'pie' ? 'bar' : 'pie';
@@ -386,6 +402,12 @@
                 // Cambiar el emoji del botón
                 const button = document.getElementById('consumiblesToggle');
                 button.textContent = currentChartType === 'pie' ? '🍩' : '📊';
+            } else if (chartId === 'materiales') {
+                currentChartTypeMateriales = currentChartTypeMateriales === 'pie' ? 'bar' : 'pie';
+                renderMaterialesChart();
+                // Cambiar el emoji del botón
+                const button = document.getElementById('materialesToggle');
+                button.textContent = currentChartTypeMateriales === 'pie' ? '📊' : '📈';
             }
         }
 
@@ -399,19 +421,32 @@
             }
 
             // Datos de PHP
-            const data = @json($topConsumibles ?? []);
+            const rawData = @json($topConsumibles ?? []);
+            const data = Array.isArray(rawData) ? rawData : [];
+
+            console.log('Top Consumibles data:', data);
 
             if (data.length === 0) {
                 // Mostrar mensaje si no hay datos
                 ctx.font = '16px Arial';
                 ctx.fillStyle = '#666';
                 ctx.textAlign = 'center';
-                ctx.fillText('No hay datos disponibles', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                ctx.fillText('No hay datos de consumibles disponibles', ctx.canvas.width / 2, ctx.canvas.height / 2);
                 return;
             }
 
             const labels = data.map(item => item.name);
             const values = data.map(item => item.value);
+
+            // Verificar que los datos no sean todos cero o vacío
+            const totalValue = values.reduce((a, b) => a + b, 0);
+            if (totalValue === 0) {
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#666';
+                ctx.textAlign = 'center';
+                ctx.fillText('No hay movimientos de consumibles registrados', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
 
             // Configuración del gráfico
             const config = {
@@ -468,27 +503,6 @@
             consumiblesChart = new Chart(ctx, config);
         }
 
-        // Variables globales para el gráfico de materiales
-        let materialesChart = null;
-        let currentChartTypeMateriales = 'pie'; // 'pie' o 'bar'
-
-        // Función para alternar tipo de gráfico de materiales
-        function toggleChartType(chartId) {
-            if (chartId === 'materiales') {
-                currentChartTypeMateriales = currentChartTypeMateriales === 'pie' ? 'bar' : 'pie';
-                renderMaterialesChart();
-                // Cambiar el emoji del botón
-                const button = document.getElementById('materialesToggle');
-                button.textContent = currentChartTypeMateriales === 'pie' ? '📊' : '📈';
-            } else if (chartId === 'consumibles') {
-                currentChartType = currentChartType === 'pie' ? 'bar' : 'pie';
-                renderConsumiblesChart();
-                // Cambiar el emoji del botón
-                const button = document.getElementById('consumiblesToggle');
-                button.textContent = currentChartType === 'pie' ? '🍩' : '📊';
-            }
-        }
-
         // Función para renderizar el gráfico de materiales
         function renderMaterialesChart() {
             const ctx = document.getElementById('materialesChart').getContext('2d');
@@ -499,19 +513,32 @@
             }
 
             // Datos de PHP
-            const data = @json($topMateriales ?? []);
+            const rawData = @json($topMateriales ?? []);
+            const data = Array.isArray(rawData) ? rawData : [];
+
+            console.log('Top Materiales data:', data);
 
             if (data.length === 0) {
                 // Mostrar mensaje si no hay datos
                 ctx.font = '16px Arial';
                 ctx.fillStyle = '#666';
                 ctx.textAlign = 'center';
-                ctx.fillText('No hay datos disponibles', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                ctx.fillText('No hay datos de materiales disponibles', ctx.canvas.width / 2, ctx.canvas.height / 2);
                 return;
             }
 
             const labels = data.map(item => item.name);
             const values = data.map(item => item.value);
+
+            // Verificar que los datos no sean todos cero o vacío
+            const totalValue = values.reduce((a, b) => a + b, 0);
+            if (totalValue === 0) {
+                ctx.font = '16px Arial';
+                ctx.fillStyle = '#666';
+                ctx.textAlign = 'center';
+                ctx.fillText('No hay movimientos de materiales registrados', ctx.canvas.width / 2, ctx.canvas.height / 2);
+                return;
+            }
 
             // Configuración del gráfico
             const config = {
@@ -723,8 +750,10 @@
 
         // Inicializar gráficos cuando se carga la página
         document.addEventListener('DOMContentLoaded', function() {
-            renderConsumiblesChart();
-            renderMaterialesChart();
+            waitForChart(function() {
+                renderConsumiblesChart();
+                renderMaterialesChart();
+            });
 
             // Inicializar Flatpickr para los filtros de fecha
             flatpickr('#activityDateRange', {
@@ -751,7 +780,8 @@
             areaGerenciaSelect.addEventListener('change', function() {
                 const gerenciaId = this.value;
                 let url = '{{ route("administracion.reportes.gerencia_area.pdf") }}';
-                if (gerenciaId) {
+                // Si es "all" o vacío, no envía parámetro para obtener todas las gerencias
+                if (gerenciaId && gerenciaId !== 'all') {
                     url += '?gerencia_id=' + encodeURIComponent(gerenciaId);
                 }
                 window.open(url, '_blank');

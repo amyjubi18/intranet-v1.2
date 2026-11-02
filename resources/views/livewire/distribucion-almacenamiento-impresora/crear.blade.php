@@ -1,6 +1,45 @@
 <div class="bg-white p-6 shadow-lg rounded-lg max-w-4xl mx-auto">
     <form wire:submit.prevent="submit" class="space-y-4">
 
+        <!-- Sugerencias de Stock Bajo -->
+        @if($mostrar_sugerencias && count($sugerencias) > 0)
+        <div class="mb-4 p-4 bg-yellow-50 border border-yellow-300 rounded-lg">
+            <h4 class="text-yellow-800 font-bold mb-2">⚠️ {{ $mensaje_sugerencia }}</h4>
+
+            @foreach($sugerencias as $sugerencia)
+            <div class="mb-3 p-3 bg-white rounded-lg shadow-sm">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="font-semibold text-sm">
+                            🖨️ {{ $sugerencia['impresora'] }} - {{ $sugerencia['consumible'] }} ({{ $sugerencia['color'] }})
+                        </p>
+                        <p class="text-xs text-red-600">
+                            Stock: {{ $sugerencia['unidades_disponibles'] }} / Mínimo: {{ $sugerencia['stock_min'] }}
+                        </p>
+                    </div>
+                </div>
+
+                @if(count($sugerencia['gerencias']) > 0)
+                <p class="text-xs font-semibold mt-2 text-gray-700">Gerencias recomendadas (por consumo histórico):</p>
+                <div class="mt-1 flex flex-wrap gap-1">
+                    @foreach($sugerencia['gerencias'] as $gerencia)
+                    <button type="button"
+                        wire:click="$set('gerencia_id', {{ $gerencia['gerencia_id'] }})"
+                        class="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded hover:bg-blue-200">
+                        {{ $gerencia['gerencia'] }} ({{ $gerencia['area'] }}) - Consumo: {{ $gerencia['consumo_total'] }}
+                    </button>
+                    @endforeach
+                </div>
+                @endif
+            </div>
+            @endforeach
+        </div>
+        @else
+        <div class="mb-4 p-4 bg-green-50 border border-green-300 rounded-lg">
+            <p class="text-green-800 text-sm">✓ {{ $mensaje_sugerencia }}</p>
+        </div>
+        @endif
+
         <!-- Almacenamiento -->
         <div>
             <label class="block text-sm font-medium mb-1 text-black">Almacenamiento:</label>
@@ -8,20 +47,10 @@
                 class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
                 name="almacenamiento_impresora_id" id="almacenamiento_impresora_id" wire:model.live="almacenamiento_impresora_id">
                 <option value="">Seleccione almacenamiento</option>
-                @php
-                    $groupedAlmacenamientos = \App\Models\AlmacenamientoImpresora::with('cartuchos', 'impresoras', 'colores')->get()->groupBy('impresora_id');
-                @endphp
-                @foreach ($groupedAlmacenamientos as $printerId => $almacenamientos)
-                    @php
-                        $printer = $almacenamientos->first()->impresoras;
-                    @endphp
-                    <optgroup label="{{ $printer ? $printer->impresora : 'Impresora Desconocida' }} ">
-                        @foreach ($almacenamientos as $almacenamiento)
-                            <option value="{{ $almacenamiento->id }}" {{ $almacenamiento_impresora_id == $almacenamiento->id ? 'selected' : '' }}>
-                                 Consumible: {{ $almacenamiento->cartuchos->cartucho ?? 'N/A' }} - Tipo de Consumible: {{ $almacenamiento->colores->colore ?? 'N/A' }}
-                            </option>
-                        @endforeach
-                    </optgroup>
+                @foreach($almacenamientos as $almacenamiento)
+                    <option value="{{ $almacenamiento['id'] }}" {{ $almacenamiento_impresora_id == $almacenamiento['id'] ? 'selected' : '' }}>
+                        {{ $almacenamiento['impresora'] }} - {{ $almacenamiento['cartucho'] }} ({{ $almacenamiento['color'] }}) - Disponibles: {{ $almacenamiento['unidades_disponibles'] }}
+                    </option>
                 @endforeach
             </select>
             @error('almacenamiento_impresora_id')
@@ -29,11 +58,8 @@
             @enderror
         </div>
 
-
-
         <!-- Unidades Disponibles -->
         @if($almacenamiento_impresora_id)
-
 
         <!-- Información del Almacenamiento -->
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
@@ -55,7 +81,6 @@
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
             <div>
-
                 <label class="block text-sm font-medium mb-1 text-black">Consumible:</label>
                 <input type="text"
                     class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
@@ -77,12 +102,11 @@
                     value="{{ $fabricante_display }}" readonly>
             </div>
             <div>
-            <label class="block text-sm font-medium mb-1 text-black">Unidades Disponibles:</label>
-            <input type="text"
-                class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
-                value="{{ $unidades_disponibles }}" readonly>
-        </div>
-
+                <label class="block text-sm font-medium mb-1 text-black">Unidades Disponibles:</label>
+                <input type="text"
+                    class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
+                    value="{{ $unidades_disponibles }}" readonly>
+            </div>
         </div>
         @endif
 
@@ -104,10 +128,20 @@
                 class="w-full px-3 py-2 border-none bg-blue-100 rounded-lg focus:ring-blue-900"
                 name="gerencia_id" id="gerencia_id" wire:model="gerencia_id">
                 <option value="">Seleccione gerencia</option>
-                @foreach (\App\Models\Gerencia::with('area')->get() as $gerencia)
-                    <option value="{{ $gerencia->id }}">
-                        {{ $gerencia->gerencia }} ({{ $gerencia->area->area ?? 'N/A' }})
-                    </option>
+                @php
+                    $groupdegerencias = \App\Models\Gerencia::with('area')->get()->groupBy('gerencia');
+                @endphp
+                @foreach($groupdegerencias as $gerenciaName => $gerencias)
+                    @php
+                        $gerenciaModel = $gerencias->first();
+                    @endphp
+                    <optgroup label="{{ $gerenciaModel ? $gerenciaModel->gerencia : 'Gerencia Desconocida' }} ">
+                        @foreach($gerencias as $gerencia)
+                            <option value="{{ $gerencia->id }}" {{ $gerencia_id == $gerencia->id ? 'selected' : '' }}>
+                                {{ $gerencia->gerencia ?? 'N/A' }} - Area: {{ $gerencia->area->area ?? 'N/A' }}
+                            </option>
+                        @endforeach
+                    </optgroup>
                 @endforeach
             </select>
             @error('gerencia_id')
@@ -115,11 +149,8 @@
             @enderror
         </div>
 
-
-
-
         <!-- Botones -->
-        <div class="flex mt-4 justify-evenly">
+        <div class="flex mt-4 justify-evenly gap-2">
             <x-primary-link href="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24"
                     style="fill: rgba(255, 255, 255, 1);transform: ;msFilter:;">
@@ -143,3 +174,4 @@
 
     </form>
 </div>
+

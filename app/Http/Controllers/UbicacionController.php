@@ -8,16 +8,31 @@ use Illuminate\Http\Request;
 
 class UbicacionController extends Controller
 {
-    public function index(Request $request){
+public function index(Request $request){
 
         abort_if(Gate::denies('ubicacion_index'), 403);
 
-      /* $ubicacions = Ubicacion::first()->orderBy('ubicacion','asc')->paginate(5); */
+        $search = trim($request->get('search', ''));
+        $sort = $request->get('sort', 'ubicacion');
+        $direction = $request->get('direction', 'asc');
 
+        // Validar dirección
+        $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
 
-      $ubicacions = Ubicacion::paginate(15);
+        $query = Ubicacion::query();
 
-       return view('administracion.ubicacion.index', ['ubicacions'=> $ubicacions]);
+        if ($search) {
+            $query->where('ubicacion', 'LIKE', '%'.$search.'%');
+        }
+
+        $ubicacions = $query->orderBy($sort, $direction)->paginate(15);
+
+       return view('administracion.ubicacion.index', [
+           'ubicacions'=> $ubicacions,
+           'search' => $search,
+           'sort' => $sort,
+           'direction' => $direction
+       ]);
    }
 
    public function create(Ubicacion $ubicacion){

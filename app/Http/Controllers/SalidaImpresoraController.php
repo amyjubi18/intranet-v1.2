@@ -27,13 +27,31 @@ class SalidaImpresoraController extends Controller
 
         $query = SalidaImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes', 'areas', 'gerencias', 'inventario_impresoras');
 
-        // Apply filters
+        // Filtro de fecha mejorado para fecha_salida - permite filtrar por fechas individuales o rangos
         if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
             $query->whereBetween('fecha_salida', [$request->input('fecha_desde'), $request->input('fecha_hasta')]);
+        } elseif ($request->filled('fecha_desde')) {
+            // Solo fecha_desde - filtrar desde esa fecha hasta ahora
+            $query->whereDate('fecha_salida', '>=', $request->input('fecha_desde'));
+        } elseif ($request->filled('fecha_hasta')) {
+            // Solo fecha_hasta - filtrar desde el inicio hasta esa fecha
+            $query->whereDate('fecha_salida', '<=', $request->input('fecha_hasta'));
         }
+
+        // Filtro de fecha mejorado para fecha_ingreso del inventario - permite filtrar por fechas individuales o rangos
         if ($request->filled('fecha_ingreso_desde') && $request->filled('fecha_ingreso_hasta')) {
             $query->whereHas('inventario_impresoras', function ($q) use ($request) {
                 $q->whereBetween('fecha_ingreso', [$request->input('fecha_ingreso_desde'), $request->input('fecha_ingreso_hasta')]);
+            });
+        } elseif ($request->filled('fecha_ingreso_desde')) {
+            // Solo fecha_ingreso_desde - filtrar desde esa fecha hasta ahora
+            $query->whereHas('inventario_impresoras', function ($q) use ($request) {
+                $q->whereDate('fecha_ingreso', '>=', $request->input('fecha_ingreso_desde'));
+            });
+        } elseif ($request->filled('fecha_ingreso_hasta')) {
+            // Solo fecha_ingreso_hasta - filtrar desde el inicio hasta esa fecha
+            $query->whereHas('inventario_impresoras', function ($q) use ($request) {
+                $q->whereDate('fecha_ingreso', '<=', $request->input('fecha_ingreso_hasta'));
             });
         }
         // Handle secondFilter based on filterType
@@ -125,13 +143,31 @@ class SalidaImpresoraController extends Controller
 
         $query = SalidaImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes', 'areas', 'gerencias', 'inventario_impresoras');
 
-        // Apply the same filters as in index
+        // Filtro de fecha mejorado para fecha_salida - permite filtrar por fechas individuales o rangos
         if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
             $query->whereBetween('fecha_salida', [$request->input('fecha_desde'), $request->input('fecha_hasta')]);
+        } elseif ($request->filled('fecha_desde')) {
+            // Solo fecha_desde - filtrar desde esa fecha hasta ahora
+            $query->whereDate('fecha_salida', '>=', $request->input('fecha_desde'));
+        } elseif ($request->filled('fecha_hasta')) {
+            // Solo fecha_hasta - filtrar desde el inicio hasta esa fecha
+            $query->whereDate('fecha_salida', '<=', $request->input('fecha_hasta'));
         }
+
+        // Filtro de fecha mejorado para fecha_ingreso del inventario - permite filtrar por fechas individuales o rangos
         if ($request->filled('fecha_ingreso_desde') && $request->filled('fecha_ingreso_hasta')) {
             $query->whereHas('inventario_impresoras', function ($q) use ($request) {
                 $q->whereBetween('fecha_ingreso', [$request->input('fecha_ingreso_desde'), $request->input('fecha_ingreso_hasta')]);
+            });
+        } elseif ($request->filled('fecha_ingreso_desde')) {
+            // Solo fecha_ingreso_desde - filtrar desde esa fecha hasta ahora
+            $query->whereHas('inventario_impresoras', function ($q) use ($request) {
+                $q->whereDate('fecha_ingreso', '>=', $request->input('fecha_ingreso_desde'));
+            });
+        } elseif ($request->filled('fecha_ingreso_hasta')) {
+            // Solo fecha_ingreso_hasta - filtrar desde el inicio hasta esa fecha
+            $query->whereHas('inventario_impresoras', function ($q) use ($request) {
+                $q->whereDate('fecha_ingreso', '<=', $request->input('fecha_ingreso_hasta'));
             });
         }
         if ($request->filled('filterType') && $request->filled('secondFilter')) {

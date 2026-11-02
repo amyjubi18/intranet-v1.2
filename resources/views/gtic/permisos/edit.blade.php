@@ -107,7 +107,7 @@
                 <p class="text-slate-400">Modifica la información del permiso seleccionado</p>
             </div>
 
-            <form id="editarPermisoForm" action="{{ route('gtic.permisos.update', $permission->id) }}" method="POST">
+            <form id="editarPermisoForm" data-permission-id="{{ $permission->id }}" action="{{ route('gtic.permisos.update', $permission->id) }}" method="POST">
                 @csrf
                 @method('PUT')
 
