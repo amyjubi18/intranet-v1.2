@@ -43,9 +43,10 @@
             $ghHost = parse_url(preg_match('#^https?://#', config('modules.gh_url')) ? config('modules.gh_url') : 'http://' . config('modules.gh_url'), PHP_URL_HOST);
             $gticHost = parse_url(preg_match('#^https?://#', config('modules.gtic_url')) ? config('modules.gtic_url') : 'http://' . config('modules.gtic_url'), PHP_URL_HOST);
 
-            $isAdminActive = ($currentHost === $adminHost) || str_contains($currentHost, '250');
-            $isGhActive = ($currentHost === $ghHost) || str_contains($currentHost, '251');
-            $isGticActive = ($currentHost === $gticHost) || str_contains($currentHost, '252');
+            $mod = config('modules.current');
+            $isAdminActive = ($mod === 'administracion') || ($currentHost === $adminHost) || str_contains($currentHost, '250');
+            $isGhActive = ($mod === 'gestion-humana') || ($currentHost === $ghHost) || str_contains($currentHost, '251');
+            $isGticActive = ($mod === 'gtic') || ($currentHost === $gticHost) || str_contains($currentHost, '252');
         @endphp
 
         <!-- Selector de Módulos con SSO -->
@@ -82,6 +83,7 @@
             </div>
         </div>
 
+        @if($isGticActive)
         @can('gtic')
         <!-- GTIC -->
         <div class="sidebar-item" onclick="toggleSubmenu('gtic')">
@@ -133,19 +135,21 @@
             @endcan
         </div>
         @endcan
+        @endif
 
+        @if($isAdminActive)
         @can('oga')
         <!-- OGA -->
         <div class="sidebar-item" onclick="toggleSubmenu('oga')">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                 <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
             </svg>
-            <span>OGA</span>
+            <span>Administración (OGA)</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="oga-arrow">
                 <polyline points="6,9 12,15 18,9"/>
             </svg>
         </div>
-        <div class="submenu ml-4 hidden" id="oga-submenu">
+        <div class="submenu ml-4" id="oga-submenu">
             @can('documentos')
             <div class="sidebar-item" onclick="toggleSubmenu('documentos')">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
@@ -412,7 +416,9 @@
 
         </div>
         @endcan
+        @endif
 
+        @if($isGhActive)
         @can('ogh')
         <!-- OGH -->
         <div class="sidebar-item" onclick="toggleSubmenu('ogh')">
@@ -459,6 +465,7 @@
             @endcan
         </div>
         @endcan
+        @endif
     </div>
 
     <!-- Bottom Section -->
