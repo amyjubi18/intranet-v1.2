@@ -25,21 +25,51 @@ class SSOController extends Controller
             return redirect('/inicio');
         }
 
+        $user = Auth::user();
+        if (!$user) {
+            return redirect('/login');
+        }
+
+        // Validación de permisos por módulo
+        $isAuthorized = false;
+        if ($module === 'admin') {
+            $isAuthorized = $user->can('oga');
+        } elseif ($module === 'gh') {
+            $isAuthorized = $user->can('ogh');
+        } elseif ($module === 'gtic') {
+            $isAuthorized = $user->can('gtic');
+        }
+
+        if (!$isAuthorized) {
+            return redirect('/inicio')->with('error', 'No tienes permisos asignados para acceder a ese entorno.');
+        }
+
         $rawTarget = trim($urls[$module]);
         $targetUrl = preg_match('#^https?://#', $rawTarget) ? $rawTarget : 'http://' . $rawTarget;
         $targetBaseUrl = rtrim($targetUrl, '/');
         $targetHost = parse_url($targetBaseUrl, PHP_URL_HOST);
+        $targetPort = parse_url($targetBaseUrl, PHP_URL_PORT) ?: 80;
 
         // Si ya estamos en el mismo contenedor, ir a /inicio directamente sin bucles
         if ($targetHost === $request->getHost()) {
             return redirect('/inicio');
         }
 
-        $userId = Auth::id();
-        if (!$userId) {
-            return redirect('/login');
+        // Health-check / Socket probe rápido al contenedor destino
+        $probe = @fsockopen($targetHost, $targetPort, $errno, $errstr, 1.2);
+        if (!$probe) {
+            $mainUrl = rtrim(config('modules.admin_url', 'http://172.17.50.250'), '/');
+            $moduleNames = [
+                'admin' => 'Administración',
+                'gh'    => 'Gestión Humana',
+                'gtic'  => 'GTIC',
+            ];
+            $name = $moduleNames[$module] ?? strtoupper($module);
+            return redirect("{$mainUrl}/inicio")->with('error', "El módulo de {$name} ({$targetHost}) está fuera de servicio o no responde. Has sido retornado al contenedor principal.");
         }
+        fclose($probe);
 
+        $userId = $user->id;
         $expires = now()->addSeconds(60)->timestamp;
 
         // Crear firma HMAC usando el APP_KEY compartido
@@ -54,6 +84,7 @@ class SSOController extends Controller
      */
     public function verify(Request $request)
     {
+        $mainUrl = rtrim(config('modules.admin_url', 'http://172.17.50.250'), '/');
         $userId = $request->query('user');
         $expires = (int) $request->query('expires');
         $signature = $request->query('signature');
@@ -65,7 +96,7 @@ class SSOController extends Controller
 
         // Validar expiración (máximo 60 segundos)
         if (!$userId || !$expires || !$signature || now()->timestamp > $expires) {
-            return redirect('/login')->withErrors(['sso' => 'El enlace de inicio de sesión ha expirado.']);
+            return redirect("{$mainUrl}/inicio")->with('error', 'El enlace de inicio de sesión ha expirado o es inválido. Retornado al contenedor principal.');
         }
 
         // Verificar la firma criptográfica con el APP_KEY compartido
@@ -73,13 +104,13 @@ class SSOController extends Controller
         $expectedSignature = hash_hmac('sha256', $payload, config('app.key'));
 
         if (!hash_equals($expectedSignature, $signature)) {
-            return redirect('/login')->withErrors(['sso' => 'Firma de autenticación no válida.']);
+            return redirect("{$mainUrl}/inicio")->with('error', 'Firma de autenticación no válida entre contenedores. Retornado al contenedor principal.');
         }
 
         // Autenticar al usuario en este contenedor
         $user = User::find($userId);
         if (!$user) {
-            return redirect('/login')->withErrors(['sso' => 'Usuario no encontrado.']);
+            return redirect("{$mainUrl}/inicio")->with('error', 'Usuario no encontrado en la base de datos.');
         }
 
         Auth::login($user);
