@@ -80,6 +80,8 @@ Route::get('/inicio', function () {
     return view('inicio');
 })->middleware(['auth', 'verified'])->name('inicio');
 
+require __DIR__.'/auth.php';
+
 Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(function () {
 
 // API routes that need auth
@@ -323,11 +325,8 @@ Route::get('/examples/react-integration', function() {
     return view('ejemplos.react-integration');
 })->name('examples.react-integration');
 
-Route::get('/{page?}', [DocsController::class, 'show'])->name('doc');
-
 Route::view('/prueba', 'prueba');
 });
-require __DIR__.'/auth.php';
 Route::get('/register', [RegisterController::class, 'create'])->name('register.create');
 Route::post('/register', [RegisterController::class, 'store'])->name('register.store');
 Route::get('/register/{id}/pdf', [RegisterController::class, 'generatePDF'])->name('register.pdf');
