@@ -39,11 +39,13 @@
 
         @php
             $currentHost = request()->getHost();
-            $adminHost = parse_url(preg_match('#^https?://#', config('modules.admin_url')) ? config('modules.admin_url') : 'http://' . config('modules.admin_url'), PHP_URL_HOST);
-            $ghHost = parse_url(preg_match('#^https?://#', config('modules.gh_url')) ? config('modules.gh_url') : 'http://' . config('modules.gh_url'), PHP_URL_HOST);
-            $gticHost = parse_url(preg_match('#^https?://#', config('modules.gtic_url')) ? config('modules.gtic_url') : 'http://' . config('modules.gtic_url'), PHP_URL_HOST);
+            $mainHost = parse_url(preg_match('#^https?://#', config('modules.main_url', 'http://172.17.50.219')) ? config('modules.main_url', 'http://172.17.50.219') : 'http://' . config('modules.main_url', 'http://172.17.50.219'), PHP_URL_HOST);
+            $adminHost = parse_url(preg_match('#^https?://#', config('modules.admin_url', 'http://172.17.50.250')) ? config('modules.admin_url', 'http://172.17.50.250') : 'http://' . config('modules.admin_url', 'http://172.17.50.250'), PHP_URL_HOST);
+            $ghHost = parse_url(preg_match('#^https?://#', config('modules.gh_url', 'http://172.17.50.251')) ? config('modules.gh_url', 'http://172.17.50.251') : 'http://' . config('modules.gh_url', 'http://172.17.50.251'), PHP_URL_HOST);
+            $gticHost = parse_url(preg_match('#^https?://#', config('modules.gtic_url', 'http://172.17.50.252')) ? config('modules.gtic_url', 'http://172.17.50.252') : 'http://' . config('modules.gtic_url', 'http://172.17.50.252'), PHP_URL_HOST);
 
             $mod = config('modules.current');
+            $isMainPortal = ($mod === 'main') || ($currentHost === $mainHost) || str_contains($currentHost, '219') || str_contains($currentHost, 'localhost');
             $isAdminActive = ($mod === 'administracion') || ($currentHost === $adminHost) || str_contains($currentHost, '250');
             $isGhActive = ($mod === 'gestion-humana') || ($currentHost === $ghHost) || str_contains($currentHost, '251');
             $isGticActive = ($mod === 'gtic') || ($currentHost === $gticHost) || str_contains($currentHost, '252');
@@ -500,10 +502,10 @@
             </div>
         </div>
         <div class="space-y-2">
-            @if(!$isAdminActive)
-            <a href="{{ config('modules.admin_url', 'http://172.17.50.250') }}/inicio" class="sidebar-item text-xs text-blue-200 hover:text-white flex items-center gap-2 bg-blue-900/50 hover:bg-blue-800 rounded-lg p-2 transition-colors">
+            @if(!$isMainPortal)
+            <a href="{{ config('modules.main_url', 'http://172.17.50.219') }}/inicio" class="sidebar-item text-xs text-blue-200 hover:text-white flex items-center gap-2 bg-blue-900/50 hover:bg-blue-800 rounded-lg p-2 transition-colors">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-                <span>Volver a Principal (.250)</span>
+                <span>Volver al Portal Principal</span>
             </a>
             @endif
             <a href="{{ route('profile.edit') }}" class="sidebar-item">

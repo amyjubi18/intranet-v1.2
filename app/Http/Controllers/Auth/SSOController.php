@@ -58,14 +58,13 @@ class SSOController extends Controller
         // Health-check / Socket probe rápido al contenedor destino
         $probe = @fsockopen($targetHost, $targetPort, $errno, $errstr, 1.2);
         if (!$probe) {
-            $mainUrl = rtrim(config('modules.admin_url', 'http://172.17.50.250'), '/');
             $moduleNames = [
                 'admin' => 'Administración',
                 'gh'    => 'Gestión Humana',
                 'gtic'  => 'GTIC',
             ];
             $name = $moduleNames[$module] ?? strtoupper($module);
-            return redirect("{$mainUrl}/inicio")->with('error', "El módulo de {$name} ({$targetHost}) está fuera de servicio o no responde. Has sido retornado al contenedor principal.");
+            return redirect('/inicio')->with('error', "El módulo de {$name} ({$targetHost}) está fuera de servicio o no responde.");
         }
         fclose($probe);
 
@@ -84,7 +83,7 @@ class SSOController extends Controller
      */
     public function verify(Request $request)
     {
-        $mainUrl = rtrim(config('modules.admin_url', 'http://172.17.50.250'), '/');
+        $mainUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/');
         $userId = $request->query('user');
         $expires = (int) $request->query('expires');
         $signature = $request->query('signature');
