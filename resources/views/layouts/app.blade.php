@@ -1248,24 +1248,50 @@
             return iconos[tipo] || '📋';
         }
 
+        @php
+            $searchUrl = function(string $targetModule, string $routeName, string $fallbackPath) {
+                $currentModule = config('modules.current');
+                $isCurrent = match($targetModule) {
+                    'admin' => in_array($currentModule, ['administracion', 'admin']),
+                    'gh'    => in_array($currentModule, ['gestion-humana', 'gh']),
+                    'gtic'  => in_array($currentModule, ['gtic']),
+                    default => false,
+                };
+
+                if ($isCurrent && \Illuminate\Support\Facades\Route::has($routeName)) {
+                    return route($routeName);
+                }
+
+                if (\Illuminate\Support\Facades\Route::has($routeName)) {
+                    return route($routeName);
+                }
+
+                if (\Illuminate\Support\Facades\Route::has('sso.go')) {
+                    return route('sso.go', ['module' => $targetModule, 'redirect' => $fallbackPath]);
+                }
+
+                return $fallbackPath;
+            };
+        @endphp
+
         function navegarABusqueda(tabla, event) {
             event.preventDefault();
 
             // Mapear tablas a rutas
             const rutas = {
-                'cartuchos': '{{ route("administracion.consumibles.index") }}',
-                'articulos': '{{ route("administracion.articulos.index") }}',
-                'impresoras': '{{ route("administracion.impresoras.index") }}',
-                'users': '{{ route("users.index") }}',
-                'proveedores': '{{ route("administracion.proveedores.index") }}',
-                'areas': '{{ route("administracion.areas.index") }}',
-                'gerencias': '{{ route("administracion.gerencias.index") }}',
-                'ubicaciones': '{{ route("administracion.ubicacion.index") }}',
-                'documentos': '{{ route("administracion.documentos.index") }}',
-                'bienes': '{{ route("administracion.bienes_publicos.index") }}',
+                'cartuchos': '{{ $searchUrl("admin", "administracion.consumibles.index", "/administracion/consumibles") }}',
+                'articulos': '{{ $searchUrl("admin", "administracion.articulos.index", "/administracion/articulos") }}',
+                'impresoras': '{{ $searchUrl("admin", "administracion.impresoras.index", "/administracion/impresoras") }}',
+                'users': '{{ $searchUrl("gtic", "users.index", "/users") }}',
+                'proveedores': '{{ $searchUrl("admin", "administracion.proveedores.index", "/administracion/proveedores") }}',
+                'areas': '{{ $searchUrl("admin", "administracion.areas.index", "/administracion/areas") }}',
+                'gerencias': '{{ $searchUrl("admin", "administracion.gerencias.index", "/administracion/gerencias") }}',
+                'ubicaciones': '{{ $searchUrl("admin", "administracion.ubicacion.index", "/administracion/ubicacion") }}',
+                'documentos': '{{ $searchUrl("admin", "administracion.documentos.index", "/administracion/documentos") }}',
+                'bienes': '{{ $searchUrl("admin", "administracion.bienes_publicos.index", "/administracion/bienes_publicos") }}',
                 // Gestión Humana
-                'tipo_documentos': '{{ route("gestion-humana.tipo_documentos.index") }}',
-                'areas_adscritas': '{{ route("gestion-humana.area_adscrita.index") }}',
+                'tipo_documentos': '{{ $searchUrl("gh", "gestion-humana.tipo_documentos.index", "/gestion-humana/tipo_documentos") }}',
+                'areas_adscritas': '{{ $searchUrl("gh", "gestion-humana.area_adscrita.index", "/gestion-humana/area_adscrita") }}',
             };
 
             console.log('Navegando a:', tabla);

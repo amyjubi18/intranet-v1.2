@@ -223,3 +223,4 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
     Route::get('reporte/excel/{usuario_de_uso}/{type}', [ExportarController::class, 'reporteExcel']);
     Route::get('/pdf', [PdfController::class, 'generateForm']);
 });
+

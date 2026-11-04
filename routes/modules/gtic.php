@@ -53,3 +53,4 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
     // Reportes Livewire
     Route::get('reportes', ReportesController::class);
 });
+

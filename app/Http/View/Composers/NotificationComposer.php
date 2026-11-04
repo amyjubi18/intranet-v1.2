@@ -235,7 +235,7 @@ class NotificationComposer
                 'mensaje' => 'Tu perfil necesita ser completado',
                 'cantidad' => $perfil['total'],
                 'campos_faltantes' => $camposTexto,
-                'ruta_ver_todas' => route('profile.edit'),
+                'ruta_ver_todas' => \Illuminate\Support\Facades\Route::has('profile.edit') ? route('profile.edit') : '/profile',
                 'color' => 'blue',
                 'leida' => $isRead
             ];
@@ -259,7 +259,7 @@ class NotificationComposer
                     'cantidad' => $itemsConsumibles->count(),
                     'items' => $itemsConsumibles,
                     'tipo_item' => 'consumible',
-                    'ruta_ver_todas' => route('administracion.almacenamiento_impresoras.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.almacenamiento_impresoras.index', '/administracion/almacenamiento_impresoras'),
                     'color' => 'orange',
                     'leida' => $isRead
                 ];
@@ -287,7 +287,7 @@ class NotificationComposer
                     'cantidad' => $itemsOficina->count(),
                     'items' => $itemsOficina,
                     'tipo_item' => 'articulo',
-                    'ruta_ver_todas' => route('administracion.inventario_oficinas.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.inventario_oficinas.index', '/administracion/inventario_oficinas'),
                     'color' => 'yellow',
                     'leida' => $isRead
                 ];
@@ -313,7 +313,7 @@ class NotificationComposer
                     'cantidad' => $usuariosIncompletos->count(),
                     'items' => $usuariosIncompletos,
                     'tipo_item' => 'usuario',
-                    'ruta_ver_todas' => route('users.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('gtic', 'users.index', '/users'),
                     'color' => 'red',
                     'leida' => $isRead
                 ];
@@ -339,7 +339,7 @@ class NotificationComposer
                     'cantidad' => $bienesDaniados->count(),
                     'items' => $bienesDaniados,
                     'tipo_item' => 'bien',
-                    'ruta_ver_todas' => route('administracion.bienes.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.bienes_publicos.index', '/administracion/bienes_publicos'),
                     'color' => 'red',
                     'leida' => $isRead
                 ];
@@ -365,7 +365,7 @@ class NotificationComposer
                     'cantidad' => $bienesSinAsignar->count(),
                     'items' => $bienesSinAsignar,
                     'tipo_item' => 'bien',
-                    'ruta_ver_todas' => route('administracion.bienes.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.bienes_publicos.index', '/administracion/bienes_publicos'),
                     'color' => 'blue',
                     'leida' => $isRead
                 ];
@@ -391,7 +391,7 @@ class NotificationComposer
                     'cantidad' => $impresorasProblema->count(),
                     'items' => $impresorasProblema,
                     'tipo_item' => 'impresora',
-                    'ruta_ver_todas' => route('administracion.impresoras.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.impresoras.index', '/administracion/impresoras'),
                     'color' => 'orange',
                     'leida' => $isRead
                 ];
@@ -401,6 +401,34 @@ class NotificationComposer
         }
 
         return $notificaciones;
+    }
+
+    /**
+     * Resuelve de forma segura la URL de la notificación para soportar arquitectura modular inter-contenedores con SSO.
+     */
+    private function resolverRutaSegura(string $targetModule, string $routeName, string $fallbackPath): string
+    {
+        $currentModule = config('modules.current');
+        $isCurrent = match($targetModule) {
+            'admin' => in_array($currentModule, ['administracion', 'admin']),
+            'gh'    => in_array($currentModule, ['gestion-humana', 'gh']),
+            'gtic'  => in_array($currentModule, ['gtic']),
+            default => false,
+        };
+
+        if ($isCurrent && \Illuminate\Support\Facades\Route::has($routeName)) {
+            return route($routeName);
+        }
+
+        if (\Illuminate\Support\Facades\Route::has($routeName)) {
+            return route($routeName);
+        }
+
+        if (\Illuminate\Support\Facades\Route::has('sso.go')) {
+            return route('sso.go', ['module' => $targetModule, 'redirect' => $fallbackPath]);
+        }
+
+        return $fallbackPath;
     }
 
     /**

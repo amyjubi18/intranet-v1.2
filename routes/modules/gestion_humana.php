@@ -32,3 +32,4 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
         ->names('gestion-humana.tipo_documentos')
         ->parameters(['tipo_documentos' => 'tipo_documento']);
 });
+
