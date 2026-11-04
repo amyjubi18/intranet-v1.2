@@ -73,7 +73,7 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: var(--card-bg);
+            background: #ffffff !important;
             border: 1px solid var(--card-border);
             backdrop-filter: blur(12px);
             border-radius: 0.75rem;
@@ -85,7 +85,7 @@
             visibility: hidden;
             transform: translateY(-10px);
             transition: all 0.2s ease;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
         }
         .searchable-select-dropdown.open {
             opacity: 1;
@@ -264,6 +264,7 @@
             <div class="p-4 glass rounded-xl">
                 {{ $usuario_de_usos->links() }}
             </div>
+        </div>
         @endif
     </div>
 

@@ -25,7 +25,7 @@ class EstanteriaController extends Controller
         // Validar dirección
         $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
 
-        $query = Estanteria::query();
+        $query = Estanteria::query()->withCount('documentos');
 
         if ($search) {
             $query->where('nombre', 'LIKE', '%' . $search . '%');
@@ -100,7 +100,7 @@ class EstanteriaController extends Controller
      */
     public function show(string $id)
     {
-        //
+        return redirect()->route('administracion.documentos.index', ['estanteria_id' => $id]);
     }
 
     /**

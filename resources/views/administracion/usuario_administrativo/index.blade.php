@@ -75,7 +75,7 @@
             top: 100%;
             left: 0;
             right: 0;
-            background: var(--card-bg);
+            background: #ffffff !important;
             border: 1px solid var(--card-border);
             backdrop-filter: blur(12px);
             border-radius: 0.75rem;
@@ -87,7 +87,7 @@
             visibility: hidden;
             transform: translateY(-10px);
             transition: all 0.2s ease;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
         }
         .searchable-select-dropdown.open {
             opacity: 1;
@@ -148,7 +148,7 @@
     </style>
 
     <!-- Filtros y controles -->
-    <div class="sticky top-0 z-10 px-6 mb-6">
+    <div class="sticky top-0 z-40 px-6 mb-6">
         <div class="p-6 glass rounded-2xl fade-in mb-4">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex flex-wrap items-center gap-4">
@@ -181,7 +181,7 @@
                                 <div id="searchableFilterOptions" class="searchable-select-options">
                                     <!-- Las opciones se generan dinámicamente -->
                                 </div>
-
+                            </div>
                         </div>
 
                         <!-- Input de texto para búsqueda (oculto por defecto) -->

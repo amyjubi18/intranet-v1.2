@@ -75,7 +75,24 @@
 <form method="GET" action="{{ route('administracion.inventario_oficinas.index') }}" id="filterForm">
     <div class="px-6 mb-6">
         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
-            <div class="flex flex-wrap items-center justify-between gap-4">
+            <div class="flex flex-col gap-4">
+                <!-- Fila de acciones (Exportar, Eliminar Seleccionados, Eliminar Todo, Nuevo Registro) -->
+                <div class="flex flex-wrap items-center justify-end gap-3 pb-4 border-b border-gray-100">
+                    <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
+                        <option value="">📤 Exportar</option>
+                        <option value="{{ route('administracion.inventario_oficinas.export.excel', request()->all()) }}">Exportar a Excel</option>
+                        <option value="{{ route('administracion.inventario_oficinas.export.pdf', request()->all()) }}">Exportar a PDF</option>
+                    </select>
+                    @can('inventarioofic_destroy')
+                    <button type="button" onclick="confirmDeleteSelected()" id="deleteSelectedBtn" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm" disabled><span>🗑️</span> Eliminar Seleccionados</button>
+                    <button type="button" onclick="confirmDeleteAll()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm"><span>⚠️</span> Eliminar Todo</button>
+                    @endcan
+                    @can('inventarioofic_create')
+                    <a href="/administracion/inventario_oficinas/create" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"><span>➕</span> Nuevo Registro</a>
+                    @endcan
+                </div>
+
+                <!-- Fila de filtros -->
                 <div class="flex flex-wrap items-center gap-4">
                     <button type="button" onclick="toggleAdvancedFilters()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">Filtros Avanzados</button>
                     <select id="filterType" name="filterType" onchange="updateSecondFilter()" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('filterType') ? 'bg-blue-100 border-blue-500' : '' }}" style="display:none;">
@@ -121,24 +138,9 @@
                     <input type="text" id="generalSearch" name="busqueda" placeholder="Buscar en todos los campos..." class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" value="{{ request('busqueda') }}" style="display:none;">
                     <a href="{{ route('administracion.inventario_oficinas.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">🗑️ Limpiar</a>
                 </div>
-                <div class="flex items-center gap-3 flex-wrap">
-                    <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
-                        <option value="">📤 Exportar</option>
-                        <option value="{{ route('administracion.inventario_oficinas.export.excel', request()->all()) }}">Exportar a Excel</option>
-                        <option value="{{ route('administracion.inventario_oficinas.export.pdf', request()->all()) }}">Exportar a PDF</option>
-                    </select>
-                    @can('inventarioofic_destroy')
-                    <button type="button" onclick="confirmDeleteSelected()" id="deleteSelectedBtn" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm" disabled><span>🗑️</span> Eliminar Seleccionados</button>
-                    <button type="button" onclick="confirmDeleteAll()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm"><span>⚠️</span> Eliminar Todo</button>
-                    @endcan
-                    @can('inventarioofic_create')
-                    <a href="/administracion/inventario_oficinas/create" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"><span>➕</span> Nuevo Registro</a>
-                    @endcan
-                </div>
+            </div>
         </div>
-        </div>
-        </div>
-        
+    </div>
 </form>
 
 <!-- Formularios ocultos para eliminación masiva -->

@@ -216,6 +216,11 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
     Route::get('/administracion/reportes/audit/pdf', [UnifiedInventoryController::class, 'exportAuditPdf'])->name('administracion.reportes.audit.pdf');
     Route::get('/administracion/reportes/gerencia-area/pdf', [UnifiedInventoryController::class, 'exportGerenciaAreaReportPdf'])->name('administracion.reportes.gerencia_area.pdf');
 
+    // Registro de actividades accesible desde Reportes de Administración
+    Route::get('/gtic/activity-log', [\App\Http\Controllers\ActivityLogController::class, 'index'])->name('gtic.activity-log.index');
+    Route::get('/gtic/activity-log/export/pdf', [\App\Http\Controllers\ActivityLogController::class, 'exportPdf'])->name('gtic.activity-log.export.pdf');
+    Route::get('/gtic/activity-log/export/excel', [\App\Http\Controllers\ActivityLogController::class, 'exportExcel'])->name('gtic.activity-log.export.excel');
+
     /* =========================================================================
      * 5. REPORTES ADICIONALES Y FORMULARIOS
      * ========================================================================= */

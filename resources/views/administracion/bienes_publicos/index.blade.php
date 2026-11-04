@@ -50,7 +50,23 @@
     <form method="GET" action="{{ route('administracion.bienes_publicos.index') }}" id="filterForm">
         <div class="px-6 mb-6">
             <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
-                <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="flex flex-col gap-4">
+                    <!-- Fila de acciones (Exportar, Nuevo) -->
+                    <div class="flex flex-wrap items-center justify-end gap-3 pb-4 border-b border-gray-100">
+                        <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
+                            <option value="">📤 Exportar</option>
+                            <option value="{{ route('administracion.bienes_publicos.export.excel', request()->all()) }}">Excel</option>
+                            <option value="{{ route('administracion.bienes_publicos.export.pdf', request()->all()) }}">PDF</option>
+                        </select>
+                        @can('bienes_create')
+                        <a href="/administracion/bienes_publicos/create" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
+                            <span>➕</span>
+                            Nuevo
+                        </a>
+                        @endcan
+                    </div>
+
+                    <!-- Fila de filtros -->
                     <div class="flex flex-wrap items-center gap-4">
                         <button type="button" onclick="startQrScanner()" class="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50">
                             📷 Escanear QR
@@ -97,19 +113,6 @@
                         <a href="{{ route('administracion.bienes_publicos.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                             🗑️ Limpiar
                         </a>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
-                            <option value="">📤 Exportar</option>
-                            <option value="{{ route('administracion.bienes_publicos.export.excel', request()->all()) }}">Excel</option>
-                            <option value="{{ route('administracion.bienes_publicos.export.pdf', request()->all()) }}">PDF</option>
-                        </select>
-                        @can('bienes_create')
-                        <a href="/administracion/bienes_publicos/create" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
-                            <span>➕</span>
-                            Nuevo
-                        </a>
-                        @endcan
                     </div>
                 </div>
             </div>

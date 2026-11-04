@@ -541,11 +541,7 @@
                             <div style="font-size: 30px;">🗄️</div>
                         @endif
                         <span class="estanteria-block__name">{{ $estanteria->nombre }}</span>
-                        @php
-                            $documentosEnEstanteria = $documentos->where('estanteria_id', $estanteria->id);
-                            $totalDocs = $documentosEnEstanteria->count();
-                        @endphp
-                        <span class="estanteria-block__count">{{ $totalDocs }} docs</span>
+                        <span class="estanteria-block__count">{{ $estanteria->documentos_count ?? $estanteria->documentos()->count() }} docs</span>
                     </div>
                 </div>
                 @endforeach
@@ -574,17 +570,19 @@
     @php
         $hayFiltros = request('filterType') || request('secondFilter') || request('search') || request('search_general') || request('fecha_desde') || request('fecha_hasta');
     @endphp
-    <div class="px-6 mb-8" id="mensajeSeleccion" style="{{ !request('estanteria_id') && !$hayFiltros && $documentos->count() == 0 ? '' : 'display:none;' }}">
+    @if(!request('estanteria_id') && !$hayFiltros && $documentos->count() == 0)
+    <div class="px-6 mb-8" id="mensajeSeleccion">
         <div class="glass rounded-2xl fade-in">
             <div class="mensaje-seleccion">
                 <div class="mensaje-seleccion__icon">📚</div>
-                <p class="mensaje-seleccion__text">Selecciona una estantería para ver sus documentos</p>
+                <p class="mensaje-seleccion__text">Selecciona una estantería o registra un documento para comenzar</p>
             </div>
         </div>
     </div>
+    @endif
 
-    <!-- Registro de documentos (visible cuando hay selección, filtros o documentos) -->
-    <div class="px-6 mb-8 {{ (request('estanteria_id') || $hayFiltros || $documentos->count() > 0) ? 'visible' : 'hidden' }}" id="documentosWrapper" style="{{ (request('estanteria_id') || $hayFiltros) ? '' : 'display:none;' }}">
+    <!-- Registro de documentos -->
+    <div class="px-6 mb-8" id="documentosWrapper">
         <div class="space-y-4 fade-in">
             @forelse ($documentos as $documento)
             <!-- Registro -->
@@ -837,32 +835,16 @@
 
             // Actualizar URL
             const url = new URL(window.location);
+            url.searchParams.delete('page');
             url.searchParams.set('estanteria_id', estanteriaId);
             window.location.href = url.toString();
         }
 
         // Ver todos los documentos
         function verTodosLosDocumentos() {
-            // Ocultar documentos solo si no hay filtros activos
-            const generalSearch = document.querySelector('#generalSearch').value;
-            const textFilter = document.querySelector('#textFilter').value;
-            const filterType = document.querySelector('#filterType').value;
-            const hayFiltros = generalSearch || textFilter || filterType;
-
-            if (!hayFiltros) {
-                document.getElementById('documentosWrapper').style.display = 'none';
-                document.getElementById('documentosWrapper').classList.remove('visible');
-                document.getElementById('documentosWrapper').classList.add('hidden');
-
-                // Mostrar mensaje de selección
-                document.getElementById('mensajeSeleccion').style.display = 'block';
-            }
-
-            // Ocultar botón de ver todos
-            document.getElementById('btnVerTodos').style.display = 'none';
-
             // Actualizar URL
             const url = new URL(window.location);
+            url.searchParams.delete('page');
             url.searchParams.delete('estanteria_id');
             window.location.href = url.toString();
         }

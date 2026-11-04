@@ -140,7 +140,7 @@
                         <svg width="16" height="16" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" /> <polyline points="14,2 14,8 20,8" /> <line x1="16" y1="13" x2="8" y2="13" /> <line x1="16" y1="17" x2="8" y2="17" /> <polyline points="10,9 9,9 8,9" />
                         </svg> Reporte de Inventario
                     </a>
-                    <a href="{{ route('gtic.activity-log.export.pdf') }}" class="btn btn-secondary hover:bg-blue-900 hover:text-white w-full justify-start">
+                    <a href="{{ Route::has('gtic.activity-log.export.pdf') ? route('gtic.activity-log.export.pdf') : (Route::has('sso.go') ? route('sso.go', ['module' => 'gtic', 'redirect' => '/gtic/activity-log/export/pdf']) : '#') }}" class="btn btn-secondary hover:bg-blue-900 hover:text-white w-full justify-start">
                         <svg width="16" height="16" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23,6 13.5,15.5 8.5,10.5 1,18" /> <polyline points="17,6 23,6 23,12" />
                         </svg> Reporte de Movimientos
                     </a>
@@ -190,11 +190,11 @@
                     <svg width="20" height="20" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v5h5" /> <path d="M3.05 13A9 9 0 1 0 6 5.3L3 8" /> <path d="M12 7v5l4 2" />
                     </svg> Registro de Actividades Recientes</h3>
                 <div class="flex gap-2">
-                    <a href="{{ route('gtic.activity-log.export.pdf') }}" class="btn btn-secondary btn-sm hover:bg-blue-900 hover:text-white justify-start">
+                    <a href="{{ Route::has('gtic.activity-log.export.pdf') ? route('gtic.activity-log.export.pdf') : (Route::has('sso.go') ? route('sso.go', ['module' => 'gtic', 'redirect' => '/gtic/activity-log/export/pdf']) : '#') }}" class="btn btn-secondary btn-sm hover:bg-blue-900 hover:text-white justify-start">
                         <svg width="14" height="14" viewbox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" /> <polyline points="7,10 12,15 17,10" /> <line x1="12" y1="15" x2="12" y2="3" />
                         </svg> Exportar
                     </a>
-                    <a href="{{ route('gtic.activity-log.index') }}" class="btn btn-secondary btn-sm hover:bg-blue-900 hover:text-white justify-start">Ver Todo</a>
+                    <a href="{{ Route::has('gtic.activity-log.index') ? route('gtic.activity-log.index') : (Route::has('sso.go') ? route('sso.go', ['module' => 'gtic', 'redirect' => '/gtic/activity-log']) : '#') }}" class="btn btn-secondary btn-sm hover:bg-blue-900 hover:text-white justify-start">Ver Todo</a>
                 </div>
             </div>
             <!-- Filtros para actividades -->

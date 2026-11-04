@@ -45,11 +45,13 @@ class DocsController extends Controller
         $documentos = Documento::query()->with('archivos.categoria', 'estanteria')
             // Búsqueda general
             ->when($searchGeneral, function ($query) use ($searchGeneral) {
-                return $query->where('name', 'LIKE', '%' . $searchGeneral . '%')
-                    ->orWhere('description', 'LIKE', '%' . $searchGeneral . '%')
-                    ->orWhereHas('archivos', function ($q) use ($searchGeneral) {
-                        $q->where('nombre_archivo', 'LIKE', '%' . $searchGeneral . '%');
-                    });
+                return $query->where(function ($q) use ($searchGeneral) {
+                    $q->where('name', 'LIKE', '%' . $searchGeneral . '%')
+                        ->orWhere('description', 'LIKE', '%' . $searchGeneral . '%')
+                        ->orWhereHas('archivos', function ($sub) use ($searchGeneral) {
+                            $sub->where('nombre_archivo', 'LIKE', '%' . $searchGeneral . '%');
+                        });
+                });
             })
             // Filtro por Nº Expediente
             ->when($filterType === 'name' && $search, function ($query) use ($search) {
@@ -73,7 +75,7 @@ class DocsController extends Controller
         return view('administracion.documentos.index', [
             'documentos' => $documentos,
             'categorias' => Categoria::all(),
-            'estanterias' => Estanteria::all(),
+            'estanterias' => Estanteria::withCount('documentos')->get(),
             'sort' => $sort,
             'direction' => $direction,
             'search_general' => $searchGeneral

@@ -54,26 +54,35 @@
             <!-- Tarjeta de estantería -->
             <div class="glass rounded-2xl p-6 hover:scale-[1.02] transition-transform">
                 <div class="flex flex-col items-center">
-                    <!-- Imagen de la estantería -->
-                    <div class="flex items-center justify-center w-full h-48 mb-4 overflow-hidden bg-gray-100 rounded-xl">
+                    <!-- Imagen de la estantería (Clickable) -->
+                    <a href="{{ route('administracion.documentos.index', ['estanteria_id' => $estanteria->id]) }}" class="flex items-center justify-center w-full h-48 mb-4 overflow-hidden bg-gray-100 rounded-xl group" title="Ver documentos de {{ $estanteria->nombre }}">
                         @if($estanteria->imagen && file_exists(storage_path('app/public/estanterias/' . $estanteria->imagen)))
-                            <img src="{{ asset('storage/estanterias/' . $estanteria->imagen) }}" alt="{{ $estanteria->nombre }}" class="object-cover w-full h-full">
+                            <img src="{{ asset('storage/estanterias/' . $estanteria->imagen) }}" alt="{{ $estanteria->nombre }}" class="object-cover w-full h-full group-hover:scale-105 transition-transform duration-200">
                         @else
-                            <div class="text-center text-gray-400">
+                            <div class="text-center text-gray-400 group-hover:scale-110 transition-transform">
                                 <div class="mb-2 text-6xl">🗄️</div>
                                 <p class="text-sm">Sin imagen</p>
                             </div>
                         @endif
-                    </div>
+                    </a>
 
-                    <!-- Nombre -->
+                    <!-- Nombre (Clickable) -->
                     <div class="mb-4 text-center">
-                        <p class="text-lg font-semibold text-blue-900">{{ $estanteria->nombre }}</p>
+                        <a href="{{ route('administracion.documentos.index', ['estanteria_id' => $estanteria->id]) }}" class="text-lg font-semibold text-blue-900 hover:text-blue-700 transition-colors">
+                            {{ $estanteria->nombre }}
+                        </a>
                         <p class="text-xs text-gray-400">Creado: {{ $estanteria->created_at->format('d/m/Y') }}</p>
+                        <span class="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            📁 {{ $estanteria->documentos_count ?? $estanteria->documentos()->count() }} documentos
+                        </span>
                     </div>
 
                     <!-- Acciones -->
                     <div class="flex flex-wrap justify-center gap-2">
+                        <a href="{{ route('administracion.documentos.index', ['estanteria_id' => $estanteria->id]) }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-xs">
+                            <span>📂</span>
+                            Ver Documentos
+                        </a>
                         @can('estanterias_edit')
                         <a href="{{ route('administracion.estanterias.edit', $estanteria->id) }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 text-white border border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs">
                             <span>✏️</span>
