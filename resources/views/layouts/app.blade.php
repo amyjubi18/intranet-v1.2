@@ -1251,6 +1251,33 @@
                 });
         }
 
+        let activeCategoriaFiltro = 'todas';
+
+        function filtrarCategoria(tipo, btnElement) {
+            activeCategoriaFiltro = tipo;
+            const container = document.getElementById('searchResults');
+            if (!container) return;
+
+            // Actualizar apariencia de los botones de pestañas
+            container.querySelectorAll('.cat-pill-btn').forEach(btn => {
+                if (btn.dataset.cat === tipo) {
+                    btn.className = 'cat-pill-btn px-3 py-1 rounded-full text-xs font-bold transition-all bg-blue-600 text-white shadow-sm shrink-0 cursor-pointer';
+                } else {
+                    btn.className = 'cat-pill-btn px-3 py-1 rounded-full text-xs font-medium transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 cursor-pointer';
+                }
+            });
+
+            // Mostrar/ocultar los bloques de resultados según la opción seleccionada
+            container.querySelectorAll('.search-group-block').forEach(block => {
+                if (tipo === 'todas' || block.dataset.tipo === tipo) {
+                    block.classList.remove('hidden');
+                } else {
+                    block.classList.add('hidden');
+                }
+            });
+        }
+        window.filtrarCategoria = filtrarCategoria;
+
         function renderSearchResults(results, query) {
             if (!searchResults) return;
 
@@ -1261,7 +1288,7 @@
                             🔍
                         </div>
                         <p class="text-sm font-bold text-slate-700">Sin coincidencias para "${escapeHtml(query)}"</p>
-                        <p class="text-xs text-slate-400 mt-1">No se encontraron registros en los módulos o contenedores asignados a tu rol.</p>
+                        <p class="text-xs text-slate-400 mt-1">No se encontraron registros en las páginas y módulos asignados a tu rol actual.</p>
                     </div>
                 `;
                 searchResults.classList.remove('hidden');
@@ -1269,7 +1296,7 @@
                 return;
             }
 
-            // Agrupar por categoría
+            // Agrupar resultados por opción / categoría
             const grouped = {};
             results.forEach(item => {
                 const key = item.tipo || item.tabla || 'Resultados';
@@ -1279,15 +1306,43 @@
                 grouped[key].push(item);
             });
 
+            const categoriasKeys = Object.keys(grouped);
             let html = '';
+
+            // Encabezado con pestañas/pills de opciones cuando hay múltiples páginas de resultados
+            if (categoriasKeys.length > 1) {
+                html += `
+                    <div class="p-2.5 bg-slate-50/95 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1.5">Opciones encontradas:</p>
+                        <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                            <button type="button" onclick="filtrarCategoria('todas', this)" data-cat="todas"
+                                class="cat-pill-btn px-3 py-1 rounded-full text-xs font-bold transition-all bg-blue-600 text-white shadow-sm shrink-0 cursor-pointer">
+                                Todas (${results.length})
+                            </button>
+                `;
+                categoriasKeys.forEach(cat => {
+                    const catItems = grouped[cat];
+                    const catIcon = catItems[0]?.icono || '📋';
+                    html += `
+                        <button type="button" onclick="filtrarCategoria('${escapeHtml(cat)}', this)" data-cat="${escapeHtml(cat)}"
+                            class="cat-pill-btn px-3 py-1 rounded-full text-xs font-medium transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 cursor-pointer">
+                            ${catIcon} ${escapeHtml(cat)} (${catItems.length})
+                        </button>
+                    `;
+                });
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
 
             for (const [tipo, items] of Object.entries(grouped)) {
                 const primerItem = items[0] || {};
                 const icono = primerItem.icono || '📋';
 
                 html += `
-                    <div class="border-b border-slate-100 last:border-b-0">
-                        <div class="sticky top-0 z-10 px-4 py-2 bg-slate-50/95 backdrop-blur-sm border-b border-slate-100 flex items-center justify-between">
+                    <div class="search-group-block border-b border-slate-100 last:border-b-0" data-tipo="${escapeHtml(tipo)}">
+                        <div class="px-4 py-2 bg-slate-100/90 border-b border-slate-200/80 flex items-center justify-between">
                             <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wide">
                                 <span>${icono}</span>
                                 <span>${escapeHtml(tipo)}</span>
@@ -1314,7 +1369,7 @@
                            </p>`
                         : '';
 
-                    const moduloTag = item.modulo ? `<span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-700 shrink-0 transition-colors">${escapeHtml(item.modulo)}</span>` : '';
+                    const moduloTag = item.modulo ? `<span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 shrink-0">${escapeHtml(item.tipo)}</span>` : '';
 
                     html += `
                         <a href="${item.url || '#'}"
@@ -1331,6 +1386,10 @@
                                 </div>
                                 ${subtituloHighlighted ? `<p class="text-xs text-slate-500 truncate mt-0.5">${subtituloHighlighted}</p>` : ''}
                                 ${matchExtra}
+                                <div class="mt-1 flex items-center gap-1 text-[11px] text-blue-600 font-medium group-hover:underline">
+                                    <span>Ir a la página de ${escapeHtml(item.tipo)}</span>
+                                    <span class="group-hover:translate-x-1 transition-transform">→</span>
+                                </div>
                             </div>
                             <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 shrink-0 mt-2 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
@@ -1345,12 +1404,13 @@
             // Footer informativo
             html += `
                 <div class="p-2.5 bg-slate-50 text-center text-xs text-slate-500 font-medium border-t border-slate-100">
-                    ${results.length} resultado(s) disponible(s) según tus permisos
+                    ${results.length} resultado(s) disponible(s) según tu rol
                 </div>
             `;
 
             searchResults.innerHTML = html;
             searchResults.classList.remove('hidden');
+            activeCategoriaFiltro = 'todas';
             positionSearchDropdown();
         }
 
@@ -1380,7 +1440,7 @@
 
             if (searchInputEl && searchResultsEl && !searchResultsEl.classList.contains('hidden')) {
                 const inputRect = searchInputEl.getBoundingClientRect();
-                const dropdownWidth = Math.min(460, window.innerWidth - 32);
+                const dropdownWidth = Math.min(520, window.innerWidth - 32);
 
                 searchResultsEl.style.top = (inputRect.bottom + 8) + 'px';
                 searchResultsEl.style.width = dropdownWidth + 'px';
