@@ -108,7 +108,9 @@ class SecureAuthController extends Controller
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        $mainLoginUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/login';
+
+        return redirect($mainLoginUrl);
     }
 
     /**

@@ -24,7 +24,8 @@ class CheckSessionTimeout
             if ($lastActivity && (time() - $lastActivity) > $timeout) {
                 Auth::logout();
                 Session::flush();
-                return redirect('/')->with('message', 'Tu sesión ha expirado por inactividad.');
+                $mainLoginUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/login';
+                return redirect($mainLoginUrl)->with('message', 'Tu sesión ha expirado por inactividad.');
             }
 
             // Actualizar la última actividad
