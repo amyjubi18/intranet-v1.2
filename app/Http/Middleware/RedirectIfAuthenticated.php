@@ -19,6 +19,17 @@ class RedirectIfAuthenticated
     {
         $guards = empty($guards) ? [null] : $guards;
 
+        // Si la petición a login incluye indicación de logout, cerrar sesión y mostrar formulario de login
+        if ($request->has('logout') || ($request->has('action') && $request->action === 'logout')) {
+            foreach ($guards as $guard) {
+                Auth::guard($guard)->logout();
+            }
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return $next($request);
+        }
+
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 return redirect(RouteServiceProvider::HOME);

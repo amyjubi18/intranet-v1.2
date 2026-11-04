@@ -53,14 +53,31 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'session_token')) {
+                $user->session_token = null;
+                $user->save();
+            }
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
 
-        $mainLoginUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/login';
+        $currentModule = config('modules.current');
+        $currentHost = $request->getHost();
+        $mainHost = parse_url(preg_match('#^https?://#', config('modules.main_url', 'http://172.17.50.219')) ? config('modules.main_url', 'http://172.17.50.219') : 'http://' . config('modules.main_url', 'http://172.17.50.219'), PHP_URL_HOST);
 
-        return redirect($mainLoginUrl);
+        $isMain = empty($currentModule) || in_array($currentModule, ['main', 'portal', 'all']) || ($currentHost === $mainHost) || str_contains($currentHost, '219') || str_contains($currentHost, 'localhost');
+
+        if (!$isMain) {
+            $mainUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/');
+            return redirect("{$mainUrl}/logout?logout=1");
+        }
+
+        return redirect()->route('login');
     }
 }

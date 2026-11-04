@@ -426,9 +426,19 @@
 
         function logout() {
             showToast('Cerrando sesión...', 'info');
-            setTimeout(() => {
-                window.location.href = '{{ route("login") }}';
-            }, 1000);
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("logout") }}';
+            const csrf = document.querySelector('meta[name="csrf-token"]');
+            if (csrf) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = '_token';
+                input.value = csrf.getAttribute('content');
+                form.appendChild(input);
+            }
+            document.body.appendChild(form);
+            form.submit();
         }
 
         // Inicialización
