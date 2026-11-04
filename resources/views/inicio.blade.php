@@ -1010,10 +1010,10 @@
         }
         function requestForm() { window.location.href = '/intranet/Formato-Solicitud-de-Materiales.xls'; }
         function requestVacation() { window.location.href = '/intranet/FORMATO-SOLICITUD-DISFRUTE-DE-VACACIONES.xls'; }
-        function openConsumables() { showToast('Abriendo inventario de consumibles...', 'info'); }
-        function openAssets() { showToast('Abriendo inventario de bienes...', 'info'); }
-        function openMaterials() { showToast('Abriendo inventario de materiales...', 'info'); }
-        function openDigitalization() { showToast('Abriendo digitalización...', 'info'); }
+        function openConsumables() { window.location.href = "{{ route('sso.go', ['module' => 'admin', 'redirect' => '/administracion/almacenamiento_impresoras']) }}"; }
+        function openAssets() { window.location.href = "{{ route('sso.go', ['module' => 'admin', 'redirect' => '/administracion/bienes_publicos']) }}"; }
+        function openMaterials() { window.location.href = "{{ route('sso.go', ['module' => 'admin', 'redirect' => '/administracion/inventario_oficinas']) }}"; }
+        function openDigitalization() { window.location.href = "{{ route('sso.go', ['module' => 'admin', 'redirect' => '/administracion/documentos']) }}"; }
         function openConsultancy() { showToast('Abriendo servicios de consultoría...', 'info'); }
 
         function readNews(newsId) {

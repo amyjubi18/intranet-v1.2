@@ -11,7 +11,8 @@ use Illuminate\Support\Facades\Schema;
 class SSOController extends Controller
 {
     /**
-     * Redirige al usuario al módulo solicitado generando un token firmado temporal.
+     * Redirige al usuario al módulo solicitado generando un token firmado temporal
+     * y permitiendo aterrizar directamente en una ruta específica vía parámetro redirect.
      */
     public function go(Request $request, string $module)
     {
@@ -44,15 +45,21 @@ class SSOController extends Controller
             return redirect('/inicio')->with('error', 'No tienes permisos asignados para acceder a ese entorno.');
         }
 
+        $targetPath = $request->query('redirect', '/inicio');
+        // Validar que la ruta sea relativa y segura (evita open-redirect hacia dominios externos)
+        if (!str_starts_with($targetPath, '/') || str_starts_with($targetPath, '//')) {
+            $targetPath = '/inicio';
+        }
+
         $rawTarget = trim($urls[$module]);
         $targetUrl = preg_match('#^https?://#', $rawTarget) ? $rawTarget : 'http://' . $rawTarget;
         $targetBaseUrl = rtrim($targetUrl, '/');
         $targetHost = parse_url($targetBaseUrl, PHP_URL_HOST);
         $targetPort = parse_url($targetBaseUrl, PHP_URL_PORT) ?: 80;
 
-        // Si ya estamos en el mismo contenedor, ir a /inicio directamente sin bucles
+        // Si ya estamos en el mismo contenedor, ir a la ruta directamente sin bucles
         if ($targetHost === $request->getHost()) {
-            return redirect('/inicio');
+            return redirect($targetPath);
         }
 
         // Health-check / Socket probe rápido al contenedor destino
@@ -71,15 +78,16 @@ class SSOController extends Controller
         $userId = $user->id;
         $expires = now()->addSeconds(60)->timestamp;
 
-        // Crear firma HMAC usando el APP_KEY compartido
-        $payload = "user={$userId}&expires={$expires}";
+        // Crear firma HMAC usando el APP_KEY compartido incluyendo la ruta destino
+        $payload = "user={$userId}&expires={$expires}&redirect=" . urlencode($targetPath);
         $signature = hash_hmac('sha256', $payload, config('app.key'));
 
         return redirect("{$targetBaseUrl}/sso/verify?{$payload}&signature={$signature}");
     }
 
     /**
-     * Recibe el token firmado, verifica la firma y autentica al usuario automáticamente.
+     * Recibe el token firmado, verifica la firma, autentica al usuario automáticamente
+     * y lo redirige a la ruta específica solicitada.
      */
     public function verify(Request $request)
     {
@@ -87,10 +95,15 @@ class SSOController extends Controller
         $userId = $request->query('user');
         $expires = (int) $request->query('expires');
         $signature = $request->query('signature');
+        
+        $targetPath = $request->query('redirect', '/inicio');
+        if (!str_starts_with($targetPath, '/') || str_starts_with($targetPath, '//')) {
+            $targetPath = '/inicio';
+        }
 
-        // Si ya está autenticado como este mismo usuario, ir a /inicio directamente
+        // Si ya está autenticado como este mismo usuario, ir al destino directamente
         if (Auth::check() && Auth::id() == $userId) {
-            return redirect('/inicio');
+            return redirect($targetPath);
         }
 
         // Validar expiración (máximo 60 segundos)
@@ -100,12 +113,17 @@ class SSOController extends Controller
         }
 
         // Verificar la firma criptográfica con el APP_KEY compartido
-        $payload = "user={$userId}&expires={$expires}";
+        $payload = "user={$userId}&expires={$expires}&redirect=" . urlencode($targetPath);
         $expectedSignature = hash_hmac('sha256', $payload, config('app.key'));
 
         if (!hash_equals($expectedSignature, $signature)) {
-            $msg = 'Firma de autenticación no válida entre contenedores (revisar APP_KEY).';
-            return redirect("{$mainUrl}/inicio?sso_error=" . urlencode($msg))->with('error', $msg);
+            // Compatibilidad en caso de firma sin parámetro redirect
+            $fallbackPayload = "user={$userId}&expires={$expires}";
+            $fallbackSignature = hash_hmac('sha256', $fallbackPayload, config('app.key'));
+            if (!hash_equals($fallbackSignature, $signature)) {
+                $msg = 'Firma de autenticación no válida entre contenedores (revisar APP_KEY).';
+                return redirect("{$mainUrl}/inicio?sso_error=" . urlencode($msg))->with('error', $msg);
+            }
         }
 
         // Autenticar al usuario en este contenedor
@@ -124,6 +142,6 @@ class SSOController extends Controller
             $user->save();
         }
 
-        return redirect('/inicio');
+        return redirect($targetPath);
     }
 }

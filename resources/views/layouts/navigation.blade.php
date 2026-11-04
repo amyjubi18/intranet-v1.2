@@ -60,6 +60,25 @@
             $showAdmin = $canAccessAdmin && ($isMainPortal || $isAdminUser || $isAdminActive);
             $showGh = $canAccessGh && ($isMainPortal || $isAdminUser || $isGhActive);
             $showGtic = $canAccessGtic && ($isMainPortal || $isAdminUser || $isGticActive);
+
+            // Generador de URLs inter-módulos con SSO:
+            // Si el usuario ya está en el contenedor activo del módulo, navega localmente.
+            // Si está en el portal central u otro contenedor, redirige vía SSO hacia la IP correspondiente.
+            $moduleUrl = function (string $targetModule, string $routeName, array $params = []) use ($isAdminActive, $isGhActive, $isGticActive) {
+                $isCurrentModule = match($targetModule) {
+                    'admin' => $isAdminActive,
+                    'gh'    => $isGhActive,
+                    'gtic'  => $isGticActive,
+                    default => false,
+                };
+
+                if ($isCurrentModule) {
+                    return route($routeName, $params);
+                }
+
+                $relative = route($routeName, $params, false);
+                return route('sso.go', ['module' => $targetModule, 'redirect' => $relative]);
+            };
         @endphp
 
         <!-- Selector de Módulos con SSO -->
@@ -124,7 +143,7 @@
         </div>
         <div class="submenu ml-4 hidden" id="gtic-submenu">
             @can('user_index')
-            <a href="{{ route('users.index') }}" class="sidebar-item {{ request()->routeIs('users.index') ? 'active' : '' }}">
+            <a href="{{ $moduleUrl('gtic', 'users.index') }}" class="sidebar-item {{ request()->routeIs('users.index') ? 'active' : '' }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
@@ -133,7 +152,7 @@
             </a>
             @endcan
             @can('role_index')
-            <a href="{{ route('gtic.roles.index') }}" class="sidebar-item {{ request()->routeIs('gtic.roles.index') ? 'active' : '' }}">
+            <a href="{{ $moduleUrl('gtic', 'gtic.roles.index') }}" class="sidebar-item {{ request()->routeIs('gtic.roles.index') ? 'active' : '' }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                     <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                 </svg>
@@ -141,7 +160,7 @@
             </a>
             @endcan
             @can('permission_index')
-            <a href="{{ route('gtic.permisos.index') }}" class="sidebar-item {{ request()->routeIs('gtic.permisos.index') ? 'active' : '' }}">
+            <a href="{{ $moduleUrl('gtic', 'gtic.permisos.index') }}" class="sidebar-item {{ request()->routeIs('gtic.permisos.index') ? 'active' : '' }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                     <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
                 </svg>
@@ -149,7 +168,7 @@
             </a>
             @endcan
             @can('activity_log_index')
-            <a href="{{ route('gtic.activity-log.index') }}" class="sidebar-item {{ request()->routeIs('gtic.activity-log.index') ? 'active' : '' }}">
+            <a href="{{ $moduleUrl('gtic', 'gtic.activity-log.index') }}" class="sidebar-item {{ request()->routeIs('gtic.activity-log.index') ? 'active' : '' }}">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                     <path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-4m-4 0V9a2 2 0 1 1 4 0v2m-4 0v2a2 2 0 0 0 4 0v-2"/>
                 </svg>
@@ -186,17 +205,17 @@
             </div>
             <div class="submenu ml-4 hidden" id="documentos-submenu">
                 @can('documentos_index')
-                <a href="{{ route('administracion.documentos.index') }}" class="sidebar-item {{ request()->routeIs('administracion.documentos.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.documentos.index') }}" class="sidebar-item {{ request()->routeIs('administracion.documentos.index') ? 'active' : '' }}">
                     <span>Documentos</span>
                 </a>
                 @endcan
                 @can('categorias_index')
-                <a href="{{ route('administracion.categorias.index') }}" class="sidebar-item {{ request()->routeIs('administracion.categorias.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.categorias.index') }}" class="sidebar-item {{ request()->routeIs('administracion.categorias.index') ? 'active' : '' }}">
                     <span>Categorías</span>
                 </a>
                 @endcan
                 @can('estanterias_index')
-                <a href="{{ route('administracion.estanterias.index') }}" class="sidebar-item {{ request()->routeIs('administracion.estanterias.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.estanterias.index') }}" class="sidebar-item {{ request()->routeIs('administracion.estanterias.index') ? 'active' : '' }}">
                     <span>Estanterías</span>
                 </a>
                 @endcan
@@ -216,7 +235,7 @@
             </div>
             <div class="submenu ml-4 hidden" id="bienes-submenu">
                 @can('bienes_index')
-                <a href="{{ route('administracion.bienes_publicos.index') }}" class="sidebar-item {{ request()->routeIs('administracion.bienes_publicos.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.bienes_publicos.index') }}" class="sidebar-item {{ request()->routeIs('administracion.bienes_publicos.index') ? 'active' : '' }}">
                     <span>Registros</span>
                 </a>
                 @endcan
@@ -236,37 +255,37 @@
                 </div>
                 <div class="submenu ml-4 hidden" id="carga-previa-bienes-submenu">
                     @can('unidad_adminis_index')
-                    <a href="{{ route('administracion.unidad_administrativa.index') }}" class="sidebar-item {{ request()->routeIs('administracion.unidad_administrativa.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.unidad_administrativa.index') }}" class="sidebar-item {{ request()->routeIs('administracion.unidad_administrativa.index') ? 'active' : '' }}">
                         <span>Unidad Administrativa</span>
                     </a>
                     @endcan
                     @can('usuario_de_uso_index')
-                    <a href="{{ route('administracion.usuario_de_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_de_uso.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.usuario_de_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_de_uso.index') ? 'active' : '' }}">
                         <span>Usuarios de Uso</span>
                     </a>
                     @endcan
                     @can('usuario_administrativo_index')
-                    <a href="{{ route('administracion.usuario_administrativo.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_administrativo.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.usuario_administrativo.index') }}" class="sidebar-item {{ request()->routeIs('administracion.usuario_administrativo.index') ? 'active' : '' }}">
                         <span>Usuarios Administrativo</span>
                     </a>
                     @endcan
                     @can('forma_adquisicion_index')
-                    <a href="{{ route('administracion.forma_adquisicion.index') }}" class="sidebar-item {{ request()->routeIs('administracion.forma_adquisicion.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.forma_adquisicion.index') }}" class="sidebar-item {{ request()->routeIs('administracion.forma_adquisicion.index') ? 'active' : '' }}">
                         <span>Forma de Adquisición</span>
                     </a>
                     @endcan
                     @can('estado_uso_index')
-                    <a href="{{ route('administracion.estado_del_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.estado_del_uso.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.estado_del_uso.index') }}" class="sidebar-item {{ request()->routeIs('administracion.estado_del_uso.index') ? 'active' : '' }}">
                         <span>Estado del Uso</span>
                     </a>
                     @endcan
                     @can('color_index')
-                    <a href="{{ route('administracion.colors.index') }}" class="sidebar-item {{ request()->routeIs('administracion.colors.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.colors.index') }}" class="sidebar-item {{ request()->routeIs('administracion.colors.index') ? 'active' : '' }}">
                         <span>Color</span>
                     </a>
                     @endcan
                     @can('condicion_index')
-                    <a href="{{ route('administracion.condicion_fisica.index') }}" class="sidebar-item {{ request()->routeIs('administracion.condicion_fisica.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.condicion_fisica.index') }}" class="sidebar-item {{ request()->routeIs('administracion.condicion_fisica.index') ? 'active' : '' }}">
                         <span>Condición Física</span>
                     </a>
                     @endcan
@@ -290,12 +309,12 @@
             </div>
             <div class="submenu ml-4 hidden" id="inv-oficina-submenu">
                 @can('inventarioofic_index')
-                <a href="{{ route('administracion.inventario_oficinas.index') }}" class="sidebar-item {{ request()->routeIs('administracion.inventario_oficinas.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.inventario_oficinas.index') }}" class="sidebar-item {{ request()->routeIs('administracion.inventario_oficinas.index') ? 'active' : '' }}">
                     <span>Ingresos de Oficina</span>
                 </a>
                 @endcan
                 @can('salidaofic_index')
-                <a href="{{ route('administracion.salida_oficina.index') }}" class="sidebar-item {{ request()->routeIs('administracion.salida_oficina.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.salida_oficina.index') }}" class="sidebar-item {{ request()->routeIs('administracion.salida_oficina.index') ? 'active' : '' }}">
                     <span>Salida de Oficina</span>
                 </a>
                 @endcan
@@ -315,27 +334,27 @@
                 </div>
                 <div class="submenu ml-4 hidden" id="carga-previa-oficina-submenu">
                     @can('articulo_index')
-                    <a href="{{ route('administracion.articulos.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.articulos.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.articulos.index', ['from' => 'oficina']) }}" class="sidebar-item {{ request()->routeIs('administracion.articulos.index') ? 'active' : '' }}">
                         <span>Artículos</span>
                     </a>
                     @endcan
                     @can('proveedor_index')
-                    <a href="{{ route('administracion.proveedores.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.proveedores.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.proveedores.index', ['from' => 'oficina']) }}" class="sidebar-item {{ request()->routeIs('administracion.proveedores.index') ? 'active' : '' }}">
                         <span>Proveedores</span>
                     </a>
                     @endcan
                     @can('unidad_medida_index')
-                    <a href="{{ route('administracion.unidad_medidas.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.unidad_medidas.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.unidad_medidas.index', ['from' => 'oficina']) }}" class="sidebar-item {{ request()->routeIs('administracion.unidad_medidas.index') ? 'active' : '' }}">
                         <span>Unidad de Medida</span>
                     </a>
                     @endcan
                     @can('area_index')
-                    <a href="{{ route('administracion.areas.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.areas.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.areas.index', ['from' => 'oficina']) }}" class="sidebar-item {{ request()->routeIs('administracion.areas.index') ? 'active' : '' }}">
                         <span>Área</span>
                     </a>
                     @endcan
                     @can('gerencia_index')
-                    <a href="{{ route('administracion.gerencias.index') }}?from=oficina" class="sidebar-item {{ request()->routeIs('administracion.gerencias.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.gerencias.index', ['from' => 'oficina']) }}" class="sidebar-item {{ request()->routeIs('administracion.gerencias.index') ? 'active' : '' }}">
                         <span>Gerencia</span>
                     </a>
                     @endcan
@@ -361,23 +380,23 @@
             </div>
             <div class="submenu ml-4 hidden" id="inv-consumibles-submenu">
                 {{-- @can('inventarioimpre_index')
-                <a href="{{ route('administracion.inventario_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.inventario_impresoras.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.inventario_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.inventario_impresoras.index') ? 'active' : '' }}">
                     <span>Ingresos de Consumibles</span>
                 </a>
                 @endcan --}}
                 @can('almacen_inv_index')
-                <a href="{{ route('administracion.almacenamiento_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.almacenamiento_impresoras.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.almacenamiento_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.almacenamiento_impresoras.index') ? 'active' : '' }}">
                     <span>Almacenamiento de Consumibles</span>
                 </a>
                 @endcan
                 @can('dist_almac_index')
-                <a href="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.distribucion_almacenamiento_impresoras.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.distribucion_almacenamiento_impresoras.index') }}" class="sidebar-item {{ request()->routeIs('administracion.distribucion_almacenamiento_impresoras.index') ? 'active' : '' }}">
                     <span>Distribución de Consumibles</span>
                 </a>
                 @endcan
 
                  @can('salidaimpre_index')
-                <a href="{{ route('administracion.salida_almacen.index') }}" class="sidebar-item {{ request()->routeIs('administracion.salida_almacen.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.salida_almacen.index') }}" class="sidebar-item {{ request()->routeIs('administracion.salida_almacen.index') ? 'active' : '' }}">
                     <span>Salida de Consumibles</span>
                 </a>
                 @endcan
@@ -397,37 +416,37 @@
                 </div>
                 <div class="submenu ml-4 hidden" id="carga-previa-submenu">
                     @can('cartucho_index')
-                    <a href="{{ route('administracion.consumibles.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.consumibles.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.consumibles.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ request()->routeIs('administracion.consumibles.index') ? 'active' : '' }}">
                         <span>Consumibles</span>
                     </a>
                     @endcan
                     @can('colores_index')
-                    <a href="{{ route('administracion.tipo_consumibles.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.tipo_consumibles.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.tipo_consumibles.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ request()->routeIs('administracion.tipo_consumibles.index') ? 'active' : '' }}">
                         <span>Tipo Consumibles</span>
                     </a>
                     @endcan
                     @can('impresora_index')
-                    <a href="{{ route('administracion.impresoras.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.impresoras.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.impresoras.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ request()->routeIs('administracion.impresoras.index') ? 'active' : '' }}">
                         <span>Impresoras</span>
                     </a>
                     @endcan
                     @can('fabricante_index')
-                    <a href="{{ route('administracion.tipo_impresoras.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.tipo_impresoras.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.tipo_impresoras.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ request()->routeIs('administracion.tipo_impresoras.index') ? 'active' : '' }}">
                         <span>Tipo Impresoras</span>
                     </a>
                     @endcan
                     @can('proveedor_index')
-                    <a href="{{ route('administracion.proveedores.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.proveedores.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.proveedores.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ request()->routeIs('administracion.proveedores.index') ? 'active' : '' }}">
                         <span>Proveedores</span>
                     </a>
                     @endcan
                     @can('area_index')
-                    <a href="{{ route('administracion.areas.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.areas.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.areas.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ request()->routeIs('administracion.areas.index') ? 'active' : '' }}">
                         <span>Área</span>
                     </a>
                     @endcan
                     @can('gerencia_index')
-                    <a href="{{ route('administracion.gerencias.index') }}?from=consumibles" class="sidebar-item {{ request()->routeIs('administracion.gerencias.index') ? 'active' : '' }}">
+                    <a href="{{ $moduleUrl('admin', 'administracion.gerencias.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ request()->routeIs('administracion.gerencias.index') ? 'active' : '' }}">
                         <span>Gerencia</span>
                     </a>
                     @endcan
@@ -438,7 +457,7 @@
             </div>
             @endcan
              @can('inventarioimpre_index')
-                <a href="{{ route('administracion.reportes.index') }}" class="sidebar-item {{ request()->routeIs('administracion.reportes.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('admin', 'administracion.reportes.index') }}" class="sidebar-item {{ request()->routeIs('administracion.reportes.index') ? 'active' : '' }}">
                     <span>Reportes</span>
                 </a>
                 @endcan
@@ -476,17 +495,17 @@
             </div>
             <div class="submenu ml-4 hidden" id="ogh-documentos-submenu">
                 @can('documentos_index')
-                <a href="{{ route('gestion-humana.digitalizacion_documentos.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.digitalizacion_documentos.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('gh', 'gestion-humana.digitalizacion_documentos.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.digitalizacion_documentos.index') ? 'active' : '' }}">
                     <span>Documentos</span>
                 </a>
                 @endcan
                 @can('area_adscrita_index')
-                <a href="{{ route('gestion-humana.area_adscrita.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.area_adscrita.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('gh', 'gestion-humana.area_adscrita.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.area_adscrita.index') ? 'active' : '' }}">
                     <span>Area Adscrita</span>
                 </a>
                 @endcan
                 @can('tipo_documento_index')
-                <a href="{{ route('gestion-humana.tipo_documentos.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.tipo_documentos.index') ? 'active' : '' }}">
+                <a href="{{ $moduleUrl('gh', 'gestion-humana.tipo_documentos.index') }}" class="sidebar-item {{ request()->routeIs('gestion-humana.tipo_documentos.index') ? 'active' : '' }}">
                     <span>Tipo de Documento</span>
                 </a>
                 @endcan
