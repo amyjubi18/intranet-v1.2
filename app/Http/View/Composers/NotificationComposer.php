@@ -14,15 +14,45 @@ use App\Models\Impresora;
 class NotificationComposer
 {
     /**
-     * Vincula datos de notificaciones a la vista
+     * Limpia la caché de notificaciones de un usuario
+     */
+    public static function clearUserCache($userId = null)
+    {
+        $id = $userId ?: Auth::id();
+        if ($id) {
+            \Illuminate\Support\Facades\Cache::forget("user_notifs_data_{$id}");
+        }
+    }
+
+    /**
+     * Vincula datos de notificaciones a la vista con caché inteligente de alto rendimiento
      */
     public function compose(View $view)
     {
-        $notificaciones = $this->obtenerNotificaciones();
-        $totalNotificaciones = $this->contarTotalNotificacionesNoLeidas();
+        $user = Auth::user();
+        if (!$user) {
+            $view->with('notificaciones', []);
+            $view->with('totalNotificaciones', 0);
+            return;
+        }
 
-        $view->with('notificaciones', $notificaciones);
-        $view->with('totalNotificaciones', $totalNotificaciones);
+        $cacheKey = "user_notifs_data_{$user->id}";
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 20, function () {
+            $notificaciones = $this->obtenerNotificaciones();
+            $totalNoLeidas = 0;
+            foreach ($notificaciones as $n) {
+                if (empty($n['leida'])) {
+                    $totalNoLeidas++;
+                }
+            }
+            return [
+                'notificaciones' => $notificaciones,
+                'totalNotificaciones' => $totalNoLeidas,
+            ];
+        });
+
+        $view->with('notificaciones', $data['notificaciones']);
+        $view->with('totalNotificaciones', $data['totalNotificaciones']);
     }
 
     /**
@@ -159,7 +189,7 @@ class NotificationComposer
     /**
      * Obtiene todas las notificaciones del sistema (incluyendo las ya leídas)
      */
-    private function obtenerNotificaciones()
+    public function obtenerNotificaciones()
     {
         $notificaciones = [];
         $user = Auth::user();

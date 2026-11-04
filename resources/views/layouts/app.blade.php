@@ -817,32 +817,65 @@
             setTimeout(() => toast.classList.add('hidden'), 3000);
         }
 
-        // Modal de notificaciones
+        // ==========================================
+        // SISTEMA DE NOTIFICACIONES DINÁMICO EN TIEMPO REAL (JS)
+        // ==========================================
         let modalAbierto = false;
+        let currentUnreadCount = {{ (int)($totalNotificaciones ?? 0) }};
 
-        // Verificar si el usuario ya vio las notificaciones
-        function hasUserViewedNotifications() {
-            return localStorage.getItem('notifications_viewed') === 'true';
-        }
+        function updateNotificationBadge(count) {
+            currentUnreadCount = Math.max(0, parseInt(count) || 0);
+            const badge = document.querySelector('.notification-badge');
+            const bellBtn = document.querySelector('button[onclick*="toggleNotificationDropdown"]');
+            const headerBadge = document.querySelector('#notificationModal .rounded-full');
 
-        // Marcar como vistas las notificaciones
-        function markNotificationsAsViewed() {
-            localStorage.setItem('notifications_viewed', 'true');
-        }
-
-        // Ocultar badge de notificaciones si ya fueron vistas
-        function hideNotificationBadgeIfViewed() {
-            if (hasUserViewedNotifications()) {
-                const badge = document.querySelector('.notification-badge');
+            if (currentUnreadCount > 0) {
+                const text = currentUnreadCount > 99 ? '99+' : currentUnreadCount;
                 if (badge) {
-                    badge.style.display = 'none';
+                    badge.textContent = text;
+                    badge.style.display = 'flex';
+                } else if (bellBtn) {
+                    const newBadge = document.createElement('span');
+                    newBadge.className = 'notification-badge absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 text-xs text-white bg-red-500 rounded-full animate-pulse';
+                    newBadge.textContent = text;
+                    bellBtn.appendChild(newBadge);
                 }
+                if (headerBadge) {
+                    headerBadge.textContent = text;
+                    headerBadge.style.display = 'inline-block';
+                }
+            } else {
+                if (badge) badge.style.display = 'none';
+                if (headerBadge) headerBadge.style.display = 'none';
             }
         }
 
-        // Ejecutar al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            hideNotificationBadgeIfViewed();
+        // Sondeo asíncrono en segundo plano (cada 25 segundos)
+        function pollNotifications() {
+            if (document.hidden) return; // Pausar cuando la pestaña no está visible
+
+            fetch('/api/notificaciones/unread-count', {
+                headers: { 
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (data && typeof data.count !== 'undefined') {
+                    const newCount = parseInt(data.count) || 0;
+                    if (newCount > currentUnreadCount) {
+                        showToast(`Nueva notificación: tienes ${newCount} pendiente(s)`, 'info');
+                    }
+                    updateNotificationBadge(newCount);
+                }
+            })
+            .catch(() => {});
+        }
+
+        setInterval(pollNotifications, 25000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) pollNotifications();
         });
 
         function toggleNotificationDropdown(event) {
@@ -853,65 +886,134 @@
 
             const modal = document.getElementById('notificationModal');
             const backdrop = document.getElementById('notificationBackdrop');
-            const badge = document.querySelector('.notification-badge');
 
             modalAbierto = !modalAbierto;
 
             if (modalAbierto) {
                 modal.classList.remove('hidden');
                 backdrop.classList.remove('hidden');
-
-                // Marcar como vistas y ocultar el badge
-                markNotificationsAsViewed();
-                if (badge) {
-                    badge.style.display = 'none';
-                }
             } else {
                 modal.classList.add('hidden');
                 backdrop.classList.add('hidden');
             }
         }
 
-        // Función para marcar notificaciones como leídas
+        // Marcar todas las notificaciones como leídas sin recargar la página
         function markNotificationsAsRead() {
+            const btn = document.querySelector('#notificationModal button[onclick*="markNotificationsAsRead"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="inline-block animate-spin mr-1">↻</span> Procesando...`;
+            }
+
             fetch('/api/notificaciones/mark-all-read', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Ocultar el badge visualmente (en la campana)
-                    const badge = document.querySelector('.notification-badge');
-                    if (badge) {
-                        badge.style.display = 'none';
-                    }
+                    updateNotificationBadge(0);
 
-                    // Ocultar el contador en el header del modal
-                    const headerBadge = document.querySelector('#notificationModal .rounded-full');
-                    if (headerBadge) {
-                        headerBadge.style.display = 'none';
-                    }
-
-                    // Ocultar el footer con el botón de marcar como leído
+                    // Ocultar botón del footer
                     const footer = document.querySelector('#notificationModal .border-t');
-                    if (footer) {
-                        footer.style.display = 'none';
-                    }
+                    if (footer) footer.style.display = 'none';
 
-                    // Recargar la página para actualizar las notificaciones como leídas
-                    window.location.reload();
+                    // Atenuar visualmente items como leídos
+                    document.querySelectorAll('#notificationModal .border-l-4').forEach(item => {
+                        item.classList.add('opacity-50', 'bg-gray-50');
+                    });
 
-                    console.log('Notificaciones marcadas como leídas');
+                    showToast('Todas las notificaciones fueron marcadas como leídas', 'success');
                 }
             })
             .catch(error => {
                 console.error('Error al marcar notificaciones:', error);
+                showToast('Error al marcar notificaciones', 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Marcar todo como leído';
+                }
             });
         }
+
+        // ==========================================
+        // ACELERADOR DE NAVEGACIÓN Y CARGAS RÁPIDAS (PREFETCH & FEEDBACK JS)
+        // ==========================================
+        // Barra superior de progreso ultraligera
+        const progressBar = document.createElement('div');
+        progressBar.id = 'pageProgressBar';
+        progressBar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:linear-gradient(to right, #2563eb, #60a5fa);z-index:99999;transition:width 0.25s ease, opacity 0.3s ease;width:0%;pointer-events:none;opacity:0;';
+        document.body.appendChild(progressBar);
+
+        function triggerProgress() {
+            progressBar.style.opacity = '1';
+            progressBar.style.width = '35%';
+            setTimeout(() => { progressBar.style.width = '75%'; }, 120);
+            setTimeout(() => { progressBar.style.width = '95%'; }, 300);
+        }
+
+        // Precarga inteligente de enlaces en hover/touch (Instant Page Prefetch)
+        const prefetchedUrls = new Set();
+        function prefetchLink(url) {
+            if (!url || prefetchedUrls.has(url) || url.startsWith('#') || url.includes('/logout') || url.includes('javascript:')) return;
+            try {
+                const parsed = new URL(url, window.location.origin);
+                if (parsed.origin !== window.location.origin) return;
+                prefetchedUrls.add(url);
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = url;
+                document.head.appendChild(link);
+            } catch(e) {}
+        }
+
+        document.addEventListener('mouseover', function(e) {
+            const anchor = e.target.closest('a');
+            if (anchor && anchor.href) {
+                prefetchLink(anchor.href);
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchstart', function(e) {
+            const anchor = e.target.closest('a');
+            if (anchor && anchor.href) {
+                prefetchLink(anchor.href);
+            }
+        }, { passive: true });
+
+        // Activar barra de progreso en clics de navegación
+        document.addEventListener('click', function(e) {
+            const anchor = e.target.closest('a');
+            if (anchor && anchor.href && !anchor.target && !anchor.hasAttribute('download') && !anchor.href.startsWith('#') && !anchor.href.includes('javascript:')) {
+                try {
+                    const url = new URL(anchor.href, window.location.origin);
+                    if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+                        triggerProgress();
+                    }
+                } catch(e) {}
+            }
+        });
+
+        // Feedback inmediato en envíos de formularios para evitar doble submit
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]:not([disabled])');
+            if (submitBtn && !form.classList.contains('no-spin')) {
+                triggerProgress();
+                setTimeout(() => {
+                    if (!form.checkValidity || form.checkValidity()) {
+                        submitBtn.classList.add('opacity-75', 'pointer-events-none');
+                        submitBtn.innerHTML = `<span class="inline-block animate-spin mr-1">↻</span> Guardando...`;
+                    }
+                }, 20);
+            }
+        });
 
         function closeNotificationModal() {
             const modal = document.getElementById('notificationModal');

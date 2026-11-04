@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Notifications\DatabaseNotification;
 use App\Models\User;
 use App\Models\UserNotification;
+use App\Http\View\Composers\NotificationComposer;
 
 class NotificationController extends Controller
 {
@@ -31,8 +32,11 @@ class NotificationController extends Controller
         UserNotification::where('user_id', $user->id)
             ->update(['read_at' => now()]);
 
+        NotificationComposer::clearUserCache($user->id);
+
         return response()->json([
             'success' => true,
+            'count' => 0,
             'message' => 'Todas las notificaciones han sido marcadas como leídas'
         ]);
     }
@@ -61,6 +65,8 @@ class NotificationController extends Controller
             ->where('notification_type', $type)
             ->update(['read_at' => now()]);
 
+        NotificationComposer::clearUserCache($user->id);
+
         return response()->json([
             'success' => true,
             'message' => 'Notificación marcada como leída'
@@ -68,7 +74,7 @@ class NotificationController extends Controller
     }
 
     /**
-     * Obtener estado de notificaciones no leídas
+     * Obtener estado de notificaciones no leídas de forma ultra rápida
      */
     public function getUnreadCount(Request $request)
     {
@@ -78,18 +84,34 @@ class NotificationController extends Controller
             return response()->json(['count' => 0]);
         }
 
-        // Contar notificaciones de Laravel (incluye birthday wishes)
-        $laravelCount = DatabaseNotification::where('notifiable_id', $user->id)
-            ->where('notifiable_type', User::class)
-            ->whereNull('read_at')
-            ->count();
+        $cacheKey = "user_notifs_data_{$user->id}";
+        $data = \Illuminate\Support\Facades\Cache::get($cacheKey);
 
-        // Contar notificaciones personalizadas
-        $customCount = UserNotification::where('user_id', $user->id)
-            ->unread()
-            ->count();
+        if ($data && isset($data['totalNotificaciones'])) {
+            return response()->json([
+                'success' => true,
+                'count' => $data['totalNotificaciones']
+            ]);
+        }
 
-        return response()->json(['count' => $laravelCount + $customCount]);
+        $composer = new NotificationComposer();
+        $notificaciones = $composer->obtenerNotificaciones();
+        $count = 0;
+        foreach ($notificaciones as $n) {
+            if (empty($n['leida'])) {
+                $count++;
+            }
+        }
+
+        \Illuminate\Support\Facades\Cache::put($cacheKey, [
+            'notificaciones' => $notificaciones,
+            'totalNotificaciones' => $count,
+        ], 20);
+
+        return response()->json([
+            'success' => true,
+            'count' => $count
+        ]);
     }
 }
 
