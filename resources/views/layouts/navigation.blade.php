@@ -13,6 +13,9 @@
 
     $user = Auth::user();
     $isAdminUser = $user && ($user->hasRole('Admin') || $user->hasRole('admin') || $user->hasRole('super-admin'));
+    $isGticUser = $user && ($user->hasRole('GTIC') || $user->hasRole('gtic'));
+    $isModuleSelectorUser = $isAdminUser || $isGticUser;
+
     $canAccessAdmin = $user && $user->can('oga');
     $canAccessGh = $user && $user->can('ogh');
     $canAccessGtic = $user && $user->can('gtic');
@@ -96,13 +99,13 @@
 
         </div>
         <div class="flex items-center gap-2">
-            <button onclick="closeSidebar()" class="lg:hidden sidebar-item p-2 hover:bg-blue-700 rounded-lg transition-colors">
+            <button type="button" onclick="closeSidebar()" class="lg:hidden sidebar-item p-2 hover:bg-blue-700 rounded-lg transition-colors" title="Cerrar menú">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                     <line x1="18" y1="6" x2="6" y2="18"/>
                     <line x1="6" y1="6" x2="18" y2="18"/>
                 </svg>
             </button>
-            <button onclick="toggleSidebar()" class="sidebar-item p-2 hover:bg-blue-700 rounded-lg transition-colors" id="sidebarToggleBtn">
+            <button type="button" onclick="toggleSidebar()" class="sidebar-item p-2 hover:bg-blue-700 rounded-lg transition-colors hidden lg:flex" id="sidebarToggleBtn" title="Ocultar menú">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" id="sidebarToggleIcon">
                     <line x1="3" y1="6" x2="21" y2="6"/>
                     <line x1="3" y1="12" x2="21" y2="12"/>
@@ -124,8 +127,8 @@
             <span>Inicio</span>
         </a>
 
-        <!-- Selector de Módulos con SSO -->
-        @if($canAccessAdmin || $canAccessGh || $canAccessGtic)
+        <!-- Selector de Módulos con SSO (Visible exclusivamente para roles Admin y GTIC) -->
+        @if($isModuleSelectorUser)
         <div class="px-4 py-3 my-2 mx-3 bg-blue-950/60 rounded-xl border border-blue-500/30">
             <span class="text-xs uppercase tracking-wider text-blue-300 font-semibold block mb-2">Entornos / Módulos:</span>
             <div class="flex flex-col gap-1.5 text-sm">
@@ -138,7 +141,6 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400" title="Contenedor activo"></span>
                     @endif
                 </a>
-                @if($canAccessAdmin)
                 <a href="{{ $isAdminActive ? route('inicio') : route('sso.go', 'admin') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ $isAdminActive ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
                     <span class="flex items-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 21h18M3 7v14M21 7v14M6 7V3h12v4M9 10h1M14 10h1M9 14h1M14 14h1M9 18h1M14 18h1"/></svg>
@@ -148,9 +150,7 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400" title="Contenedor activo"></span>
                     @endif
                 </a>
-                @endif
 
-                @if($canAccessGh)
                 <a href="{{ $isGhActive ? route('inicio') : route('sso.go', 'gh') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ $isGhActive ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
                     <span class="flex items-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -160,9 +160,7 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400" title="Contenedor activo"></span>
                     @endif
                 </a>
-                @endif
 
-                @if($canAccessGtic)
                 <a href="{{ $isGticActive ? route('inicio') : route('sso.go', 'gtic') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ $isGticActive ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
                     <span class="flex items-center gap-2">
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="9" x2="15" y2="9"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="9" y1="9" x2="9" y2="15"/><line x1="15" y1="9" x2="15" y2="15"/></svg>
@@ -172,7 +170,6 @@
                         <span class="w-2 h-2 rounded-full bg-emerald-400" title="Contenedor activo"></span>
                     @endif
                 </a>
-                @endif
             </div>
         </div>
         @endif
@@ -790,25 +787,17 @@
 
     // Toggle sidebar collapse/expand
     function toggleSidebar() {
+        if (typeof window.toggleSidebarUnified === 'function') {
+            window.toggleSidebarUnified();
+            return;
+        }
         const sidebar = document.getElementById('sidebar');
         const mainContent = document.getElementById('mainContent');
-        const toggleIcon = document.getElementById('sidebarToggleIcon');
-        const toggleText = document.getElementById('sidebarToggleText');
-
-        const isCollapsed = sidebar.classList.contains('collapsed');
-
-        if (isCollapsed) {
-            // Expandir sidebar
-            sidebar.classList.remove('collapsed');
-            mainContent.classList.remove('sidebar-collapsed');
-            if (toggleIcon) toggleIcon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
-            if (toggleText) toggleText.textContent = 'Ocultar Menú';
-        } else {
-            // Colapsar sidebar
-            sidebar.classList.add('collapsed');
-            mainContent.classList.add('sidebar-collapsed');
-            if (toggleIcon) toggleIcon.innerHTML = '<path d="M3 12h18m-9-9l9 9-9 9"/>';
-            if (toggleText) toggleText.textContent = 'Mostrar Menú';
+        if (sidebar) {
+            const isCollapsed = sidebar.classList.toggle('collapsed');
+            if (mainContent) {
+                mainContent.classList.toggle('sidebar-collapsed', isCollapsed);
+            }
         }
     }
 
