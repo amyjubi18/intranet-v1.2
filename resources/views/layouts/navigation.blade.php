@@ -51,9 +51,14 @@
             $isGticActive = ($mod === 'gtic') || ($currentHost === $gticHost) || str_contains($currentHost, '252');
 
             $user = Auth::user();
+            $isAdminUser = $user && ($user->hasRole('Admin') || $user->hasRole('admin') || $user->hasRole('super-admin'));
             $canAccessAdmin = $user && $user->can('oga');
             $canAccessGh = $user && $user->can('ogh');
             $canAccessGtic = $user && $user->can('gtic');
+
+            $showGtic = ($isMainPortal || $isAdminUser || $isGticActive);
+            $showAdmin = ($isMainPortal || $isAdminUser || $isAdminActive);
+            $showGh = ($isMainPortal || $isAdminUser || $isGhActive);
         @endphp
 
         <!-- Selector de Módulos con SSO -->
@@ -98,7 +103,7 @@
             </div>
         </div>
 
-        @if($isGticActive)
+        @if($showGtic)
         @can('gtic')
         <!-- GTIC -->
         <div class="sidebar-item" onclick="toggleSubmenu('gtic')">
@@ -152,7 +157,7 @@
         @endcan
         @endif
 
-        @if($isAdminActive)
+        @if($showAdmin)
         @can('oga')
         <!-- OGA -->
         <div class="sidebar-item" onclick="toggleSubmenu('oga')">
@@ -433,7 +438,7 @@
         @endcan
         @endif
 
-        @if($isGhActive)
+        @if($showGh)
         @can('ogh')
         <!-- OGH -->
         <div class="sidebar-item" onclick="toggleSubmenu('ogh')">
