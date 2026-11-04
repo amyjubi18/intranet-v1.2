@@ -36,6 +36,7 @@ class UserEditRequest extends FormRequest
             'password' => 'sometimes|nullable|string|min:8|confirmed',
             'password_confirmation' => 'sometimes|nullable|string|min:8',
             'status' => 'nullable|boolean',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ];
     }
 
@@ -78,6 +79,9 @@ class UserEditRequest extends FormRequest
             'roles.integer' => 'Debe seleccionar un rol válido',
 
             'departamento.required' => 'El departamento es obligatorio',
+            'profile_photo.image' => 'El archivo debe ser una imagen válida',
+            'profile_photo.mimes' => 'La foto de perfil debe ser de formato JPG, JPEG, PNG o WEBP',
+            'profile_photo.max' => 'La foto de perfil no debe superar los 2MB',
         ];
     }
 }

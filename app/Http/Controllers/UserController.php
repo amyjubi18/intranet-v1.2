@@ -178,7 +178,11 @@ class UserController extends Controller
         // Manejar foto de perfil si se subió
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $guessedExt = strtolower($file->guessExtension() ?? '');
+            $safeExt = in_array($guessedExt, ['jpeg', 'jpg', 'png', 'webp'])
+                ? ($guessedExt === 'jpeg' ? 'jpg' : $guessedExt)
+                : 'jpg';
+            $filename = time() . '_' . $user->id . '_' . Str::random(6) . '.' . $safeExt;
             $file->move(public_path('archivos/avatars'), $filename);
             $user->profile_photo = $filename;
             $user->save();
@@ -271,7 +275,11 @@ class UserController extends Controller
                 unlink(public_path('archivos/avatars/' . $user->profile_photo));
             }
             $file = $request->file('profile_photo');
-            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $guessedExt = strtolower($file->guessExtension() ?? '');
+            $safeExt = in_array($guessedExt, ['jpeg', 'jpg', 'png', 'webp'])
+                ? ($guessedExt === 'jpeg' ? 'jpg' : $guessedExt)
+                : 'jpg';
+            $filename = time() . '_' . $user->id . '_' . Str::random(6) . '.' . $safeExt;
             $file->move(public_path('archivos/avatars'), $filename);
             $user->profile_photo = $filename;
             $user->save();
