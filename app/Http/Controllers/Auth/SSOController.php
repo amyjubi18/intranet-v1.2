@@ -17,6 +17,7 @@ class SSOController extends Controller
     public function go(Request $request, string $module)
     {
         $urls = [
+            'main'  => config('modules.main_url', 'http://172.17.50.219'),
             'admin' => config('modules.admin_url', 'http://172.17.50.250'),
             'gh'    => config('modules.gh_url', 'http://172.17.50.251'),
             'gtic'  => config('modules.gtic_url', 'http://172.17.50.252'),
@@ -33,7 +34,9 @@ class SSOController extends Controller
 
         // Validación de permisos por módulo
         $isAuthorized = false;
-        if ($module === 'admin') {
+        if ($module === 'main') {
+            $isAuthorized = true;
+        } elseif ($module === 'admin') {
             $isAuthorized = $user->can('oga');
         } elseif ($module === 'gh') {
             $isAuthorized = $user->can('ogh');

@@ -1,9 +1,96 @@
+@php
+    $currentHost = request()->getHost();
+    $mainHost = parse_url(preg_match('#^https?://#', config('modules.main_url', 'http://172.17.50.219')) ? config('modules.main_url', 'http://172.17.50.219') : 'http://' . config('modules.main_url', 'http://172.17.50.219'), PHP_URL_HOST);
+    $adminHost = parse_url(preg_match('#^https?://#', config('modules.admin_url', 'http://172.17.50.250')) ? config('modules.admin_url', 'http://172.17.50.250') : 'http://' . config('modules.admin_url', 'http://172.17.50.250'), PHP_URL_HOST);
+    $ghHost = parse_url(preg_match('#^https?://#', config('modules.gh_url', 'http://172.17.50.251')) ? config('modules.gh_url', 'http://172.17.50.251') : 'http://' . config('modules.gh_url', 'http://172.17.50.251'), PHP_URL_HOST);
+    $gticHost = parse_url(preg_match('#^https?://#', config('modules.gtic_url', 'http://172.17.50.252')) ? config('modules.gtic_url', 'http://172.17.50.252') : 'http://' . config('modules.gtic_url', 'http://172.17.50.252'), PHP_URL_HOST);
+
+    $mod = config('modules.current');
+    $isMainPortal = ($mod === 'main') || ($currentHost === $mainHost) || str_contains($currentHost, '219') || str_contains($currentHost, 'localhost');
+    $isAdminActive = ($mod === 'administracion') || ($currentHost === $adminHost) || str_contains($currentHost, '250');
+    $isGhActive = ($mod === 'gestion-humana') || ($currentHost === $ghHost) || str_contains($currentHost, '251');
+    $isGticActive = ($mod === 'gtic') || ($currentHost === $gticHost) || str_contains($currentHost, '252');
+
+    $user = Auth::user();
+    $isAdminUser = $user && ($user->hasRole('Admin') || $user->hasRole('admin') || $user->hasRole('super-admin'));
+    $canAccessAdmin = $user && $user->can('oga');
+    $canAccessGh = $user && $user->can('ogh');
+    $canAccessGtic = $user && $user->can('gtic');
+
+    // Visibilidad por entorno y rol/permisos
+    $showAdmin = $canAccessAdmin && ($isMainPortal || $isAdminUser || $isAdminActive);
+    $showGh = $canAccessGh && ($isMainPortal || $isAdminUser || $isGhActive);
+    $showGtic = $canAccessGtic && ($isMainPortal || $isAdminUser || $isGticActive);
+
+    // Generador de URLs inter-módulos con SSO:
+    // Si el usuario ya está en el contenedor activo del módulo, navega localmente.
+    // Si está en el portal central u otro contenedor, redirige vía SSO hacia la IP correspondiente.
+    $moduleUrl = function (string $targetModule, string $routeName, array $params = []) use ($isAdminActive, $isGhActive, $isGticActive) {
+        $isCurrentModule = match($targetModule) {
+            'admin' => $isAdminActive,
+            'gh'    => $isGhActive,
+            'gtic'  => $isGticActive,
+            default => false,
+        };
+
+        if ($isCurrentModule && \Illuminate\Support\Facades\Route::has($routeName)) {
+            return route($routeName, $params);
+        }
+
+        if (\Illuminate\Support\Facades\Route::has($routeName)) {
+            $relative = route($routeName, $params, false);
+        } else {
+            static $pathMap = [
+                'users.index' => '/users',
+                'gtic.roles.index' => '/gtic/roles',
+                'gtic.permisos.index' => '/gtic/permisos',
+                'gtic.activity-log.index' => '/gtic/activity-log',
+                'administracion.documentos.index' => '/administracion/documentos',
+                'administracion.categorias.index' => '/administracion/categorias',
+                'administracion.estanterias.index' => '/administracion/estanterias',
+                'administracion.bienes_publicos.index' => '/administracion/bienes_publicos',
+                'administracion.unidad_administrativa.index' => '/administracion/unidad_administrativa',
+                'administracion.usuario_de_uso.index' => '/administracion/usuario_de_uso',
+                'administracion.usuario_administrativo.index' => '/administracion/usuario_administrativo',
+                'administracion.forma_adquisicion.index' => '/administracion/forma_adquisicion',
+                'administracion.estado_del_uso.index' => '/administracion/estado_del_uso',
+                'administracion.colors.index' => '/administracion/colors',
+                'administracion.condicion_fisica.index' => '/administracion/condicion_fisica',
+                'administracion.inventario_oficinas.index' => '/administracion/inventario_oficinas',
+                'administracion.salida_oficina.index' => '/administracion/salida_oficina',
+                'administracion.articulos.index' => '/administracion/articulos',
+                'administracion.proveedores.index' => '/administracion/proveedores',
+                'administracion.unidad_medidas.index' => '/administracion/unidad_medidas',
+                'administracion.areas.index' => '/administracion/areas',
+                'administracion.gerencias.index' => '/administracion/gerencias',
+                'administracion.inventario_impresoras.index' => '/administracion/inventario_impresoras',
+                'administracion.almacenamiento_impresoras.index' => '/administracion/almacenamiento_impresoras',
+                'administracion.distribucion_almacenamiento_impresoras.index' => '/administracion/distribucion_almacenamiento_impresoras',
+                'administracion.salida_almacen.index' => '/administracion/salida_almacen',
+                'administracion.consumibles.index' => '/administracion/consumibles',
+                'administracion.tipo_consumibles.index' => '/administracion/tipo_consumibles',
+                'administracion.impresoras.index' => '/administracion/impresoras',
+                'administracion.tipo_impresoras.index' => '/administracion/tipo_impresoras',
+                'administracion.reportes.index' => '/administracion/reportes',
+                'gestion-humana.digitalizacion_documentos.index' => '/gestion-humana/digitalizacion_documentos',
+                'gestion-humana.area_adscrita.index' => '/gestion-humana/area_adscrita',
+                'gestion-humana.tipo_documentos.index' => '/gestion-humana/tipo_documentos',
+            ];
+            $relative = $pathMap[$routeName] ?? '/inicio';
+            if (!empty($params)) {
+                $relative .= '?' . http_build_query($params);
+            }
+        }
+
+        return route('sso.go', ['module' => $targetModule, 'redirect' => $relative]);
+    };
+@endphp
 <!-- Sidebar Navigation -->
 <div class="flex flex-col h-full bg-gradient-to-r from-blue-800 to-indigo-900">
     <!-- Header -->
     <div class="sidebar-header flex items-center justify-between p-6 border-b border-blue-700">
         <div class="sidebar-header-content flex items-center gap-3">
-            <a href="{{ route('inicio') }}" class="transition-transform hover:scale-105">
+            <a href="{{ $isMainPortal ? route('inicio') : route('sso.go', 'main') }}" class="transition-transform hover:scale-105">
                 <img src="{{asset('img/Logo.png')}}" class="h-20 w-auto" alt="Logo">
             </a>
 
@@ -28,7 +115,7 @@
     <!-- Navigation -->
     <div class="sidebar-nav flex-1 overflow-y-auto py-4">
         <!-- Inicio -->
-        <a href="{{ route('inicio') }}" class="sidebar-item {{ request()->routeIs('inicio') ? 'active' : '' }}">
+        <a href="{{ $isMainPortal ? route('inicio') : route('sso.go', 'main') }}" class="sidebar-item {{ request()->routeIs('inicio') ? 'active' : '' }}">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                 <path d="M3 12l2 2 4-4 4 4 4-4 4 4 2-2"/>
                 <path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/>
@@ -37,99 +124,20 @@
             <span>Inicio</span>
         </a>
 
-        @php
-            $currentHost = request()->getHost();
-            $mainHost = parse_url(preg_match('#^https?://#', config('modules.main_url', 'http://172.17.50.219')) ? config('modules.main_url', 'http://172.17.50.219') : 'http://' . config('modules.main_url', 'http://172.17.50.219'), PHP_URL_HOST);
-            $adminHost = parse_url(preg_match('#^https?://#', config('modules.admin_url', 'http://172.17.50.250')) ? config('modules.admin_url', 'http://172.17.50.250') : 'http://' . config('modules.admin_url', 'http://172.17.50.250'), PHP_URL_HOST);
-            $ghHost = parse_url(preg_match('#^https?://#', config('modules.gh_url', 'http://172.17.50.251')) ? config('modules.gh_url', 'http://172.17.50.251') : 'http://' . config('modules.gh_url', 'http://172.17.50.251'), PHP_URL_HOST);
-            $gticHost = parse_url(preg_match('#^https?://#', config('modules.gtic_url', 'http://172.17.50.252')) ? config('modules.gtic_url', 'http://172.17.50.252') : 'http://' . config('modules.gtic_url', 'http://172.17.50.252'), PHP_URL_HOST);
-
-            $mod = config('modules.current');
-            $isMainPortal = ($mod === 'main') || ($currentHost === $mainHost) || str_contains($currentHost, '219') || str_contains($currentHost, 'localhost');
-            $isAdminActive = ($mod === 'administracion') || ($currentHost === $adminHost) || str_contains($currentHost, '250');
-            $isGhActive = ($mod === 'gestion-humana') || ($currentHost === $ghHost) || str_contains($currentHost, '251');
-            $isGticActive = ($mod === 'gtic') || ($currentHost === $gticHost) || str_contains($currentHost, '252');
-
-            $user = Auth::user();
-            $isAdminUser = $user && ($user->hasRole('Admin') || $user->hasRole('admin') || $user->hasRole('super-admin'));
-            $canAccessAdmin = $user && $user->can('oga');
-            $canAccessGh = $user && $user->can('ogh');
-            $canAccessGtic = $user && $user->can('gtic');
-
-            // Visibilidad por entorno y rol/permisos
-            $showAdmin = $canAccessAdmin && ($isMainPortal || $isAdminUser || $isAdminActive);
-            $showGh = $canAccessGh && ($isMainPortal || $isAdminUser || $isGhActive);
-            $showGtic = $canAccessGtic && ($isMainPortal || $isAdminUser || $isGticActive);
-
-            // Generador de URLs inter-módulos con SSO:
-            // Si el usuario ya está en el contenedor activo del módulo, navega localmente.
-            // Si está en el portal central u otro contenedor, redirige vía SSO hacia la IP correspondiente.
-            $moduleUrl = function (string $targetModule, string $routeName, array $params = []) use ($isAdminActive, $isGhActive, $isGticActive) {
-                $isCurrentModule = match($targetModule) {
-                    'admin' => $isAdminActive,
-                    'gh'    => $isGhActive,
-                    'gtic'  => $isGticActive,
-                    default => false,
-                };
-
-                if ($isCurrentModule && \Illuminate\Support\Facades\Route::has($routeName)) {
-                    return route($routeName, $params);
-                }
-
-                if (\Illuminate\Support\Facades\Route::has($routeName)) {
-                    $relative = route($routeName, $params, false);
-                } else {
-                    static $pathMap = [
-                        'users.index' => '/users',
-                        'gtic.roles.index' => '/gtic/roles',
-                        'gtic.permisos.index' => '/gtic/permisos',
-                        'gtic.activity-log.index' => '/gtic/activity-log',
-                        'administracion.documentos.index' => '/administracion/documentos',
-                        'administracion.categorias.index' => '/administracion/categorias',
-                        'administracion.estanterias.index' => '/administracion/estanterias',
-                        'administracion.bienes_publicos.index' => '/administracion/bienes_publicos',
-                        'administracion.unidad_administrativa.index' => '/administracion/unidad_administrativa',
-                        'administracion.usuario_de_uso.index' => '/administracion/usuario_de_uso',
-                        'administracion.usuario_administrativo.index' => '/administracion/usuario_administrativo',
-                        'administracion.forma_adquisicion.index' => '/administracion/forma_adquisicion',
-                        'administracion.estado_del_uso.index' => '/administracion/estado_del_uso',
-                        'administracion.colors.index' => '/administracion/colors',
-                        'administracion.condicion_fisica.index' => '/administracion/condicion_fisica',
-                        'administracion.inventario_oficinas.index' => '/administracion/inventario_oficinas',
-                        'administracion.salida_oficina.index' => '/administracion/salida_oficina',
-                        'administracion.articulos.index' => '/administracion/articulos',
-                        'administracion.proveedores.index' => '/administracion/proveedores',
-                        'administracion.unidad_medidas.index' => '/administracion/unidad_medidas',
-                        'administracion.areas.index' => '/administracion/areas',
-                        'administracion.gerencias.index' => '/administracion/gerencias',
-                        'administracion.inventario_impresoras.index' => '/administracion/inventario_impresoras',
-                        'administracion.almacenamiento_impresoras.index' => '/administracion/almacenamiento_impresoras',
-                        'administracion.distribucion_almacenamiento_impresoras.index' => '/administracion/distribucion_almacenamiento_impresoras',
-                        'administracion.salida_almacen.index' => '/administracion/salida_almacen',
-                        'administracion.consumibles.index' => '/administracion/consumibles',
-                        'administracion.tipo_consumibles.index' => '/administracion/tipo_consumibles',
-                        'administracion.impresoras.index' => '/administracion/impresoras',
-                        'administracion.tipo_impresoras.index' => '/administracion/tipo_impresoras',
-                        'administracion.reportes.index' => '/administracion/reportes',
-                        'gestion-humana.digitalizacion_documentos.index' => '/gestion-humana/digitalizacion_documentos',
-                        'gestion-humana.area_adscrita.index' => '/gestion-humana/area_adscrita',
-                        'gestion-humana.tipo_documentos.index' => '/gestion-humana/tipo_documentos',
-                    ];
-                    $relative = $pathMap[$routeName] ?? '/inicio';
-                    if (!empty($params)) {
-                        $relative .= '?' . http_build_query($params);
-                    }
-                }
-
-                return route('sso.go', ['module' => $targetModule, 'redirect' => $relative]);
-            };
-        @endphp
-
         <!-- Selector de Módulos con SSO -->
         @if($canAccessAdmin || $canAccessGh || $canAccessGtic)
         <div class="px-4 py-3 my-2 mx-3 bg-blue-950/60 rounded-xl border border-blue-500/30">
             <span class="text-xs uppercase tracking-wider text-blue-300 font-semibold block mb-2">Entornos / Módulos:</span>
             <div class="flex flex-col gap-1.5 text-sm">
+                <a href="{{ $isMainPortal ? route('inicio') : route('sso.go', 'main') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ $isMainPortal ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
+                    <span class="flex items-center gap-2">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2 2 4-4 4 4 4-4 4 4 2-2"/><path d="M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/><path d="M9 21v-6a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v6"/></svg>
+                        <span>Portal Central</span>
+                    </span>
+                    @if($isMainPortal)
+                        <span class="w-2 h-2 rounded-full bg-emerald-400" title="Contenedor activo"></span>
+                    @endif
+                </a>
                 @if($canAccessAdmin)
                 <a href="{{ $isAdminActive ? route('inicio') : route('sso.go', 'admin') }}" class="flex items-center justify-between px-3 py-1.5 rounded-lg transition-colors {{ $isAdminActive ? 'bg-blue-600 text-white font-medium shadow-sm' : 'text-blue-200 hover:bg-blue-800/70 hover:text-white' }}">
                     <span class="flex items-center gap-2">

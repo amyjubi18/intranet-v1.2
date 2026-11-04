@@ -22,6 +22,16 @@ Route::get('/', function () {
 
 // Pantalla principal del sistema
 Route::get('/inicio', function () {
+    $currentModule = config('modules.current');
+    $currentHost = request()->getHost();
+    $mainHost = parse_url(preg_match('#^https?://#', config('modules.main_url', 'http://172.17.50.219')) ? config('modules.main_url', 'http://172.17.50.219') : 'http://' . config('modules.main_url', 'http://172.17.50.219'), PHP_URL_HOST);
+
+    $isMain = empty($currentModule) || in_array($currentModule, ['main', 'portal', 'all']) || ($currentHost === $mainHost) || str_contains($currentHost, '219') || str_contains($currentHost, 'localhost');
+
+    if (!$isMain) {
+        return redirect()->route('sso.go', 'main');
+    }
+
     return view('inicio');
 })->middleware(['auth', 'verified'])->name('inicio');
 
