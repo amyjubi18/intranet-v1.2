@@ -56,12 +56,14 @@
             $canAccessGh = $user && $user->can('ogh');
             $canAccessGtic = $user && $user->can('gtic');
 
-            $showGtic = ($isMainPortal || $isAdminUser || $isGticActive);
-            $showAdmin = ($isMainPortal || $isAdminUser || $isAdminActive);
-            $showGh = ($isMainPortal || $isAdminUser || $isGhActive);
+            // Visibilidad por entorno y rol/permisos
+            $showAdmin = $canAccessAdmin && ($isMainPortal || $isAdminUser || $isAdminActive);
+            $showGh = $canAccessGh && ($isMainPortal || $isAdminUser || $isGhActive);
+            $showGtic = $canAccessGtic && ($isMainPortal || $isAdminUser || $isGticActive);
         @endphp
 
         <!-- Selector de Módulos con SSO -->
+        @if($canAccessAdmin || $canAccessGh || $canAccessGtic)
         <div class="px-4 py-3 my-2 mx-3 bg-blue-950/60 rounded-xl border border-blue-500/30">
             <span class="text-xs uppercase tracking-wider text-blue-300 font-semibold block mb-2">Entornos / Módulos:</span>
             <div class="flex flex-col gap-1.5 text-sm">
@@ -102,6 +104,7 @@
                 @endif
             </div>
         </div>
+        @endif
 
         @if($showGtic)
         @can('gtic')
@@ -217,6 +220,7 @@
                     <span>Registros</span>
                 </a>
                 @endcan
+                @if($isAdminUser || $user->can('unidad_adminis_index') || $user->can('usuario_de_uso_index') || $user->can('usuario_administrativo_index') || $user->can('forma_adquisicion_index') || $user->can('estado_uso_index') || $user->can('color_index') || $user->can('condicion_index'))
                 <div class="sidebar-item" onclick="toggleSubmenu('carga-previa-bienes')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -267,6 +271,7 @@
                     </a>
                     @endcan
                 </div>
+                @endif
             </div>
             @endcan
 
@@ -294,6 +299,7 @@
                     <span>Salida de Oficina</span>
                 </a>
                 @endcan
+                @if($isAdminUser || $user->can('articulo_index') || $user->can('proveedor_index') || $user->can('unidad_medida_index') || $user->can('area_index') || $user->can('gerencia_index'))
                 <div class="sidebar-item" onclick="toggleSubmenu('carga-previa-oficina')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -334,6 +340,7 @@
                     </a>
                     @endcan
                 </div>
+                @endif
 
             </div>
             @endcan
@@ -374,6 +381,7 @@
                     <span>Salida de Consumibles</span>
                 </a>
                 @endcan
+                @if($isAdminUser || $user->can('cartucho_index') || $user->can('colores_index') || $user->can('impresora_index') || $user->can('fabricante_index') || $user->can('proveedor_index') || $user->can('area_index') || $user->can('gerencia_index'))
                 <div class="sidebar-item" onclick="toggleSubmenu('carga-previa')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -424,6 +432,7 @@
                     </a>
                     @endcan
                 </div>
+                @endif
 
 
             </div>
