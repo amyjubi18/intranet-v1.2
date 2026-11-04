@@ -27,59 +27,63 @@ class AuthServiceProvider extends ServiceProvider
             if (in_array('admin', $roles) || in_array('super-admin', $roles)) {
                 return true;
             }
-            return null; // Deja que las reglas normales de Spatie continúen
+            return null; // Deja que las reglas normales continúen
         });
 
         // 2. Gate de Módulo Administración (OGA)
-        // Se evalúa dinámicamente según permisos en BD (sin nombres de roles hardcodeados)
         Gate::define('oga', function ($user) {
-            $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
-            if (in_array('oga', $userPerms)) {
+            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            $adminRoles = ['admin', 'super-admin', 'gerente-admin', 'administración', 'administracion', 'bienes-publicos', 'gerente', 'coordinacion'];
+            if (count(array_intersect($roles, $adminRoles)) > 0) {
                 return true;
             }
-            // Permisos específicos que pertenecen exclusivamente al módulo Administración
-            $ogaSubPerms = [
-                'bienes', 'bienes_index', 'inv-oficina', 'inventarioofic_index',
-                'salidaofic_index', 'inv-consumibles', 'cartucho_index', 'salidaimpre_index',
-                'categorias_index', 'estanterias_index'
+            $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
+            $ogaPerms = [
+                'oga', 'bienes', 'bienes_index', 'inv-oficina', 'inventarioofic_index',
+                'salidaofic_index', 'inv-consumibles', 'categorias_index', 'estanterias_index'
             ];
-            return count(array_intersect($userPerms, $ogaSubPerms)) > 0;
+            return count(array_intersect($userPerms, $ogaPerms)) > 0;
         });
 
         // 3. Gate de Módulo Gestión Humana (OGH)
-        // Se evalúa dinámicamente según permisos en BD (sin nombres de roles hardcodeados)
         Gate::define('ogh', function ($user) {
-            $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
-            if (in_array('ogh', $userPerms)) {
+            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            $ghRoles = ['admin', 'super-admin', 'gerente_ogh', 'gerente-ogh', 'coordinacion_ogh', 'coordinacion', 'analistas_ogh'];
+            if (count(array_intersect($roles, $ghRoles)) > 0) {
                 return true;
             }
-            $ghSubPerms = [
-                'area_adscrita_index', 'tipo_documento_index', 'digitalizaciones_index',
-                'recibos_pago', 'constancias_trabajo'
-            ];
-            return count(array_intersect($userPerms, $ghSubPerms)) > 0;
+            $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
+            $ghPerms = ['ogh', 'area_adscrita_index', 'tipo_documento_index', 'digitalizaciones_index', 'recibos_pago', 'constancias_trabajo'];
+            return count(array_intersect($userPerms, $ghPerms)) > 0;
         });
 
         // 4. Gate de Módulo GTIC
-        // Se evalúa dinámicamente según permisos en BD (sin nombres de roles hardcodeados)
         Gate::define('gtic', function ($user) {
-            $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
-            if (in_array('gtic', $userPerms)) {
+            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            $gticRoles = ['admin', 'super-admin', 'gtic'];
+            if (count(array_intersect($roles, $gticRoles)) > 0) {
                 return true;
             }
-            $gticSubPerms = [
-                'user_index', 'role_index', 'permission_index', 'activity_log_index', 'tecnologia'
-            ];
-            return count(array_intersect($userPerms, $gticSubPerms)) > 0;
+            $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
+            $gticPerms = ['gtic', 'user_index', 'role_index', 'permission_index', 'activity_log_index', 'tecnologia'];
+            return count(array_intersect($userPerms, $gticPerms)) > 0;
         });
 
-        // 5. Gates de soporte para submódulos de Administración (evaluación dinámica por permisos)
+        // 5. Gates de soporte para submódulos de Administración
         Gate::define('documentos', function ($user) {
+            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            if (count(array_intersect($roles, ['admin', 'super-admin', 'gerente-admin', 'administración', 'administracion', 'bienes-publicos', 'gerente_ogh', 'coordinacion_ogh', 'analistas_ogh'])) > 0) {
+                return true;
+            }
             $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
             return count(array_intersect($userPerms, ['documentos', 'documentos_index', 'categorias_index', 'estanterias_index'])) > 0;
         });
 
         Gate::define('bienes', function ($user) {
+            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            if (count(array_intersect($roles, ['admin', 'super-admin', 'gerente-admin', 'administración', 'administracion', 'bienes-publicos'])) > 0) {
+                return true;
+            }
             $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
             return count(array_intersect($userPerms, [
                 'bienes', 'bienes_index', 'unidad_adminis_index', 'forma_adquisicion_index',
@@ -88,6 +92,10 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('inv-oficina', function ($user) {
+            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            if (count(array_intersect($roles, ['admin', 'super-admin', 'gerente-admin', 'administración', 'administracion'])) > 0) {
+                return true;
+            }
             $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
             return count(array_intersect($userPerms, [
                 'inv-oficina', 'inventarioofic_index', 'salidaofic_index', 'articulo_index',
@@ -96,6 +104,10 @@ class AuthServiceProvider extends ServiceProvider
         });
 
         Gate::define('inv-consumibles', function ($user) {
+            $roles = $user->roles->pluck('name')->map(fn($r) => strtolower($r))->toArray();
+            if (count(array_intersect($roles, ['admin', 'super-admin', 'gerente-admin', 'administración', 'administracion'])) > 0) {
+                return true;
+            }
             $userPerms = $user->getAllPermissions()->pluck('name')->toArray();
             return count(array_intersect($userPerms, [
                 'inv-consumibles', 'cartucho_index', 'colores_index', 'impresora_index',
