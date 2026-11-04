@@ -72,11 +72,55 @@
                     default => false,
                 };
 
-                if ($isCurrentModule) {
+                if ($isCurrentModule && \Illuminate\Support\Facades\Route::has($routeName)) {
                     return route($routeName, $params);
                 }
 
-                $relative = route($routeName, $params, false);
+                if (\Illuminate\Support\Facades\Route::has($routeName)) {
+                    $relative = route($routeName, $params, false);
+                } else {
+                    static $pathMap = [
+                        'users.index' => '/users',
+                        'gtic.roles.index' => '/gtic/roles',
+                        'gtic.permisos.index' => '/gtic/permisos',
+                        'gtic.activity-log.index' => '/gtic/activity-log',
+                        'administracion.documentos.index' => '/administracion/documentos',
+                        'administracion.categorias.index' => '/administracion/categorias',
+                        'administracion.estanterias.index' => '/administracion/estanterias',
+                        'administracion.bienes_publicos.index' => '/administracion/bienes_publicos',
+                        'administracion.unidad_administrativa.index' => '/administracion/unidad_administrativa',
+                        'administracion.usuario_de_uso.index' => '/administracion/usuario_de_uso',
+                        'administracion.usuario_administrativo.index' => '/administracion/usuario_administrativo',
+                        'administracion.forma_adquisicion.index' => '/administracion/forma_adquisicion',
+                        'administracion.estado_del_uso.index' => '/administracion/estado_del_uso',
+                        'administracion.colors.index' => '/administracion/colors',
+                        'administracion.condicion_fisica.index' => '/administracion/condicion_fisica',
+                        'administracion.inventario_oficinas.index' => '/administracion/inventario_oficinas',
+                        'administracion.salida_oficina.index' => '/administracion/salida_oficina',
+                        'administracion.articulos.index' => '/administracion/articulos',
+                        'administracion.proveedores.index' => '/administracion/proveedores',
+                        'administracion.unidad_medidas.index' => '/administracion/unidad_medidas',
+                        'administracion.areas.index' => '/administracion/areas',
+                        'administracion.gerencias.index' => '/administracion/gerencias',
+                        'administracion.inventario_impresoras.index' => '/administracion/inventario_impresoras',
+                        'administracion.almacenamiento_impresoras.index' => '/administracion/almacenamiento_impresoras',
+                        'administracion.distribucion_almacenamiento_impresoras.index' => '/administracion/distribucion_almacenamiento_impresoras',
+                        'administracion.salida_almacen.index' => '/administracion/salida_almacen',
+                        'administracion.consumibles.index' => '/administracion/consumibles',
+                        'administracion.tipo_consumibles.index' => '/administracion/tipo_consumibles',
+                        'administracion.impresoras.index' => '/administracion/impresoras',
+                        'administracion.tipo_impresoras.index' => '/administracion/tipo_impresoras',
+                        'administracion.reportes.index' => '/administracion/reportes',
+                        'gestion-humana.digitalizacion_documentos.index' => '/gestion-humana/digitalizacion_documentos',
+                        'gestion-humana.area_adscrita.index' => '/gestion-humana/area_adscrita',
+                        'gestion-humana.tipo_documentos.index' => '/gestion-humana/tipo_documentos',
+                    ];
+                    $relative = $pathMap[$routeName] ?? '/inicio';
+                    if (!empty($params)) {
+                        $relative .= '?' . http_build_query($params);
+                    }
+                }
+
                 return route('sso.go', ['module' => $targetModule, 'redirect' => $relative]);
             };
         @endphp
