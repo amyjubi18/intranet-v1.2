@@ -650,7 +650,7 @@
     <div id="sidebarBackdrop" class=" inset-0 z-30 hidden bg-black/50 lg:hidden" onclick="closeSidebar()"></div>
 
     <!-- Dropdown del buscador (fuera del main-content para que aparezca sobre todo) -->
-    <div id="searchResults" class="hidden fixed bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto w-96 z-[99999] sm:w-20">
+    <div id="searchResults" class="hidden fixed bg-white rounded-2xl shadow-2xl border border-slate-200/90 max-h-[460px] overflow-y-auto z-[99999] transition-all">
     </div>
 
     <!-- Contenido principal -->
@@ -770,6 +770,25 @@
                 </div>
             @endif
 
+            @if(session('success') || session('datos') || session('status'))
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (typeof showToast === 'function') {
+                            showToast(@json(session('success') ?: (session('datos') ?: session('status'))), 'success');
+                        }
+                    });
+                </script>
+            @endif
+            @if(session('error') || request('sso_error'))
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (typeof showToast === 'function') {
+                            showToast(@json(session('error') ?? request('sso_error')), 'error');
+                        }
+                    });
+                </script>
+            @endif
+
             @if($errors->any())
                 <div class="p-4 mb-4 text-yellow-700 bg-yellow-100 border border-yellow-400 rounded-lg">
                     <p class="font-bold">Por favor corrija los siguientes errores:</p>
@@ -789,20 +808,27 @@
         </main>
     </main>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed z-50 hidden bottom-4 right-4">
-        <div class="flex items-center gap-2 px-4 py-3 glass rounded-xl">
-            <div id="toastIcon">✅</div>
-            <div id="toastMsg" class="text-sm"></div>
+    <!-- Toast de Notificaciones -->
+    <div id="toast" class="fixed bottom-5 right-5 z-[99999] hidden transition-all duration-300 transform translate-y-3 opacity-0 pointer-events-none">
+        <div class="flex items-center gap-3 px-5 py-3.5 bg-white text-slate-800 rounded-2xl shadow-2xl border border-slate-200 max-w-md">
+            <div id="toastIcon" class="text-xl shrink-0">✅</div>
+            <div id="toastMsg" class="text-sm font-semibold text-slate-700 leading-snug"></div>
+            <button type="button" onclick="hideToast()" class="ml-2 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors focus:outline-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
     </div>
 
     <script>
-        // Toast
+        // Toast dinámico
+        let toastTimeout = null;
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
             const icon = document.getElementById('toastIcon');
             const msgEl = document.getElementById('toastMsg');
+            if (!toast || !msgEl) return;
 
             const icons = {
                 success: '✅',
@@ -811,11 +837,38 @@
                 info: 'ℹ️'
             };
 
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+            }
+
             icon.textContent = icons[type] || icons.success;
             msgEl.textContent = msg;
+
             toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
+            // Forzar reflow para que la animación CSS aplique suavemente
+            void toast.offsetWidth;
+            toast.classList.remove('translate-y-3', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+
+            toastTimeout = setTimeout(() => {
+                hideToast();
+            }, 4000);
         }
+
+        function hideToast() {
+            const toast = document.getElementById('toast');
+            if (!toast) return;
+            if (toastTimeout) clearTimeout(toastTimeout);
+
+            toast.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            toast.classList.add('translate-y-3', 'opacity-0', 'pointer-events-none');
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 300);
+        }
+        window.showToast = showToast;
+        window.hideToast = hideToast;
 
         // ==========================================
         // SISTEMA DE NOTIFICACIONES DINÁMICO EN TIEMPO REAL (JS)
@@ -1107,8 +1160,9 @@
         }
         window.toggleSidebarUnified = toggleSidebar;
 
-        // ============ BUSCADOR GLOBAL ============
+        // ============ BUSCADOR GLOBAL EN TIEMPO REAL ============
         let searchTimeout = null;
+        let searchAbortController = null;
         const searchInput = document.getElementById('searchInput');
         const searchResults = document.getElementById('searchResults');
         const searchLoading = document.getElementById('searchLoading');
@@ -1117,27 +1171,27 @@
             searchInput.addEventListener('input', function(e) {
                 const query = e.target.value.trim();
 
-                console.log('Buscando:', query);
-
-                // Limpiar timeout anterior
+                // Limpiar timeout y llamadas anteriores
                 if (searchTimeout) {
                     clearTimeout(searchTimeout);
                 }
+                if (searchAbortController) {
+                    searchAbortController.abort();
+                }
 
-                // Ocultar resultados si la búsqueda está vacía
-                if (query.length < 2) {
+                // Requisito: Mínimo 3 letras para disparar búsqueda en tiempo real
+                if (query.length < 3) {
                     searchResults.classList.add('hidden');
-                    searchLoading.classList.add('hidden');
+                    if (searchLoading) searchLoading.classList.add('hidden');
                     return;
                 }
 
-                // Mostrar loading
-                searchLoading.classList.remove('hidden');
+                if (searchLoading) searchLoading.classList.remove('hidden');
 
-                // Debounce: esperar 300ms antes de buscar
+                // Debounce snappy de 250ms
                 searchTimeout = setTimeout(() => {
                     performSearch(query);
-                }, 300);
+                }, 250);
             });
 
             // Cerrar resultados al hacer clic fuera
@@ -1147,39 +1201,49 @@
                 }
             });
 
-            // Manejar teclado
+            // Manejo de teclado en el buscador
             searchInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     searchResults.classList.add('hidden');
                     searchInput.blur();
+                } else if (e.key === 'Enter') {
+                    // Si presiona enter y hay resultados visibles, abrir el primer resultado
+                    const primerResultado = searchResults.querySelector('a[href]');
+                    if (primerResultado && !searchResults.classList.contains('hidden')) {
+                        e.preventDefault();
+                        primerResultado.click();
+                    }
                 }
             });
+
+            // Posicionar al redimensionar o scroll
+            window.addEventListener('resize', positionSearchDropdown);
+            window.addEventListener('scroll', positionSearchDropdown, true);
         }
 
         function performSearch(query) {
+            searchAbortController = new AbortController();
             const url = `/api/buscar?q=${encodeURIComponent(query)}`;
-            console.log('URL de búsqueda:', url);
 
-            fetch(url)
+            fetch(url, { signal: searchAbortController.signal })
                 .then(response => {
-                    console.log('Status:', response.status);
                     if (!response.ok) {
-                        throw new Error('Error en la búsqueda');
+                        throw new Error('Error al consultar el servidor');
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Resultados:', data);
-                    searchLoading.classList.add('hidden');
-                    renderSearchResults(data);
+                    if (searchLoading) searchLoading.classList.add('hidden');
+                    renderSearchResults(data, query);
                 })
                 .catch(error => {
-                    console.error('Error en búsqueda:', error);
-                    searchLoading.classList.add('hidden');
+                    if (error.name === 'AbortError') return; // Cancelada por tipeo continuo
+                    console.error('Error en búsqueda global:', error);
+                    if (searchLoading) searchLoading.classList.add('hidden');
                     searchResults.innerHTML = `
-                        <div class="p-4 text-center text-red-500 z-[9999]">
-                            <p class="text-sm">Error al buscar</p>
-                            <p class="text-xs text-gray-400 mt-1">${error.message}</p>
+                        <div class="p-5 text-center text-red-500">
+                            <p class="text-sm font-semibold">Error al realizar la búsqueda</p>
+                            <p class="text-xs text-gray-400 mt-1">${escapeHtml(error.message)}</p>
                         </div>
                     `;
                     searchResults.classList.remove('hidden');
@@ -1187,17 +1251,17 @@
                 });
         }
 
-        function renderSearchResults(results) {
+        function renderSearchResults(results, query) {
             if (!searchResults) return;
 
-            console.log('Renderizando:', results.length, 'resultados');
-
-            if (results.length === 0) {
-                const searchValue = document.getElementById('searchInput')?.value || '';
+            if (!Array.isArray(results) || results.length === 0) {
                 searchResults.innerHTML = `
-                    <div class="p-4 text-center text-gray-500 z-[9999]">
-                        <p class="text-sm">No se encontraron resultados para "${searchValue}"</p>
-                        <p class="text-xs text-gray-400 mt-1">Intenta con otras palabras clave</p>
+                    <div class="p-6 text-center text-slate-500">
+                        <div class="w-12 h-12 mx-auto mb-2 text-2xl flex items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                            🔍
+                        </div>
+                        <p class="text-sm font-bold text-slate-700">Sin coincidencias para "${escapeHtml(query)}"</p>
+                        <p class="text-xs text-slate-400 mt-1">No se encontraron registros en los módulos o contenedores asignados a tu rol.</p>
                     </div>
                 `;
                 searchResults.classList.remove('hidden');
@@ -1205,55 +1269,70 @@
                 return;
             }
 
-            let html = '';
-
-            // Agrupar por categoría/tipo
+            // Agrupar por categoría
             const grouped = {};
             results.forEach(item => {
-                const key = item.tabla || item.tipo || 'otro';
+                const key = item.tipo || item.tabla || 'Resultados';
                 if (!grouped[key]) {
                     grouped[key] = [];
                 }
                 grouped[key].push(item);
             });
 
-            console.log('Categorías encontradas:', Object.keys(grouped));
+            let html = '';
 
-            // Generar HTML
-            for (const [key, items] of Object.entries(grouped)) {
-                const primerItem = items[0];
+            for (const [tipo, items] of Object.entries(grouped)) {
+                const primerItem = items[0] || {};
                 const icono = primerItem.icono || '📋';
-                const label = primerItem.tipo || key;
 
                 html += `
-                    <div class="border-b border-gray-100 last:border-b-0">
-                        <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
-                            <span>${icono}</span>
-                            <span>${label}</span>
-                            <span class="text-gray-400">(${items.length})</span>
+                    <div class="border-b border-slate-100 last:border-b-0">
+                        <div class="sticky top-0 z-10 px-4 py-2 bg-slate-50/95 backdrop-blur-sm border-b border-slate-100 flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                <span>${icono}</span>
+                                <span>${escapeHtml(tipo)}</span>
+                            </div>
+                            <span class="text-[11px] font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200 shadow-sm">
+                                ${items.length}
+                            </span>
                         </div>
                 `;
 
                 items.forEach(item => {
-                    // Destacar el término buscado en el resultado
-                    const searchValue = document.getElementById('searchInput')?.value || '';
-                    const nombreHighlighted = highlightMatch(item.nombre, searchValue);
-
-                    const campoTexto = item.campo_encontrado
-                        ? `<span class="font-medium text-blue-600">${item.campo_encontrado}</span>`
+                    const nombreHighlighted = highlightMatch(item.nombre, query);
+                    const subtituloHighlighted = item.subtitulo ? highlightMatch(item.subtitulo, query) : '';
+                    const matchExtra = (item.campo_encontrado && item.coincidencia &&
+                                        item.campo_encontrado.toLowerCase() !== 'descripcion' &&
+                                        item.campo_encontrado.toLowerCase() !== 'name' &&
+                                        item.campo_encontrado.toLowerCase() !== 'articulo' &&
+                                        item.campo_encontrado.toLowerCase() !== 'cartucho' &&
+                                        item.campo_encontrado.toLowerCase() !== 'impresora' &&
+                                        item.campo_encontrado.toLowerCase() !== 'proveedor')
+                        ? `<p class="text-[11px] text-blue-600 mt-1 flex items-center gap-1 font-medium">
+                             <span class="text-slate-500">${escapeHtml(item.campo_encontrado)}:</span>
+                             <span>${highlightMatch(item.coincidencia, query)}</span>
+                           </p>`
                         : '';
 
+                    const moduloTag = item.modulo ? `<span class="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 group-hover:bg-blue-100 group-hover:text-blue-700 shrink-0 transition-colors">${escapeHtml(item.modulo)}</span>` : '';
+
                     html += `
-                        <a href="#" onclick="navegarABusqueda('${item.tabla}', event)"
-                           class="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm">
+                        <a href="${item.url || '#'}"
+                           class="group flex items-start gap-3 px-4 py-3 hover:bg-blue-50/80 transition-colors border-b border-slate-50 last:border-b-0">
+                            <div class="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-blue-100 text-slate-600 group-hover:text-blue-700 flex items-center justify-center shrink-0 text-sm transition-colors mt-0.5 shadow-sm">
                                 ${item.icono || '📋'}
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-800">${nombreHighlighted}</p>
-                                ${campoTexto ? `<p class="text-xs text-gray-500 mt-0.5">Encontrado en: ${campoTexto}</p>` : ''}
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-sm font-semibold text-slate-800 truncate group-hover:text-blue-900 transition-colors">
+                                        ${nombreHighlighted}
+                                    </p>
+                                    ${moduloTag}
+                                </div>
+                                ${subtituloHighlighted ? `<p class="text-xs text-slate-500 truncate mt-0.5">${subtituloHighlighted}</p>` : ''}
+                                ${matchExtra}
                             </div>
-                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 shrink-0 mt-2 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </a>
@@ -1263,113 +1342,56 @@
                 html += '</div>';
             }
 
-            // Footer con ver todos
+            // Footer informativo
             html += `
-                <div class="p-3 border-t border-gray-200 bg-gray-50 text-center">
-                    <span class="text-xs text-gray-500">${results.length} resultado(s) encontrado(s)</span>
+                <div class="p-2.5 bg-slate-50 text-center text-xs text-slate-500 font-medium border-t border-slate-100">
+                    ${results.length} resultado(s) disponible(s) según tus permisos
                 </div>
             `;
 
             searchResults.innerHTML = html;
             searchResults.classList.remove('hidden');
-
-            // Posicionar el dropdown debajo del input
             positionSearchDropdown();
         }
 
-        // Función para resaltar texto coincidente
+        // Función para resaltar coincidencias
         function highlightMatch(text, searchTerm) {
-            if (!text || !searchTerm) return text || '';
+            if (!text || !searchTerm) return escapeHtml(text || '');
             const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedSearch})`, 'gi');
-            return text.replace(regex, '<span class="bg-yellow-200 font-semibold">$1</span>');
+            return escapeHtml(text).replace(regex, '<span class="bg-yellow-200 text-slate-900 font-bold px-0.5 rounded">$1</span>');
         }
 
-        // Función para posicionar el dropdown del buscador
+        // Helper para escapar HTML seguro
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Posicionar el dropdown debajo del input alineado a la derecha
         function positionSearchDropdown() {
             const searchInputEl = document.getElementById('searchInput');
             const searchResultsEl = document.getElementById('searchResults');
 
-            if (searchInputEl && searchResultsEl) {
+            if (searchInputEl && searchResultsEl && !searchResultsEl.classList.contains('hidden')) {
                 const inputRect = searchInputEl.getBoundingClientRect();
+                const dropdownWidth = Math.min(460, window.innerWidth - 32);
+
                 searchResultsEl.style.top = (inputRect.bottom + 8) + 'px';
-                searchResultsEl.style.left = inputRect.left + 'px';
-                searchResultsEl.style.width = inputRect.width + 'px';
-            }
-        }
+                searchResultsEl.style.width = dropdownWidth + 'px';
 
-        function getIconoPorTipo(tipo) {
-            const iconos = {
-                'cartucho': '🖨️',
-                'articulo': '📦',
-                'impresora': '🖨️',
-                'usuario': '👤',
-                'documento': '📄',
-                'proveedor': '🏢',
-                'area': '🏢',
-                'gerencia': '🏛️'
-            };
-            return iconos[tipo] || '📋';
-        }
-
-        @php
-            $searchUrl = function(string $targetModule, string $routeName, string $fallbackPath) {
-                $currentModule = config('modules.current');
-                $isCurrent = match($targetModule) {
-                    'admin' => in_array($currentModule, ['administracion', 'admin']),
-                    'gh'    => in_array($currentModule, ['gestion-humana', 'gh']),
-                    'gtic'  => in_array($currentModule, ['gtic']),
-                    default => false,
-                };
-
-                if ($isCurrent && \Illuminate\Support\Facades\Route::has($routeName)) {
-                    return route($routeName);
+                // Alinear al borde derecho del input pero sin desbordar el viewport
+                let left = inputRect.right - dropdownWidth;
+                if (left < 16) left = 16;
+                if (left + dropdownWidth > window.innerWidth - 16) {
+                    left = window.innerWidth - dropdownWidth - 16;
                 }
-
-                if (\Illuminate\Support\Facades\Route::has($routeName)) {
-                    return route($routeName);
-                }
-
-                if (\Illuminate\Support\Facades\Route::has('sso.go')) {
-                    return route('sso.go', ['module' => $targetModule, 'redirect' => $fallbackPath]);
-                }
-
-                return $fallbackPath;
-            };
-        @endphp
-
-        function navegarABusqueda(tabla, event) {
-            event.preventDefault();
-
-            // Mapear tablas a rutas
-            const rutas = {
-                'cartuchos': '{{ $searchUrl("admin", "administracion.consumibles.index", "/administracion/consumibles") }}',
-                'articulos': '{{ $searchUrl("admin", "administracion.articulos.index", "/administracion/articulos") }}',
-                'impresoras': '{{ $searchUrl("admin", "administracion.impresoras.index", "/administracion/impresoras") }}',
-                'users': '{{ $searchUrl("gtic", "users.index", "/users") }}',
-                'proveedores': '{{ $searchUrl("admin", "administracion.proveedores.index", "/administracion/proveedores") }}',
-                'areas': '{{ $searchUrl("admin", "administracion.areas.index", "/administracion/areas") }}',
-                'gerencias': '{{ $searchUrl("admin", "administracion.gerencias.index", "/administracion/gerencias") }}',
-                'ubicaciones': '{{ $searchUrl("admin", "administracion.ubicacion.index", "/administracion/ubicacion") }}',
-                'documentos': '{{ $searchUrl("admin", "administracion.documentos.index", "/administracion/documentos") }}',
-                'bienes': '{{ $searchUrl("admin", "administracion.bienes_publicos.index", "/administracion/bienes_publicos") }}',
-                // Gestión Humana
-                'tipo_documentos': '{{ $searchUrl("gh", "gestion-humana.tipo_documentos.index", "/gestion-humana/tipo_documentos") }}',
-                'areas_adscritas': '{{ $searchUrl("gh", "gestion-humana.area_adscrita.index", "/gestion-humana/area_adscrita") }}',
-            };
-
-            console.log('Navegando a:', tabla);
-
-            // Usar la ruta del mapa o ir al dashboard
-            const rutaFinal = rutas[tabla] || '{{ route("inicio") }}';
-            window.location.href = rutaFinal;
-
-            // Ocultar resultados
-            if (searchResults) {
-                searchResults.classList.add('hidden');
-            }
-            if (searchInput) {
-                searchInput.value = '';
+                searchResultsEl.style.left = left + 'px';
             }
         }
 
@@ -1394,8 +1416,6 @@
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            showToast('Sistema cargado correctamente', 'success');
-
             // Restaurar estado del sidebar en escritorio desde localStorage
             if (window.innerWidth > 1024) {
                 try {

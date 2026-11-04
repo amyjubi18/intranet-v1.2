@@ -52,6 +52,8 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
 /* =========================================================================
  * APIs y Servicios Compartidos
  * ========================================================================= */
+Route::get('/buscar', [BusquedaController::class, 'search'])->middleware(['auth']);
+
 Route::middleware(['auth'])->prefix('api')->group(function () {
     // Búsqueda
     Route::get('/buscar', [BusquedaController::class, 'search'])->name('api.buscar');

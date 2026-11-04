@@ -86,6 +86,19 @@ class BieneController extends Controller
 
         $query = Biene::with(['unidad_administrativas', 'usuario_administrativos', 'usuario_de_usos', 'forma_adquisicions', 'estado_del_usos', 'condicions', 'colors']);
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('descripcion', 'like', '%' . $search . '%')
+                  ->orWhere('n_factura', 'like', '%' . $search . '%')
+                  ->orWhere('n_interno_bien', 'like', '%' . $search . '%')
+                  ->orWhere('marca', 'like', '%' . $search . '%')
+                  ->orWhere('modelo', 'like', '%' . $search . '%')
+                  ->orWhere('serial', 'like', '%' . $search . '%')
+                  ->orWhere('sede', 'like', '%' . $search . '%');
+            });
+        }
+
         if ($request->filled('filterType')) {
             switch ($request->filterType) {
                 case 'fecha':

@@ -25,7 +25,7 @@ class DocsController extends Controller
         abort_if(Gate::denies('documentos_index'), 403);
 
         // Parámetros de búsqueda y ordenamiento
-        $searchGeneral = $request->get('search_general');
+        $searchGeneral = $request->get('search_general') ?: $request->get('search');
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
 

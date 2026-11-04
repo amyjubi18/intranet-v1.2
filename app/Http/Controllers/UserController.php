@@ -30,6 +30,17 @@ class UserController extends Controller
 
         $users = User::query()->with('roles');
 
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $users->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('cedula', 'like', "%{$search}%")
+                  ->orWhere('lastname', 'like', "%{$search}%");
+            });
+        }
+
         // Filtro avanzado por tipo de campo
         if ($request->filled('filterType') && $request->filled('secondFilter') && $request->secondFilter != '') {
             $filterType = $request->filterType;

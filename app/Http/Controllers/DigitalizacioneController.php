@@ -18,7 +18,7 @@ class DigitalizacioneController extends Controller
     {
         abort_if(Gate::denies('digitalizaciones_index'), 403);
 
-        $search_general = $request->get('search_general', '');
+        $search_general = $request->get('search_general', '') ?: $request->get('search', '');
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
 
