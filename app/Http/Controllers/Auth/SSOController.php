@@ -95,7 +95,8 @@ class SSOController extends Controller
 
         // Validar expiración (máximo 60 segundos)
         if (!$userId || !$expires || !$signature || now()->timestamp > $expires) {
-            return redirect("{$mainUrl}/inicio")->with('error', 'El enlace de inicio de sesión ha expirado o es inválido. Retornado al contenedor principal.');
+            $msg = 'El enlace de inicio de sesión ha expirado o es inválido.';
+            return redirect("{$mainUrl}/inicio?sso_error=" . urlencode($msg))->with('error', $msg);
         }
 
         // Verificar la firma criptográfica con el APP_KEY compartido
@@ -103,13 +104,15 @@ class SSOController extends Controller
         $expectedSignature = hash_hmac('sha256', $payload, config('app.key'));
 
         if (!hash_equals($expectedSignature, $signature)) {
-            return redirect("{$mainUrl}/inicio")->with('error', 'Firma de autenticación no válida entre contenedores. Retornado al contenedor principal.');
+            $msg = 'Firma de autenticación no válida entre contenedores (revisar APP_KEY).';
+            return redirect("{$mainUrl}/inicio?sso_error=" . urlencode($msg))->with('error', $msg);
         }
 
         // Autenticar al usuario en este contenedor
         $user = User::find($userId);
         if (!$user) {
-            return redirect("{$mainUrl}/inicio")->with('error', 'Usuario no encontrado en la base de datos.');
+            $msg = 'Usuario no encontrado en la base de datos central.';
+            return redirect("{$mainUrl}/inicio?sso_error=" . urlencode($msg))->with('error', $msg);
         }
 
         Auth::login($user);

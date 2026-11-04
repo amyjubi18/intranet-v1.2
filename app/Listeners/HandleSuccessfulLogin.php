@@ -60,8 +60,12 @@ class HandleSuccessfulLogin
     /**
      * Parse device info from user agent.
      */
-    protected function parseDevice(string $userAgent): string
+    protected function parseDevice(?string $userAgent): string
     {
+        if (!$userAgent) {
+            return 'Desktop';
+        }
+
         if (preg_match('/(mobile|tablet|android|iphone|ipad)/i', $userAgent, $matches)) {
             return ucfirst(strtolower($matches[1]));
         }
