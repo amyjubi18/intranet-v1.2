@@ -65,9 +65,22 @@ class SSOController extends Controller
             return redirect($targetPath);
         }
 
-        // Health-check / Socket probe rápido al contenedor destino
-        $probe = @fsockopen($targetHost, $targetPort, $errno, $errstr, 1.2);
-        if (!$probe) {
+        // Health-check / Socket probe rápido al contenedor destino (con caché de 30s y timeout de 200ms)
+        $cacheKey = "sso_probe_{$targetHost}_{$targetPort}";
+        $isAlive = \Illuminate\Support\Facades\Cache::get($cacheKey);
+
+        if ($isAlive === null) {
+            $probe = @fsockopen($targetHost, $targetPort, $errno, $errstr, 0.2);
+            if ($probe) {
+                fclose($probe);
+                \Illuminate\Support\Facades\Cache::put($cacheKey, true, 30);
+                $isAlive = true;
+            } else {
+                $isAlive = false;
+            }
+        }
+
+        if (!$isAlive) {
             $moduleNames = [
                 'admin' => 'Administración',
                 'gh'    => 'Gestión Humana',
@@ -76,7 +89,6 @@ class SSOController extends Controller
             $name = $moduleNames[$module] ?? strtoupper($module);
             return redirect('/inicio')->with('error', "El módulo de {$name} ({$targetHost}) está fuera de servicio o no responde.");
         }
-        fclose($probe);
 
         $userId = $user->id;
         $expires = now()->addSeconds(60)->timestamp;
