@@ -64,100 +64,17 @@ class NotificationComposer
     }
 
     /**
-     * Cuenta el total de notificaciones NO LEÍDAS
+     * Cuenta el total de notificaciones NO LEÍDAS basándose estrictamente en las notificaciones autorizadas
      */
     private function contarTotalNotificacionesNoLeidas()
     {
+        $notificaciones = $this->obtenerNotificaciones();
         $total = 0;
-        $user = Auth::user();
-
-        if (!$user) {
-            return 0;
-        }
-
-        // Helper para verificar permisos - verificar tanto permisos como rol
-        $can = function($permission) use ($user) {
-            // Verificar si tiene el permiso específico
-            if ($user->can($permission)) {
-                return true;
-            }
-            // Verificar si tiene rol de admin o gtic
-            if ($user->hasAnyRole(['admin', 'gtic', 'super-admin'])) {
-                return true;
-            }
-            return false;
-        };
-
-        // 0. Notificaciones de Laravel NO leídas (solo cumpleanos)
-        $laravelNotifications = DatabaseNotification::where('notifiable_id', $user->id)
-            ->where('notifiable_type', User::class)
-            ->whereNull('read_at')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        foreach ($laravelNotifications as $notif) {
-            $data = $notif->data;
-            $tipo = $data['type'] ?? 'general';
-            if ($tipo === 'birthday_wish') {
-                $total += 1;
+        foreach ($notificaciones as $n) {
+            if (empty($n['leida'])) {
+                $total++;
             }
         }
-
-        // 1. Perfil incompleto (siempre cuenta como 1 notificación)
-        $perfil = $user->perfil_incompleto;
-        if ($perfil['incompleto']) {
-            $total += 1;
-        }
-
-        // 2. Stock bajo en Consumibles
-        if ($can('almacen_inv_index')) {
-            $countConsumibles = $this->contarStockBajoConsumibles();
-            if ($countConsumibles > 0) {
-                $total += 1;
-            }
-        }
-
-        // 3. Stock bajo en Oficina
-        if ($can('inventarioofic_index')) {
-            $countOficina = $this->contarStockBajoOficina();
-            if ($countOficina > 0) {
-                $total += 1;
-            }
-        }
-
-        // 4. Usuarios con datos incompletos (solo para admin/gtic)
-        if ($can('user_index')) {
-            $countUsuariosIncompletos = $this->contarUsuariosConDatosFaltantes();
-            if ($countUsuariosIncompletos > 0) {
-                $total += 1;
-            }
-        }
-
-        // 5. Bienes dañados o en mal estado
-        if ($can('bienes_index')) {
-            $countBienesDaniados = $this->contarBienesDaniados();
-            if ($countBienesDaniados > 0) {
-                $total += 1;
-            }
-        }
-
-        // 6. Bienes sin asignar
-        if ($can('bienes_index')) {
-            $countBienesSinAsignar = $this->contarBienesSinAsignar();
-            if ($countBienesSinAsignar > 0) {
-                $total += 1;
-            }
-        }
-
-        // 7. Impresoras con problemas
-        if ($can('impresora_index')) {
-            $countImpresorasProblema = $this->contarImpresorasConProblemas();
-            if ($countImpresorasProblema > 0) {
-                $total += 1;
-            }
-        }
-
         return $total;
     }
 
@@ -199,15 +116,13 @@ class NotificationComposer
             return $notificaciones;
         }
 
-        // Helper para verificar permisos - verificar tanto permisos como rol
+        // Helper para verificar permisos estrictos del usuario (basado en Spatie permissions del usuario)
         $can = function($permission) use ($user) {
-            // Verificar si tiene el permiso específico
-            if ($user->can($permission)) {
-                return true;
-            }
-            // Verificar si tiene rol de admin o gtic
-            if ($user->hasAnyRole(['admin', 'gtic', 'super-admin'])) {
-                return true;
+            $perms = (array) $permission;
+            foreach ($perms as $p) {
+                if ($user->can($p)) {
+                    return true;
+                }
             }
             return false;
         };
@@ -271,8 +186,8 @@ class NotificationComposer
             ];
         }
 
-        // 2. Stock bajo en Consumibles - MOSTRAR SIEMPRE si hay items con stock bajo
-        if ($can('almacen_inv_index')) {
+        // 2. Stock bajo en Consumibles - Solo si tiene permiso de consumibles
+        if ($can(['almacen_inv_index', 'inv-consumibles', 'cartucho_index'])) {
             $countConsumibles = $this->contarStockBajoConsumibles();
             if ($countConsumibles > 0) {
                 $hash = $this->generateNotificationHash('stock_consumibles', $countConsumibles);
@@ -299,8 +214,8 @@ class NotificationComposer
             }
         }
 
-        // 3. Stock bajo en Oficina - MOSTRAR SIEMPRE si hay items con stock bajo
-        if ($can('inventarioofic_index')) {
+        // 3. Stock bajo en Oficina - Solo si tiene permiso de oficina
+        if ($can(['inventarioofic_index', 'inv-oficina', 'articulo_index'])) {
             $countOficina = $this->contarStockBajoOficina();
             if ($countOficina > 0) {
                 $hash = $this->generateNotificationHash('stock_oficina', $countOficina);
@@ -326,8 +241,8 @@ class NotificationComposer
             }
         }
 
-        // 4. Usuarios con datos incompletos (solo para admin/gtic)
-        if ($can('user_index')) {
+        // 4. Usuarios con datos incompletos - Solo si tiene permiso de gestión de usuarios
+        if ($can(['user_index', 'user_edit'])) {
             $countUsuariosIncompletos = $this->contarUsuariosConDatosFaltantes();
             if ($countUsuariosIncompletos > 0) {
                 $hash = $this->generateNotificationHash('usuarios_incompletos', $countUsuariosIncompletos);
@@ -352,8 +267,8 @@ class NotificationComposer
             }
         }
 
-        // 5. Bienes dañados o en mal estado
-        if ($can('bienes_index')) {
+        // 5. Bienes dañados o en mal estado - Solo si tiene permiso de bienes públicos
+        if ($can(['bienes_index', 'bienes', 'bienes_edit'])) {
             $countBienesDaniados = $this->contarBienesDaniados();
             if ($countBienesDaniados > 0) {
                 $hash = $this->generateNotificationHash('bienes_daniados', $countBienesDaniados);
@@ -378,8 +293,8 @@ class NotificationComposer
             }
         }
 
-        // 6. Bienes sin asignar
-        if ($can('bienes_index')) {
+        // 6. Bienes sin asignar - Solo si tiene permiso de bienes públicos
+        if ($can(['bienes_index', 'bienes', 'bienes_edit'])) {
             $countBienesSinAsignar = $this->contarBienesSinAsignar();
             if ($countBienesSinAsignar > 0) {
                 $hash = $this->generateNotificationHash('bienes_sin_asignar', $countBienesSinAsignar);
@@ -404,8 +319,8 @@ class NotificationComposer
             }
         }
 
-        // 7. Impresoras con problemas
-        if ($can('impresora_index')) {
+        // 7. Impresoras con problemas - Solo si tiene permiso de impresoras
+        if ($can(['impresora_index', 'inventarioimpre_index', 'impresora_edit'])) {
             $countImpresorasProblema = $this->contarImpresorasConProblemas();
             if ($countImpresorasProblema > 0) {
                 $hash = $this->generateNotificationHash('impresoras_problema', $countImpresorasProblema);
