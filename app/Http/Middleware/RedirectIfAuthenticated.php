@@ -23,7 +23,7 @@ class RedirectIfAuthenticated
         $referer = (string) $request->headers->get('referer', '');
         $isFromSecondary = str_contains($referer, '250') || str_contains($referer, '251') || str_contains($referer, '252');
 
-        if ($request->has('logout') || ($request->has('action') && $request->action === 'logout') || $isFromSecondary) {
+        if ($request->has('logout') || $request->has('timeout') || ($request->has('action') && $request->action === 'logout') || $isFromSecondary) {
             foreach ($guards as $guard) {
                 Auth::guard($guard)->logout();
             }

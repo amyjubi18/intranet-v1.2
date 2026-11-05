@@ -1019,6 +1019,28 @@
             }
         };
 
+        // URLs base para redirección limpia de sesión y SSO
+        const MAIN_PORTAL_LOGIN = @json(rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/login?timeout=1');
+        const MAIN_PORTAL_LOGOUT = @json(rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/logout?timeout=1');
+
+        // Interceptor global para capturar 401 (expiración de sesión) y redirigir limpiamente sin alert de error
+        (function() {
+            const originalFetch = window.fetch;
+            window.fetch = async function(...args) {
+                try {
+                    const response = await originalFetch.apply(this, args);
+                    if (response && response.status === 401) {
+                        if (!window.location.pathname.includes('/login')) {
+                            window.location.href = MAIN_PORTAL_LOGIN;
+                        }
+                    }
+                    return response;
+                } catch (err) {
+                    throw err;
+                }
+            };
+        })();
+
         // ==========================================
         // SISTEMA DE NOTIFICACIONES DINÁMICO EN TIEMPO REAL (JS)
         // ==========================================
@@ -1064,7 +1086,7 @@
             })
             .then(res => {
                 if (res && res.status === 401) {
-                    window.location.href = '/login?timeout=1';
+                    window.location.href = MAIN_PORTAL_LOGIN;
                     return null;
                 }
                 return res && res.ok ? res.json() : null;
@@ -1179,7 +1201,7 @@
             };
 
             function cerrarSesionPorInactividad() {
-                window.location.href = '/login?timeout=1';
+                window.location.href = MAIN_PORTAL_LOGOUT;
             }
         })();
 

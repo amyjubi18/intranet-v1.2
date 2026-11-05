@@ -56,6 +56,14 @@
 </div>
 @endif
 
+<!-- Error Message -->
+@if (session('error'))
+<div class="mb-4 text-sm text-red-700 bg-red-100 border border-red-300 rounded-xl p-3.5 flex items-center gap-2.5 shadow-sm">
+<span class="text-xl">⚠️</span>
+<span>{{ session('error') }}</span>
+</div>
+@endif
+
 <form id="loginForm" method="POST" action="{{ route('login') }}" class="space-y-5">
 @csrf
 

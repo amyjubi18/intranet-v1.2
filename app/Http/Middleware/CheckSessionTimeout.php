@@ -34,14 +34,16 @@ class CheckSessionTimeout
                 Session::invalidate();
                 Session::regenerateToken();
 
+                $mainLoginUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/login?timeout=1';
+
                 if ($request->expectsJson() || $request->is('api/*')) {
                     return response()->json([
                         'error' => 'session_timeout',
-                        'message' => 'Tu sesión ha expirado por inactividad (20 minutos).'
+                        'message' => 'Tu sesión ha expirado por inactividad (20 minutos).',
+                        'redirect' => $mainLoginUrl,
                     ], 401);
                 }
 
-                $mainLoginUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/login?timeout=1';
                 return redirect($mainLoginUrl)->with('message', 'Tu sesión ha expirado tras 20 minutos de inactividad.');
             }
 

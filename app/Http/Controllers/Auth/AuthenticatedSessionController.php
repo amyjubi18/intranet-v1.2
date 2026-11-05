@@ -73,9 +73,15 @@ class AuthenticatedSessionController extends Controller
 
         $isMain = empty($currentModule) || in_array($currentModule, ['main', 'portal', 'all']) || ($currentHost === $mainHost) || str_contains($currentHost, '219') || str_contains($currentHost, 'localhost');
 
+        $mainUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/');
+
         if (!$isMain) {
-            $mainUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/');
-            return redirect("{$mainUrl}/logout?logout=1");
+            $param = $request->has('timeout') ? 'timeout=1' : 'logout=1';
+            return redirect("{$mainUrl}/logout?{$param}");
+        }
+
+        if ($request->has('timeout')) {
+            return redirect("{$mainUrl}/login?timeout=1");
         }
 
         return redirect()->route('login');
