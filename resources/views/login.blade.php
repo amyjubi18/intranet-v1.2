@@ -49,9 +49,10 @@
 @endif
 
 <!-- Session Timeout Message -->
-@if (session('message'))
-<div class="mb-4 text-sm text-orange-400 bg-orange-900/20 border border-orange-800 rounded-lg p-3">
-{{ session('message') }}
+@if (session('message') || request('timeout'))
+<div class="mb-4 text-sm text-amber-900 bg-amber-50 border border-amber-300 rounded-xl p-3.5 flex items-center gap-2.5 shadow-sm">
+<span class="text-xl">⏳</span>
+<span>{{ session('message') ?? 'Tu sesión ha expirado tras 20 minutos de inactividad o por cierre del navegador.' }}</span>
 </div>
 @endif
 
@@ -108,12 +109,12 @@ title="Mostrar/Ocultar contraseña"
 @enderror
 </div>
 
-<!-- Remember Me -->
-<div class="mt-4">
-<label for="remember_me" class="inline-flex items-center text-black">
-<input id="remember_me" type="checkbox" class="text-blue-600 border-slate-600 rounded shadow-sm focus:ring-blue-500" name="remember">
-<span class="ml-2 text-sm text-black">{{ __('Recordarme') }}</span>
-</label>
+<!-- Aviso de Seguridad: Cierre de Sesión Automático -->
+<div class="mt-4 flex items-center gap-2 text-xs text-slate-700 bg-blue-50/70 p-2.5 rounded-xl border border-blue-200/60">
+<svg class="w-4 h-4 text-blue-700 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+</svg>
+<span>La sesión se cerrará automáticamente tras <strong>20 min de inactividad</strong> o al <strong>apagar el equipo</strong>.</span>
 </div>
 
 <!-- Enlace de contraseña olvidada -->

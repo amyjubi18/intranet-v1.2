@@ -913,7 +913,13 @@
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             })
-            .then(res => res.ok ? res.json() : null)
+            .then(res => {
+                if (res && res.status === 401) {
+                    window.location.href = '/login?timeout=1';
+                    return null;
+                }
+                return res && res.ok ? res.json() : null;
+            })
             .then(data => {
                 if (data && typeof data.count !== 'undefined') {
                     const newCount = parseInt(data.count) || 0;
@@ -930,6 +936,103 @@
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden) pollNotifications();
         });
+
+        // ==========================================================
+        // CONTROL DE INACTIVIDAD DEL USUARIO (20 MINUTOS)
+        // ==========================================================
+        (function() {
+            const INACTIVITY_LIMIT_MS = 20 * 60 * 1000; // 20 minutos (1.200.000 ms)
+            const WARNING_BEFORE_MS = 60 * 1000; // Aviso 1 minuto antes (a los 19 minutos)
+            let lastUserActivity = Date.now();
+            let warningModalShown = false;
+            let checkInterval = null;
+
+            function recordUserActivity() {
+                lastUserActivity = Date.now();
+                if (warningModalShown) {
+                    warningModalShown = false;
+                    const modal = document.getElementById('inactivityWarningModal');
+                    if (modal) modal.classList.add('hidden');
+                }
+            }
+
+            // Escuchar interacciones reales del usuario
+            const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+            let throttleTimer = null;
+            activityEvents.forEach(evt => {
+                window.addEventListener(evt, () => {
+                    if (!throttleTimer) {
+                        recordUserActivity();
+                        throttleTimer = setTimeout(() => { throttleTimer = null; }, 5000); // Máximo 1 actualización cada 5s
+                    }
+                }, { passive: true });
+            });
+
+            // Temporizador para verificar inactividad cada 10 segundos
+            checkInterval = setInterval(() => {
+                const idleTime = Date.now() - lastUserActivity;
+
+                // Si se alcanzaron los 20 minutos de inactividad
+                if (idleTime >= INACTIVITY_LIMIT_MS) {
+                    clearInterval(checkInterval);
+                    cerrarSesionPorInactividad();
+                    return;
+                }
+
+                // Aviso 1 minuto antes (a los 19 minutos)
+                if (idleTime >= (INACTIVITY_LIMIT_MS - WARNING_BEFORE_MS) && !warningModalShown) {
+                    warningModalShown = true;
+                    mostrarModalAvisoInactividad();
+                }
+            }, 10000);
+
+            function mostrarModalAvisoInactividad() {
+                let modal = document.getElementById('inactivityWarningModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'inactivityWarningModal';
+                    modal.className = 'fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 backdrop-blur-sm';
+                    modal.innerHTML = `
+                        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center border border-amber-200">
+                            <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                                ⏳
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-800">¿Sigues trabajando?</h3>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Tu sesión se cerrará en <span id="inactivityCountdown" class="font-bold text-red-600">60</span> segundos por inactividad.
+                            </p>
+                            <p class="text-xs text-slate-400 mt-2">Mueve el cursor o presiona cualquier tecla para continuar.</p>
+                            <button type="button" onclick="window.continuarSesion()" class="mt-4 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-md">
+                                Continuar Trabajando
+                            </button>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                } else {
+                    modal.classList.remove('hidden');
+                }
+
+                let secondsLeft = 60;
+                const countdownEl = document.getElementById('inactivityCountdown');
+                const countdownInterval = setInterval(() => {
+                    secondsLeft--;
+                    if (countdownEl) countdownEl.textContent = secondsLeft;
+                    if (secondsLeft <= 0 || !warningModalShown) {
+                        clearInterval(countdownInterval);
+                    }
+                }, 1000);
+            }
+
+            window.continuarSesion = function() {
+                recordUserActivity();
+                // Notificar ping ligero al servidor para actualizar last_activity en backend
+                fetch('/api/buscar?q=ping').catch(() => {});
+            };
+
+            function cerrarSesionPorInactividad() {
+                window.location.href = '/login?timeout=1';
+            }
+        })();
 
         function toggleNotificationDropdown(event) {
             if (event) {
