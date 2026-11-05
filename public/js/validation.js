@@ -264,37 +264,22 @@ class FormValidator {
     }
 
     showToast(message, type = 'info') {
-        // Crear toast si no existe
-        let toast = document.getElementById('validation-toast');
-        if (!toast) {
-            toast = document.createElement('div');
-            toast.id = 'validation-toast';
-            toast.className = 'fixed bottom-4 right-4 z-50 bg-white border-l-4 border-red-500 shadow-lg rounded-lg p-4 flex items-center gap-3 transform transition-all duration-300 translate-y-[110%]';
-            toast.style.minWidth = '300px';
-            document.body.appendChild(toast);
+        if (typeof Swal !== 'undefined' && (type === 'error' || type === 'warning')) {
+            Swal.fire({
+                icon: type,
+                title: type === 'error' ? 'Error' : 'Atención',
+                text: message,
+                confirmButtonText: 'Entendido',
+                confirmButtonColor: '#2563eb'
+            });
+            return;
         }
 
-        const icons = {
-            success: '✅',
-            error: '❌',
-            warning: '⚠️',
-            info: 'ℹ️'
-        };
-
-        toast.innerHTML = `
-            <span class="text-xl">${icons[type] || icons.info}</span>
-            <span class="text-sm text-gray-700">${message}</span>
-        `;
-
-        // Mostrar toast
-        setTimeout(() => {
-            toast.classList.remove('translate-y-full');
-        }, 100);
-
-        // Ocultar después de 4 segundos
-        setTimeout(() => {
-            toast.classList.add('translate-y-full');
-        }, 4000);
+        if (typeof window.showAppToast === 'function') {
+            window.showAppToast(message, type);
+        } else if (typeof window.showToast === 'function' && window.showToast !== showToast) {
+            window.showToast(message, type);
+        }
     }
 }
 
@@ -463,44 +448,26 @@ function initRoleValidation() {
     });
 }
 
-// Mostrar toast (función global)
+// Mostrar notificación / alerta (función global)
 function showToast(message, type = 'info') {
-    let toast = document.getElementById('validation-toast');
-    if (!toast) {
-        toast = document.createElement('div');
-        toast.id = 'validation-toast';
-        toast.className = 'fixed bottom-4 right-4 z-50 bg-white shadow-lg rounded-lg p-4 flex items-center gap-3 transform transition-all duration-300 translate-y-[110%]';
-        toast.style.minWidth = '300px';
-        document.body.appendChild(toast);
+    // Si es error o warning, mostrar SweetAlert para máxima visibilidad y estilo limpio
+    if (typeof Swal !== 'undefined' && (type === 'error' || type === 'warning')) {
+        Swal.fire({
+            icon: type,
+            title: type === 'error' ? 'Error' : 'Atención',
+            text: message,
+            confirmButtonText: 'Aceptar',
+            confirmButtonColor: '#2563eb'
+        });
+        return;
     }
 
-    const colors = {
-        success: 'border-green-500',
-        error: 'border-red-500',
-        warning: 'border-yellow-500',
-        info: 'border-blue-500'
-    };
-
-    const icons = {
-        success: '✅',
-        error: '❌',
-        warning: '⚠️',
-        info: 'ℹ️'
-    };
-
-    toast.className = `fixed bottom-4 right-4 z-50 bg-white shadow-lg rounded-lg p-4 flex items-center gap-3 transform transition-all duration-300 ${colors[type] || colors.info} border-l-4`;
-    toast.innerHTML = `
-        <span class="text-xl">${icons[type] || icons.info}</span>
-        <span class="text-sm text-gray-700">${message}</span>
-    `;
-
-    setTimeout(() => {
-        toast.classList.remove('translate-y-full');
-    }, 100);
-
-    setTimeout(() => {
-        toast.classList.add('translate-y-full');
-    }, 4000);
+    // Delegar al toast del layout
+    if (typeof window.showAppToast === 'function') {
+        window.showAppToast(message, type);
+    } else if (typeof window.showToast === 'function' && window.showToast !== showToast) {
+        window.showToast(message, type);
+    }
 }
 
 // Auto-inicialización cuando el DOM esté listo

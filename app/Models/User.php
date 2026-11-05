@@ -365,13 +365,31 @@ class User extends Authenticatable
      */
     public static function getBirthdaysForCurrentMonth()
     {
-        $currentMonth = now()->month;
+        $currentMonth = (int) now()->month;
 
         return self::whereNotNull('fecha_nacimiento')
             ->whereMonth('fecha_nacimiento', $currentMonth)
-            ->where('is_active', true)
+            ->where(function($q) {
+                $q->where('is_active', true)->orWhereNull('is_active');
+            })
             ->orderByRaw('DAY(fecha_nacimiento)')
             ->get();
+    }
+
+    /**
+     * Get upcoming birthdays ordered by closeness (next to celebrate)
+     */
+    public static function getUpcomingBirthdays($limit = 6)
+    {
+        $users = self::whereNotNull('fecha_nacimiento')
+            ->where(function($q) {
+                $q->where('is_active', true)->orWhereNull('is_active');
+            })
+            ->get();
+
+        return $users->sortBy(function($user) {
+            return $user->days_until_birthday ?? 999;
+        })->take($limit)->values();
     }
 
     /**
@@ -382,7 +400,7 @@ class User extends Authenticatable
         if (!$this->fecha_nacimiento) {
             return false;
         }
-        return $this->fecha_nacimiento->month === now()->month;
+        return (int) $this->fecha_nacimiento->month === (int) now()->month;
     }
 
     /**
@@ -400,7 +418,7 @@ class User extends Authenticatable
             9 => 'Septiembre', 10 => 'Octubre', 11 => 'Noviembre', 12 => 'Diciembre'
         ];
 
-        return $this->fecha_nacimiento->day . ' de ' . $meses[$this->fecha_nacimiento->month];
+        return $this->fecha_nacimiento->day . ' de ' . $meses[(int) $this->fecha_nacimiento->month];
     }
 
     /**
@@ -408,7 +426,7 @@ class User extends Authenticatable
      */
     public function getBirthdayDayAttribute(): int
     {
-        return $this->fecha_nacimiento ? $this->fecha_nacimiento->day : 0;
+        return $this->fecha_nacimiento ? (int) $this->fecha_nacimiento->day : 0;
     }
 
     /**
@@ -417,11 +435,13 @@ class User extends Authenticatable
     public static function getAllBirthdaysForCalendar()
     {
         return self::whereNotNull('fecha_nacimiento')
-            ->where('is_active', true)
+            ->where(function($q) {
+                $q->where('is_active', true)->orWhereNull('is_active');
+            })
             ->select('id', 'name', 'lastname', 'departamento', 'fecha_nacimiento')
             ->get()
             ->groupBy(function($user) {
-                return $user->fecha_nacimiento->month;
+                return (int) $user->fecha_nacimiento->month;
             });
     }
 
@@ -444,16 +464,17 @@ class User extends Authenticatable
             return null;
         }
 
-        $birthday = now()->year . '-' .
-                    str_pad($this->fecha_nacimiento->month, 2, '0', STR_PAD_LEFT) . '-' .
-                    str_pad($this->fecha_nacimiento->day, 2, '0', STR_PAD_LEFT);
+        $today = now()->startOfDay();
+        $thisYearBirthday = \Carbon\Carbon::create(
+            (int) now()->year,
+            (int) $this->fecha_nacimiento->month,
+            (int) $this->fecha_nacimiento->day
+        )->startOfDay();
 
-        $birthdayDate = now()->parse($birthday);
-
-        if ($birthdayDate->isPast()) {
-            $birthdayDate = $birthdayDate->addYear();
+        if ($thisYearBirthday->lt($today)) {
+            $thisYearBirthday->addYear();
         }
 
-        return now()->diffInDays($birthdayDate, false);
+        return (int) $today->diffInDays($thisYearBirthday);
     }
 }

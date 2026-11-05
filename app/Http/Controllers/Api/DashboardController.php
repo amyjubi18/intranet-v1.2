@@ -42,41 +42,51 @@ class DashboardController extends Controller
      */
     public function birthdays()
     {
-        // Get birthdays for current month
-        $currentMonthBirthdays = User::getBirthdaysForCurrentMonth();
+        // Obtener cumpleañeros ordenados por cercanía
+        $upcomingUsers = User::getUpcomingBirthdays(8);
 
-        // Format current month birthdays
-        $formattedBirthdays = $currentMonthBirthdays->map(function($user) {
+        // Formatear cumpleañeros
+        $formattedBirthdays = $upcomingUsers->map(function($user) {
+            $isToday = $user->fecha_nacimiento && ($user->fecha_nacimiento->format('m-d') === now()->format('m-d'));
+            $daysUntil = $user->days_until_birthday ?? 999;
+
             return [
                 'id' => $user->id,
                 'name' => $user->name,
                 'lastname' => $user->lastname,
-                'fullname' => $user->name . ' ' . $user->lastname,
+                'fullname' => trim($user->name . ' ' . ($user->lastname ?? '')),
                 'departamento' => $user->departamento ?? 'Sin asignar',
                 'birthday_date' => $user->birthday_display_date,
-                'birthday_day' => $user->birthday_day,
+                'birthday_day' => (int) $user->birthday_day,
+                'birthday_month' => (int) ($user->fecha_nacimiento ? $user->fecha_nacimiento->month : 0),
                 'initials' => $user->initials,
-                'days_until' => $user->days_until_birthday,
-                'has_today' => $user->fecha_nacimiento && $user->fecha_nacimiento->isToday()
+                'days_until' => $daysUntil,
+                'has_today' => $isToday
             ];
-        });
+        })->values();
 
-        // Get all birthdays for calendar
+        // Obtener todos los cumpleaños organizados por mes para el calendario interactivo
         $allBirthdays = User::getAllBirthdaysForCalendar();
 
-        // Format calendar data
         $calendarData = [];
         foreach ($allBirthdays as $month => $users) {
             $calendarData[$month] = $users->map(function($user) {
+                $isToday = $user->fecha_nacimiento && ($user->fecha_nacimiento->format('m-d') === now()->format('m-d'));
+                $daysUntil = $user->days_until_birthday ?? 999;
                 return [
-                    'day' => $user->birthday_day,
-                    'name' => $user->name . ' ' . $user->lastname,
-                    'departamento' => $user->departamento ?? 'Sin asignar'
+                    'id' => $user->id,
+                    'day' => (int) $user->birthday_day,
+                    'month' => (int) $user->fecha_nacimiento->month,
+                    'name' => trim($user->name . ' ' . ($user->lastname ?? '')),
+                    'departamento' => $user->departamento ?? 'Sin asignar',
+                    'birthday_date' => $user->birthday_display_date,
+                    'days_until' => $daysUntil,
+                    'is_today' => $isToday
                 ];
-            })->toArray();
+            })->values()->toArray();
         }
 
-        // Month names in Spanish
+        // Meses en español
         $months = [
             1 => 'Enero', 2 => 'Febrero', 3 => 'Marzo', 4 => 'Abril',
             5 => 'Mayo', 6 => 'Junio', 7 => 'Julio', 8 => 'Agosto',
@@ -84,12 +94,12 @@ class DashboardController extends Controller
         ];
 
         return response()->json([
-            'current_month' => now()->month,
-            'current_month_name' => $months[now()->month],
-            'current_year' => now()->year,
+            'current_month' => (int) now()->month,
+            'current_month_name' => $months[(int) now()->month],
+            'current_year' => (int) now()->year,
             'birthdays' => $formattedBirthdays,
             'calendar_data' => $calendarData,
-            'total_this_month' => $formattedBirthdays->count(),
+            'total_this_month' => $formattedBirthdays->filter(fn($b) => $b['birthday_month'] === (int) now()->month)->count(),
             'today_birthdays' => $formattedBirthdays->where('has_today', true)->values()
         ]);
     }

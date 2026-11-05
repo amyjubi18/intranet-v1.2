@@ -103,9 +103,50 @@
             transform:translateX(4px);
         }
         .sidebar-item.active{
-            background:rgba(255,255,255,0.2);
-            color:#ffffff;
-            box-shadow:0 4px 12px rgba(0,0,0,0.3);
+            background:rgba(255,255,255,0.22) !important;
+            color:#ffffff !important;
+            font-weight:700 !important;
+            border-left:4px solid #60a5fa !important;
+            padding-left:0.75rem !important;
+            box-shadow:0 4px 14px rgba(0,0,0,0.35) !important;
+        }
+
+        /* Animaciones para el preloader */
+        @keyframes preloaderLogoPulse {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 14px rgba(96, 165, 250, 0.45));
+            }
+            50% {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 30px rgba(96, 165, 250, 0.85));
+            }
+        }
+        .preloader-logo-pulse {
+            animation: preloaderLogoPulse 2.4s ease-in-out infinite;
+        }
+        .wave-parallax > use {
+            animation: move-wave-forever 20s cubic-bezier(.55,.5,.45,.5) infinite;
+        }
+        .wave-parallax > use:nth-child(1) {
+            animation-delay: -2s;
+            animation-duration: 7s;
+        }
+        .wave-parallax > use:nth-child(2) {
+            animation-delay: -3s;
+            animation-duration: 10s;
+        }
+        .wave-parallax > use:nth-child(3) {
+            animation-delay: -4s;
+            animation-duration: 13s;
+        }
+        .wave-parallax > use:nth-child(4) {
+            animation-delay: -5s;
+            animation-duration: 18s;
+        }
+        @keyframes move-wave-forever {
+            0% { transform: translate3d(-90px, 0, 0); }
+            100% { transform: translate3d(85px, 0, 0); }
         }
         .main-content{
             margin-left:280px;
@@ -415,6 +456,65 @@
     </style>
 </head>
 <body class="scroll-smooth">
+
+    <!-- Preloader Institucional: Fondo azul degradado con animación de olas y logo animado al centro -->
+    <div id="page-preloader" class="fixed inset-0 z-[999999] flex flex-col items-center justify-center overflow-hidden transition-all duration-500 pointer-events-auto" style="background: linear-gradient(135deg, #07152b 0%, #0c234a 35%, #1e3a8a 75%, #1e40af 100%);">
+        <!-- Contenedor central con logo animado -->
+        <div class="relative z-20 flex flex-col items-center justify-center px-4 text-center">
+            <div class="relative p-6 sm:p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl flex items-center justify-center">
+                <img src="{{ asset('img/Logo.png') }}" class="h-24 sm:h-32 md:h-36 w-auto object-contain preloader-logo-pulse" alt="CODECYT">
+                <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-blue-400/30 to-cyan-300/30 blur-md pointer-events-none animate-pulse"></div>
+            </div>
+
+            <!-- Indicador sutil de carga de 3 puntos -->
+            <div class="mt-6 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-cyan-400 animate-bounce" style="animation-delay: 0s;"></span>
+                <span class="w-3 h-3 rounded-full bg-blue-300 animate-bounce" style="animation-delay: 0.15s;"></span>
+                <span class="w-3 h-3 rounded-full bg-indigo-300 animate-bounce" style="animation-delay: 0.3s;"></span>
+            </div>
+            <p class="text-xs uppercase tracking-widest text-blue-200/80 font-medium mt-3">Cargando...</p>
+        </div>
+
+        <!-- Animación de olas suaves en la parte inferior -->
+        <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none pointer-events-none z-10" style="height: 140px;">
+            <svg class="preloader-waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto" style="width: 100%; height: 100%;">
+                <defs>
+                    <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+                </defs>
+                <g class="wave-parallax">
+                    <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(37, 99, 235, 0.22)" />
+                    <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(59, 130, 246, 0.32)" />
+                    <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(96, 165, 250, 0.22)" />
+                    <use xlink:href="#gentle-wave" x="48" y="7" fill="rgba(30, 58, 138, 0.6)" />
+                </g>
+            </svg>
+        </div>
+    </div>
+    <script>
+        (function() {
+            function removePreloader() {
+                const el = document.getElementById('page-preloader');
+                if (!el || el.dataset.dismissed) return;
+                el.dataset.dismissed = 'true';
+                el.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    if (el && el.parentNode) {
+                        el.style.display = 'none';
+                    }
+                }, 550);
+            }
+
+            if (document.readyState === 'complete') {
+                setTimeout(removePreloader, 350);
+            } else {
+                window.addEventListener('load', function() {
+                    setTimeout(removePreloader, 350);
+                });
+            }
+            // Failsafe: nunca bloquear la pantalla más de 2 segundos
+            setTimeout(removePreloader, 2000);
+        })();
+    </script>
 
     <!-- Modal de notificaciones (fuera del flujo para aparecer por encima de todo) -->
     @php
@@ -782,15 +882,50 @@
             @if(session('error') || request('sso_error'))
                 <script>
                     document.addEventListener('DOMContentLoaded', function() {
-                        if (typeof showToast === 'function') {
-                            showToast(@json(session('error') ?? request('sso_error')), 'error');
+                        const errMsg = @json(session('error') ?? request('sso_error'));
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Atención',
+                                text: errMsg,
+                                confirmButtonText: 'Aceptar',
+                                confirmButtonColor: '#2563eb',
+                                customClass: {
+                                    popup: 'rounded-2xl shadow-2xl'
+                                }
+                            });
+                        } else if (typeof showToast === 'function') {
+                            showToast(errMsg, 'error');
                         }
                     });
                 </script>
             @endif
 
             @if($errors->any())
-                <div class="p-4 mb-4 text-yellow-700 bg-yellow-100 border border-yellow-400 rounded-lg">
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const errors = @json($errors->all());
+                        let errorHtml = '<div class="text-left text-sm text-slate-700 mt-2 space-y-1.5">';
+                        errors.forEach(function(msg) {
+                            errorHtml += '<div class="flex items-start gap-2"><span class="text-red-500 font-bold">•</span><span>' + msg + '</span></div>';
+                        });
+                        errorHtml += '</div>';
+
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Por favor corrija los siguientes errores:',
+                                html: errorHtml,
+                                confirmButtonText: 'Entendido',
+                                confirmButtonColor: '#2563eb',
+                                customClass: {
+                                    popup: 'rounded-2xl shadow-2xl border border-slate-200'
+                                }
+                            });
+                        }
+                    });
+                </script>
+                <div class="p-4 mb-4 text-red-700 bg-red-100 border border-red-400 rounded-lg">
                     <p class="font-bold">Por favor corrija los siguientes errores:</p>
                     <ul class="pl-5 mt-2 list-disc">
                         @foreach($errors->all() as $error)
@@ -868,7 +1003,21 @@
             }, 300);
         }
         window.showToast = showToast;
+        window.showAppToast = showToast;
         window.hideToast = hideToast;
+        window.showErrorAlert = function(msg, title = 'Error') {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: title,
+                    text: msg,
+                    confirmButtonColor: '#2563eb',
+                    confirmButtonText: 'Entendido'
+                });
+            } else {
+                showToast(msg, 'error');
+            }
+        };
 
         // ==========================================
         // SISTEMA DE NOTIFICACIONES DINÁMICO EN TIEMPO REAL (JS)

@@ -100,9 +100,12 @@
             transform:translateX(4px);
         }
         .sidebar-item.active{
-            background:rgba(255,255,255,0.2);
-            color:#ffffff;
-            box-shadow:0 4px 12px rgba(0,0,0,0.3);
+            background:rgba(255,255,255,0.22) !important;
+            color:#ffffff !important;
+            font-weight:700 !important;
+            border-left:4px solid #60a5fa !important;
+            padding-left:0.75rem !important;
+            box-shadow:0 4px 14px rgba(0,0,0,0.35) !important;
         }
         .main-content{
             margin-left:280px;
