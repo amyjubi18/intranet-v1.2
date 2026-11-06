@@ -1578,7 +1578,22 @@ export default function UsersManagement() {
                         </div>
 
                         <div className="flex flex-col items-center text-center mb-4">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-900 to-blue-500 flex items-center justify-center text-white font-bold text-2xl border-4 border-blue-100 shadow-md mb-2">
+                            {selectedUser.profile_photo ? (
+                                <img
+                                    src={`/archivos/avatars/${selectedUser.profile_photo}`}
+                                    alt={selectedUser.name}
+                                    className="w-24 h-24 rounded-full object-cover border-4 border-blue-900 shadow-lg mb-2"
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        const fallback = e.target.parentElement?.querySelector('.detail-avatar-fallback');
+                                        if (fallback) fallback.style.display = 'flex';
+                                    }}
+                                />
+                            ) : null}
+                            <div
+                                className="detail-avatar-fallback w-24 h-24 rounded-full bg-gradient-to-br from-blue-900 to-blue-500 items-center justify-center text-white font-bold text-3xl border-4 border-blue-100 shadow-lg mb-2"
+                                style={{ display: selectedUser.profile_photo ? 'none' : 'flex' }}
+                            >
                                 {getInitials(selectedUser.name, selectedUser.lastname)}
                             </div>
                             <h4 className="text-base font-bold text-slate-800">{selectedUser.name} {selectedUser.lastname || ''}</h4>
