@@ -235,6 +235,12 @@ class BieneController extends Controller
                         'n_internos' => $n_internos,
                         'usuarios_de_uso' => $usuarios_de_uso,
                         'usuarios_administrativos' => $usuarios_administrativos,
+                    ],
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('bienes_create') ?? false,
+                        'can_edit' => auth()->user()?->can('bienes_edit') ?? false,
+                        'can_destroy' => auth()->user()?->can('bienes_destroy') ?? false,
+                        'can_export' => true,
                     ]
                 ],
                 'message' => 'Bienes públicos obtenidos exitosamente'

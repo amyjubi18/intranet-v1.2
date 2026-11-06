@@ -72,6 +72,11 @@ class DigitalizacioneController extends Controller
                     'tipo_documentos' => TipoDocumento::all(),
                     'total' => Digitalizacione::count(),
                     'totalDocumentos' => DigitalizacionDocumento::count(),
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('digitalizaciones_create') ?? false,
+                        'can_edit' => auth()->user()?->can('digitalizaciones_edit') ?? false,
+                        'can_destroy' => auth()->user()?->can('digitalizaciones_destroy') ?? false,
+                    ]
                 ],
                 'message' => 'Digitalizaciones obtenidas exitosamente'
             ], 200);

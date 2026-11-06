@@ -6,7 +6,9 @@ import NotificationCenter from './components/ui/NotificationCenter';
 import ActivityLog from './components/gtic/ActivityLog';
 import BienesPublicos from './components/administracion/BienesPublicos';
 import InventarioOficinas from './components/administracion/InventarioOficinas';
+import Consumibles from './components/administracion/Consumibles';
 import DigitalizacionDocumentos from './components/gestion_humana/DigitalizacionDocumentos';
+import UsersManagement from './components/gtic/UsersManagement';
 
 // Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
@@ -33,17 +35,21 @@ function mountById(elementId, component) {
 
 // Inicializar componentes cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    // GTIC: Registro de Actividades
+    // GTIC: Registro de Actividades y Gestión de Usuarios
     mountComponent('ActivityLog', ActivityLog);
     mountById('activity-log-root', ActivityLog);
+    mountComponent('UsersManagement', UsersManagement);
+    mountById('users-management-root', UsersManagement);
 
     // OGA: Bienes Públicos / Muebles
     mountComponent('BienesPublicos', BienesPublicos);
     mountById('bienes-publicos-root', BienesPublicos);
 
-    // OGA: Inventario de Oficina
+    // OGA: Inventario de Oficina y Consumibles
     mountComponent('InventarioOficinas', InventarioOficinas);
     mountById('inventario-oficinas-root', InventarioOficinas);
+    mountComponent('Consumibles', Consumibles);
+    mountById('consumibles-root', Consumibles);
 
     // OGH: Digitalización de Documentos
     mountComponent('DigitalizacionDocumentos', DigitalizacionDocumentos);
@@ -60,8 +66,10 @@ document.addEventListener('DOMContentLoaded', () => {
 // Exportar componentes para uso global
 window.ReactComponents = {
     ActivityLog,
+    UsersManagement,
     BienesPublicos,
     InventarioOficinas,
+    Consumibles,
     DigitalizacionDocumentos,
     DocumentViewer,
     EstanteriaSelector,

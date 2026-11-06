@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 use Spatie\Activitylog\Models\Activity;
 
 class ActivityLogController extends Controller
@@ -13,6 +14,8 @@ class ActivityLogController extends Controller
      */
     public function index(Request $request)
     {
+        abort_if(Gate::denies('activity_log_index'), 403);
+
         $query = Activity::with(['causer' => function($q) {
             $q->select('id', 'name', 'username', 'email');
         }])->latest();
@@ -43,7 +46,13 @@ class ActivityLogController extends Controller
             return response()->json([
                 'status' => 200,
                 'success' => true,
-                'data' => $activities,
+                'data' => [
+                    'activities' => $activities,
+                    'permissions' => [
+                        'can_show' => auth()->user()?->can('activity_log_show') ?? false,
+                        'can_export' => true,
+                    ]
+                ],
                 'message' => 'Registros de actividad obtenidos exitosamente'
             ], 200);
         }
@@ -56,6 +65,8 @@ class ActivityLogController extends Controller
      */
     public function show($id, Request $request)
     {
+        abort_if(Gate::denies('activity_log_show'), 403);
+
         $activity = Activity::with('causer')->findOrFail($id);
 
         if ($request->wantsJson() || $request->is('api/*')) {

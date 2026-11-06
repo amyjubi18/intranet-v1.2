@@ -16,6 +16,7 @@ export default function ActivityLog() {
     const [eventFilter, setEventFilter] = useState('');
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
+    const [permissions, setPermissions] = useState({ can_show: true, can_export: true });
 
     // Fetch activities from API
     const fetchActivities = useCallback(async (page = 1) => {
@@ -41,7 +42,7 @@ export default function ActivityLog() {
             }
 
             const json = await response.json();
-            const paginatedData = json.data || {};
+            const paginatedData = json.data?.activities || json.data || {};
 
             setActivities(paginatedData.data || []);
             setPagination({
@@ -52,6 +53,10 @@ export default function ActivityLog() {
                 to: paginatedData.to || 0,
                 per_page: paginatedData.per_page || 20
             });
+
+            if (json.data?.permissions) {
+                setPermissions(json.data.permissions);
+            }
         } catch (err) {
             console.error('Error fetching activity log:', err);
             setError(err.message || 'No se pudieron cargar los registros de actividades.');
@@ -264,16 +269,20 @@ export default function ActivityLog() {
                                                 )}
                                             </td>
                                             <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => handleViewDetail(activity)}
-                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all"
-                                                >
-                                                    <span>Ver detalle</span>
-                                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                                    </svg>
-                                                </button>
+                                                {permissions.can_show ? (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleViewDetail(activity)}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all"
+                                                    >
+                                                        <span>Ver detalle</span>
+                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </button>
+                                                ) : (
+                                                    <span className="text-xs text-slate-400 italic">Sin permiso</span>
+                                                )}
                                             </td>
                                         </tr>
                                     );

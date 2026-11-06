@@ -31,6 +31,7 @@ export default function BienesPublicos() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [permissions, setPermissions] = useState({ can_create: false, can_edit: false, can_destroy: false, can_export: false });
 
     // Filtros
     const [search, setSearch] = useState('');
@@ -88,6 +89,7 @@ export default function BienesPublicos() {
 
             if (resData.metrics) setMetrics(resData.metrics);
             if (resData.catalogs) setCatalogs(resData.catalogs);
+            if (resData.permissions) setPermissions(resData.permissions);
         } catch (err) {
             console.error('Error fetching bienes:', err);
             setError(err.message || 'No se pudieron cargar los registros de bienes.');
@@ -189,13 +191,15 @@ export default function BienesPublicos() {
                             <span>Refrescar</span>
                         </button>
 
-                        <a
-                            href="/administracion/bienes_publicos/create"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all"
-                        >
-                            <span>➕</span>
-                            <span>Nuevo Bien</span>
-                        </a>
+                        {permissions.can_create && (
+                            <a
+                                href="/administracion/bienes_publicos/create"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all"
+                            >
+                                <span>➕</span>
+                                <span>Nuevo Bien</span>
+                            </a>
+                        )}
 
                         <a
                             href="/administracion/bienes_publicos/export/excel"
@@ -424,13 +428,15 @@ export default function BienesPublicos() {
                                                     >
                                                         Detalles
                                                     </button>
-                                                    <a
-                                                        href={`/administracion/bienes_publicos/${bien.id}/edit`}
-                                                        className="p-1.5 text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
-                                                        title="Editar"
-                                                    >
-                                                        ✏️
-                                                    </a>
+                                                    {permissions.can_edit && (
+                                                        <a
+                                                            href={`/administracion/bienes_publicos/${bien.id}/edit`}
+                                                            className="p-1.5 text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                                                            title="Editar"
+                                                        >
+                                                            ✏️
+                                                        </a>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

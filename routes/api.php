@@ -5,8 +5,10 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DirectoryController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\BieneController;
 use App\Http\Controllers\InventarioOficController;
+use App\Http\Controllers\CartuchoController;
 use App\Http\Controllers\DigitalizacioneController;
 
 // API routes that need authentication (works with session auth for web)
@@ -37,12 +39,21 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('gtic')->group(function () {
         Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('api.gtic.activity-log.index');
         Route::get('/activity-log/{id}', [ActivityLogController::class, 'show'])->name('api.gtic.activity-log.show');
+        Route::get('/users', [UserController::class, 'index'])->name('api.gtic.users.index');
+        Route::get('/users/{user}', [UserController::class, 'show'])->name('api.gtic.users.show');
+        Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('api.gtic.users.destroy');
     });
+
+    // General Users API
+    Route::get('/users', [UserController::class, 'index'])->name('api.users.index');
+    Route::get('/users/{user}', [UserController::class, 'show'])->name('api.users.show');
+    Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('api.users.destroy');
 
     // OGA Module API (ct-admin: 172.17.50.250)
     Route::prefix('administracion')->group(function () {
         Route::get('/bienes_publicos', [BieneController::class, 'index'])->name('api.administracion.bienes_publicos.index');
         Route::get('/inventario_oficinas', [InventarioOficController::class, 'index'])->name('api.administracion.inventario_oficinas.index');
+        Route::get('/consumibles', [CartuchoController::class, 'index'])->name('api.administracion.consumibles.index');
     });
 
     // OGH Module API (ct-gh: 172.17.50.251)

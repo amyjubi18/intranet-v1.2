@@ -201,6 +201,13 @@ case 'busqueda':
                         'articulos' => $articulos,
                         'unidad_medidas' => $unidad_medidas,
                         'facturas' => $facturas,
+                    ],
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('inventarioofic_create') ?? false,
+                        'can_edit' => auth()->user()?->can('inventarioofic_edit') ?? false,
+                        'can_destroy' => auth()->user()?->can('inventarioofic_destroy') ?? false,
+                        'can_salida' => auth()->user()?->can('salidaofic_create') ?? false,
+                        'can_export' => true,
                     ]
                 ],
                 'message' => 'Inventario de oficina obtenido exitosamente'

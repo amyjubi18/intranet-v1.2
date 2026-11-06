@@ -116,6 +116,25 @@ class UserController extends Controller
         // Obtener roles para el filtro
         $roles = Role::all()->pluck('name', 'id');
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'users' => $users,
+                    'roles' => Role::orderBy('name')->get(['id', 'name']),
+                    'current_user_id' => auth()->id(),
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('user_create') ?? false,
+                        'can_edit' => auth()->user()?->can('user_edit') ?? false,
+                        'can_destroy' => auth()->user()?->can('user_destroy') ?? false,
+                        'can_export' => true,
+                    ]
+                ],
+                'message' => 'Usuarios obtenidos exitosamente'
+            ], 200);
+        }
+
         return view('users.index', [
             'users' => $users,
             'roles' => $roles,
@@ -202,11 +221,18 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Usuario creado correctamente');
     }
 
-    public function show(User $user)
+    public function show(User $user, Request $request)
     {
         $user->load('roles');
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => $user,
+                'message' => 'Usuario obtenido exitosamente'
+            ], 200);
+        }
         return view('users.show', compact('user'));
-
     }
 
     public function edit(User $user)
@@ -299,15 +325,21 @@ class UserController extends Controller
         return redirect()->route('users.index')->with('success', 'Usuario actualizado correctamente');
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user, Request $request)
     {
         if (!auth()->check()) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'Tu sesión ha expirado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
 
         abort_if(Gate::denies('user_destroy'), 403);
 
         if (auth()->user()->id == $user->id) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'No puedes eliminar tu propia cuenta'], 422);
+            }
             return redirect()->route('users.index')->with('error', 'No puedes eliminar tu propia cuenta');
         }
 
@@ -323,8 +355,15 @@ class UserController extends Controller
             // Eliminar el usuario
             $user->delete();
 
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => true, 'message' => 'Usuario eliminado correctamente']);
+            }
+
             return back()->with('success', 'Usuario eliminado correctamente');
         } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'No se puede eliminar el usuario porque tiene registros asociados'], 422);
+            }
             return back()->with('error', 'No se puede eliminar el usuario porque tiene registros asociados');
         }
     }

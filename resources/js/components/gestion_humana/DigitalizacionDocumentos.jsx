@@ -18,6 +18,7 @@ export default function DigitalizacionDocumentos() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [permissions, setPermissions] = useState({ can_create: false, can_edit: false, can_destroy: false });
 
     // Filtros
     const [search, setSearch] = useState('');
@@ -68,6 +69,7 @@ export default function DigitalizacionDocumentos() {
 
             if (resData.areas_adscritas) setAreasAdscritas(resData.areas_adscritas);
             if (resData.tipo_documentos) setTiposDocumentos(resData.tipo_documentos);
+            if (resData.permissions) setPermissions(resData.permissions);
             setMetrics({
                 total: resData.total || paginated.total || 0,
                 totalDocumentos: resData.totalDocumentos || 0
@@ -152,13 +154,15 @@ export default function DigitalizacionDocumentos() {
                             <span>Refrescar</span>
                         </button>
 
-                        <a
-                            href="/gestion-humana/digitalizacion_documentos/create"
-                            className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all"
-                        >
-                            <span>➕</span>
-                            <span>Nueva Digitalización</span>
-                        </a>
+                        {permissions.can_create && (
+                            <a
+                                href="/gestion-humana/digitalizacion_documentos/create"
+                                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all"
+                            >
+                                <span>➕</span>
+                                <span>Nueva Digitalización</span>
+                            </a>
+                        )}
                     </div>
                 </div>
 
@@ -292,12 +296,14 @@ export default function DigitalizacionDocumentos() {
                                                     >
                                                         Ver PDFs
                                                     </button>
-                                                    <a
-                                                        href={`/gestion-humana/digitalizacion_documentos/${dig.id}/edit`}
-                                                        className="p-1.5 text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
-                                                    >
-                                                        ✏️
-                                                    </a>
+                                                    {permissions.can_edit && (
+                                                        <a
+                                                            href={`/gestion-humana/digitalizacion_documentos/${dig.id}/edit`}
+                                                            className="p-1.5 text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
+                                                        >
+                                                            ✏️
+                                                        </a>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

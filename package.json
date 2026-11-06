@@ -26,6 +26,7 @@
         "react-dom": "^18.3.1",
         "semver": "^7.6.2",
         "simple-get": "^4.0.1",
+        "sweetalert2": "^11.26.25",
         "tom-select": "^2.4.3"
     }
 }
