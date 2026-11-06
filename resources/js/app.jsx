@@ -33,8 +33,8 @@ function mountById(elementId, component) {
     }
 }
 
-// Inicializar componentes cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
+// Inicializar componentes cuando el DOM esté listo o inmediatamente si ya cargó
+function initReactRoots() {
     // GTIC: Registro de Actividades y Gestión de Usuarios
     mountComponent('ActivityLog', ActivityLog);
     mountById('activity-log-root', ActivityLog);
@@ -61,7 +61,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Notification Center (si existe el elemento)
     mountById('react-notification-center', NotificationCenter);
-});
+}
+
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initReactRoots);
+    } else {
+        initReactRoots();
+    }
+}
 
 // Exportar componentes para uso global
 window.ReactComponents = {
@@ -133,7 +141,12 @@ export function useDebounce(value, delay = 300) {
 }
 
 export default {
-    DashboardMetrics,
+    ActivityLog,
+    UsersManagement,
+    BienesPublicos,
+    InventarioOficinas,
+    Consumibles,
+    DigitalizacionDocumentos,
     DocumentViewer,
     EstanteriaSelector,
     NotificationCenter,

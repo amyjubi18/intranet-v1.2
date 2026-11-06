@@ -256,13 +256,13 @@ export default function InventarioOficinas() {
                                 className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-800 disabled:opacity-50"
                             >
                                 <option value="">Seleccione opción...</option>
-                                {filterType === 'articulo_id' && catalogs.articulos.map(a => (
+                                {filterType === 'articulo_id' && (Array.isArray(catalogs.articulos) ? catalogs.articulos : []).map(a => (
                                     <option key={a.id} value={a.id}>{a.articulo}</option>
                                 ))}
-                                {filterType === 'proveedore_id' && catalogs.proveedores.map(p => (
+                                {filterType === 'proveedore_id' && (Array.isArray(catalogs.proveedores) ? catalogs.proveedores : []).map(p => (
                                     <option key={p.id} value={p.id}>{p.proveedor}</option>
                                 ))}
-                                {filterType === 'n_factura' && catalogs.facturas.map((f, i) => (
+                                {filterType === 'n_factura' && (Array.isArray(catalogs.facturas) ? catalogs.facturas : []).map((f, i) => (
                                     <option key={i} value={f}>{f}</option>
                                 ))}
                             </select>

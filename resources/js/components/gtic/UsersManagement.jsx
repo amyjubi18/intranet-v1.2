@@ -275,7 +275,7 @@ export default function UsersManagement() {
                             className="w-full px-3 py-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-800"
                         >
                             <option value="">Filtrar por Rol (Todos)...</option>
-                            {roles.map((r) => (
+                            {(Array.isArray(roles) ? roles : []).map((r) => (
                                 <option key={r.id} value={r.id}>{r.name}</option>
                             ))}
                         </select>

@@ -282,25 +282,25 @@ export default function BienesPublicos() {
                                 className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-800 disabled:opacity-50"
                             >
                                 <option value="">Seleccione opción...</option>
-                                {filterType === 'unidad_administrativa_id' && catalogs.unidad_administrativas.map(u => (
+                                {filterType === 'unidad_administrativa_id' && (Array.isArray(catalogs.unidad_administrativas) ? catalogs.unidad_administrativas : []).map(u => (
                                     <option key={u.id} value={u.id}>{u.unidad_administrativa}</option>
                                 ))}
-                                {filterType === 'usuario_de_uso_id' && catalogs.usuarios_de_uso.map(u => (
+                                {filterType === 'usuario_de_uso_id' && (Array.isArray(catalogs.usuarios_de_uso) ? catalogs.usuarios_de_uso : []).map(u => (
                                     <option key={u.id} value={u.id}>{u.nombre_usuario || u.name}</option>
                                 ))}
-                                {filterType === 'estado_del_uso_id' && catalogs.estado_del_usos.map(e => (
+                                {filterType === 'estado_del_uso_id' && (Array.isArray(catalogs.estado_del_usos) ? catalogs.estado_del_usos : []).map(e => (
                                     <option key={e.id} value={e.id}>{e.estado_del_uso}</option>
                                 ))}
-                                {filterType === 'condicion_id' && catalogs.condiciones.map(c => (
+                                {filterType === 'condicion_id' && (Array.isArray(catalogs.condiciones) ? catalogs.condiciones : []).map(c => (
                                     <option key={c.id} value={c.id}>{c.condicion}</option>
                                 ))}
-                                {filterType === 'descripcion' && catalogs.descripciones.map((d, i) => (
+                                {filterType === 'descripcion' && (Array.isArray(catalogs.descripciones) ? catalogs.descripciones : []).map((d, i) => (
                                     <option key={i} value={d}>{d}</option>
                                 ))}
-                                {filterType === 'marca' && catalogs.marcas.map((m, i) => (
+                                {filterType === 'marca' && (Array.isArray(catalogs.marcas) ? catalogs.marcas : []).map((m, i) => (
                                     <option key={i} value={m}>{m}</option>
                                 ))}
-                                {filterType === 'modelo' && catalogs.modelos.map((mo, i) => (
+                                {filterType === 'modelo' && (Array.isArray(catalogs.modelos) ? catalogs.modelos : []).map((mo, i) => (
                                     <option key={i} value={mo}>{mo}</option>
                                 ))}
                             </select>
