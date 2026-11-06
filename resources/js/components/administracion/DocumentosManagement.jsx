@@ -40,12 +40,20 @@ export default function DocumentosManagement() {
         can_destroy: true
     });
 
-    // Modales
+    // Modales de Documentos
     const [createModalOpen, setCreateModalOpen] = useState(false);
     const [editModalOpen, setEditModalOpen] = useState(false);
     const [pdfViewerOpen, setPdfViewerOpen] = useState(false);
     const [viewingPdf, setViewingPdf] = useState(null);
     const [pdfZoom, setPdfZoom] = useState(100);
+
+    // Sub-Modal Rápido para Añadir Nueva Categoría desde el formulario
+    const [quickCatModalOpen, setQuickCatModalOpen] = useState(false);
+    const [quickCatName, setQuickCatName] = useState('');
+    const [quickCatSubmitting, setQuickCatSubmitting] = useState(false);
+    const [quickCatError, setQuickCatError] = useState(null);
+    const [quickCatTargetPdfIndex, setQuickCatTargetPdfIndex] = useState(null);
+    const [quickCatTargetExistingId, setQuickCatTargetExistingId] = useState(null);
 
     // Formulario de Creación / Edición
     const [formData, setFormData] = useState({
@@ -172,17 +180,15 @@ export default function DocumentosManagement() {
     // Seleccionar estantería
     const handleSelectEstanteria = (estanteriaId) => {
         if (selectedEstanteriaId === estanteriaId) {
-            // Si hace clic en la misma, no deselecciona a menos que use el botón de ver todas
             return;
         }
         setSelectedEstanteriaId(estanteriaId);
-        // Actualizar URL sin recargar
         const url = new URL(window.location);
         url.searchParams.set('estanteria_id', estanteriaId);
         window.history.pushState({}, '', url);
     };
 
-    // Deseleccionar estantería / ver mensaje
+    // Deseleccionar estantería
     const handleDeselectEstanteria = () => {
         setSelectedEstanteriaId(null);
         setDocumentos([]);
@@ -200,7 +206,7 @@ export default function DocumentosManagement() {
         return `${pad(d.getDate())}/${pad(d.getMonth() + 1)}/${d.getFullYear()}`;
     };
 
-    // Abrir Modal de Creación
+    // Abrir Modal de Creación de Documento
     const handleOpenCreateModal = () => {
         setFormData({
             name: '',
@@ -215,7 +221,7 @@ export default function DocumentosManagement() {
         setCreateModalOpen(true);
     };
 
-    // Abrir Modal de Edición
+    // Abrir Modal de Edición de Documento
     const handleOpenEditModal = (documento) => {
         setSelectedDocumento(documento);
         setFormData({
@@ -237,7 +243,92 @@ export default function DocumentosManagement() {
         setEditModalOpen(true);
     };
 
-    // Manejar archivos seleccionados para subir
+    // Abrir Sub-Modal para añadir Nueva Categoría
+    const handleOpenQuickCategoryModal = (pdfIndex = null, existingArchivoId = null) => {
+        setQuickCatTargetPdfIndex(pdfIndex);
+        setQuickCatTargetExistingId(existingArchivoId);
+        setQuickCatName('');
+        setQuickCatError(null);
+        setQuickCatModalOpen(true);
+    };
+
+    // Guardar Nueva Categoría desde el Sub-Modal
+    const handleQuickCategorySubmit = async (e) => {
+        e.preventDefault();
+        if (!quickCatName.trim()) {
+            setQuickCatError('El nombre de la categoría es obligatorio');
+            return;
+        }
+
+        setQuickCatSubmitting(true);
+        setQuickCatError(null);
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const res = await fetch('/api/administracion/categorias/store-ajax', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ name: quickCatName.trim() })
+            });
+
+            const json = await res.json();
+            if (!res.ok) {
+                throw new Error(json.message || 'Error al crear la categoría');
+            }
+
+            const createdCategory = json.categoria || json.data;
+
+            // Actualizar el array local de categorías de forma ordenada
+            setCategorias(prev => {
+                const updated = [...prev, createdCategory];
+                return updated.sort((a, b) => a.name.localeCompare(b.name));
+            });
+
+            // Asignar automáticamente la nueva categoría según dónde se originó
+            if (quickCatTargetExistingId) {
+                setExistingCategorias(prev => ({
+                    ...prev,
+                    [quickCatTargetExistingId]: createdCategory.id
+                }));
+            } else if (quickCatTargetPdfIndex !== null) {
+                setPdfCategorias(prev => ({
+                    ...prev,
+                    [quickCatTargetPdfIndex]: createdCategory.id
+                }));
+            } else {
+                setFormData(prev => ({
+                    ...prev,
+                    categoria_id: createdCategory.id
+                }));
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: '¡Categoría creada!',
+                text: `La categoría "${createdCategory.name}" fue registrada y seleccionada`,
+                timer: 1600,
+                showConfirmButton: false,
+                customClass: { popup: 'rounded-2xl shadow-2xl z-[80]' }
+            });
+
+            setQuickCatModalOpen(false);
+            setQuickCatName('');
+            setQuickCatTargetPdfIndex(null);
+            setQuickCatTargetExistingId(null);
+        } catch (err) {
+            console.error('Error creating quick category:', err);
+            setQuickCatError(err.message || 'No se pudo crear la categoría');
+        } finally {
+            setQuickCatSubmitting(false);
+        }
+    };
+
+    // Manejar selección de archivos PDF
     const handleFilesSelect = (files) => {
         const fileList = Array.from(files);
         const validPdfs = fileList.filter(f => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf'));
@@ -245,7 +336,7 @@ export default function DocumentosManagement() {
         if (validPdfs.length < fileList.length) {
             Swal.fire({
                 icon: 'warning',
-                title: 'Formato inválido',
+                title: 'Formato no admitido',
                 text: 'Solo se permiten archivos en formato PDF.',
                 timer: 2000,
                 showConfirmButton: false
@@ -301,7 +392,6 @@ export default function DocumentosManagement() {
                 showConfirmButton: false
             });
 
-            // Actualizar lista en fondo
             fetchDocumentos(pagination.current_page);
         } catch (err) {
             Swal.fire({
@@ -373,7 +463,6 @@ export default function DocumentosManagement() {
             });
 
             setCreateModalOpen(false);
-            // Si guardó en la estantería actual o en otra, mantener o cambiar
             if (parseInt(formData.estanteria_id) !== selectedEstanteriaId) {
                 setSelectedEstanteriaId(parseInt(formData.estanteria_id));
             } else {
@@ -408,12 +497,10 @@ export default function DocumentosManagement() {
             payload.append('estanteria_id', formData.estanteria_id);
             if (formData.categoria_id) payload.append('categoria_id', formData.categoria_id);
 
-            // Actualizar categorías existentes
             Object.keys(existingCategorias).forEach(archId => {
                 payload.append(`categoria_existente[${archId}]`, existingCategorias[archId] || '');
             });
 
-            // Nuevos archivos PDF
             newPdfs.forEach((file, idx) => {
                 payload.append('pdfs[]', file);
                 const catId = pdfCategorias[idx] || formData.categoria_id;
@@ -1075,15 +1162,32 @@ export default function DocumentosManagement() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                                        Categoría 📁:
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-sm font-semibold text-slate-700">
+                                            Categoría 📁:
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenQuickCategoryModal()}
+                                            className="text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors"
+                                        >
+                                            <span>➕</span>
+                                            <span>Nueva Categoría</span>
+                                        </button>
+                                    </div>
                                     <select
                                         value={formData.categoria_id}
-                                        onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })}
+                                        onChange={(e) => {
+                                            if (e.target.value === '__NEW__') {
+                                                handleOpenQuickCategoryModal();
+                                            } else {
+                                                setFormData({ ...formData, categoria_id: e.target.value });
+                                            }
+                                        }}
                                         className="w-full bg-blue-100 border-none rounded-xl px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600"
                                     >
                                         <option value="">Seleccionar categoría...</option>
+                                        <option value="__NEW__" className="text-blue-700 font-bold">➕ + Añadir nueva categoría...</option>
                                         {categorias.map(cat => (
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
@@ -1092,7 +1196,7 @@ export default function DocumentosManagement() {
                                 </div>
                             </div>
 
-                            {/* Área de Carga de Múltiples PDFs (Replicando el uploader original) */}
+                            {/* Área de Carga de Múltiples PDFs */}
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">
                                     Documentos PDF (puede seleccionar múltiples):
@@ -1143,20 +1247,27 @@ export default function DocumentosManagement() {
                                                     <div key={idx} className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg text-xs">
                                                         <div className="flex items-center gap-2 overflow-hidden">
                                                             <span className="text-red-600 font-bold">PDF</span>
-                                                            <span className="truncate max-w-[150px] font-medium text-slate-800" title={file.name}>
+                                                            <span className="truncate max-w-[140px] font-medium text-slate-800" title={file.name}>
                                                                 {file.name}
                                                             </span>
                                                             <span className="text-[10px] text-slate-400">
                                                                 ({(file.size / 1024 / 1024).toFixed(2)} MB)
                                                             </span>
                                                         </div>
-                                                        <div className="flex items-center gap-2">
+                                                        <div className="flex items-center gap-1.5">
                                                             <select
                                                                 value={pdfCategorias[idx] || formData.categoria_id || ''}
-                                                                onChange={(e) => setPdfCategorias({ ...pdfCategorias, [idx]: e.target.value })}
-                                                                className="text-[11px] py-1 px-2 border border-slate-200 rounded-md bg-white"
+                                                                onChange={(e) => {
+                                                                    if (e.target.value === '__NEW__') {
+                                                                        handleOpenQuickCategoryModal(idx);
+                                                                    } else {
+                                                                        setPdfCategorias({ ...pdfCategorias, [idx]: e.target.value });
+                                                                    }
+                                                                }}
+                                                                className="text-[11px] py-1 px-2 border border-slate-200 rounded-md bg-white max-w-[110px]"
                                                             >
                                                                 <option value="">Categoría...</option>
+                                                                <option value="__NEW__" className="text-blue-700 font-bold">➕ + Nueva...</option>
                                                                 {categorias.map(c => (
                                                                     <option key={c.id} value={c.id}>{c.name}</option>
                                                                 ))}
@@ -1319,15 +1430,32 @@ export default function DocumentosManagement() {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">
-                                        Categoría Principal 📁:
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1.5">
+                                        <label className="block text-sm font-semibold text-slate-700">
+                                            Categoría Principal 📁:
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleOpenQuickCategoryModal()}
+                                            className="text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors"
+                                        >
+                                            <span>➕</span>
+                                            <span>Nueva Categoría</span>
+                                        </button>
+                                    </div>
                                     <select
                                         value={formData.categoria_id}
-                                        onChange={(e) => setFormData({ ...formData, categoria_id: e.target.value })}
+                                        onChange={(e) => {
+                                            if (e.target.value === '__NEW__') {
+                                                handleOpenQuickCategoryModal();
+                                            } else {
+                                                setFormData({ ...formData, categoria_id: e.target.value });
+                                            }
+                                        }}
                                         className="w-full bg-blue-100 border-none rounded-xl px-4 py-2.5 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600"
                                     >
                                         <option value="">Seleccionar categoría...</option>
+                                        <option value="__NEW__" className="text-blue-700 font-bold">➕ + Añadir nueva categoría...</option>
                                         {categorias.map(cat => (
                                             <option key={cat.id} value={cat.id}>{cat.name}</option>
                                         ))}
@@ -1354,10 +1482,17 @@ export default function DocumentosManagement() {
                                                         </p>
                                                         <select
                                                             value={existingCategorias[arch.id] || ''}
-                                                            onChange={(e) => setExistingCategorias({ ...existingCategorias, [arch.id]: e.target.value })}
+                                                            onChange={(e) => {
+                                                                if (e.target.value === '__NEW__') {
+                                                                    handleOpenQuickCategoryModal(null, arch.id);
+                                                                } else {
+                                                                    setExistingCategorias({ ...existingCategorias, [arch.id]: e.target.value });
+                                                                }
+                                                            }}
                                                             className="text-[10px] mt-1 py-0.5 px-1.5 border border-slate-200 rounded bg-white text-slate-700"
                                                         >
                                                             <option value="">Sin categoría</option>
+                                                            <option value="__NEW__" className="text-blue-700 font-bold">➕ + Nueva...</option>
                                                             {categorias.map(c => (
                                                                 <option key={c.id} value={c.id}>{c.name}</option>
                                                             ))}
@@ -1460,6 +1595,89 @@ export default function DocumentosManagement() {
                                                 <polyline points="7,3 7,8 15,8"/>
                                             </svg>
                                             <span>Actualizar Documento</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* SUB-MODAL RÁPIDO PARA CREAR NUEVA CATEGORÍA (Z-INDEX SUPERIOR Z-[70]) */}
+            {quickCatModalOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 transition-all animate-in fade-in zoom-in-95 duration-200">
+                        {/* Cabecera del sub-modal */}
+                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
+                            <div>
+                                <h4 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <span>📁</span>
+                                    <span>Nueva Categoría</span>
+                                </h4>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Crea una categoría y se seleccionará automáticamente
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setQuickCatModalOpen(false)}
+                                disabled={quickCatSubmitting}
+                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        {/* Formulario de nueva categoría */}
+                        <form onSubmit={handleQuickCategorySubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                                    Nombre de la Categoría:
+                                </label>
+                                <input
+                                    type="text"
+                                    value={quickCatName}
+                                    onChange={(e) => setQuickCatName(e.target.value)}
+                                    placeholder="Ej. Facturas, Resoluciones, Memorándums..."
+                                    className="w-full bg-blue-100 border-none rounded-xl px-4 py-2 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600"
+                                    autoFocus
+                                    required
+                                    disabled={quickCatSubmitting}
+                                />
+                                {quickCatError && (
+                                    <p className="mt-1 text-xs text-red-500 font-semibold">{quickCatError}</p>
+                                )}
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setQuickCatModalOpen(false)}
+                                    disabled={quickCatSubmitting}
+                                    className="px-3.5 py-1.5 text-xs font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-colors"
+                                >
+                                    Cancelar
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={quickCatSubmitting}
+                                    className="btn-save inline-flex items-center gap-1.5 px-4 py-1.5 text-xs font-bold text-white rounded-lg shadow-sm transition-all disabled:opacity-50"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%)'
+                                    }}
+                                >
+                                    {quickCatSubmitting ? (
+                                        <>
+                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Guardando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>➕</span>
+                                            <span>Crear y Seleccionar</span>
                                         </>
                                     )}
                                 </button>

@@ -27,6 +27,7 @@ export default function EstanteriasManagement() {
     const [imagePreview, setImagePreview] = useState(null);
     const [formErrors, setFormErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+    const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef(null);
 
     // Cargar estanterías desde la API
@@ -123,16 +124,20 @@ export default function EstanteriasManagement() {
     const handleFileChange = (e) => {
         const file = e.target.files?.[0];
         if (file) {
-            setImageFile(file);
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImagePreview(reader.result);
-            };
-            reader.readAsDataURL(file);
+            processFile(file);
         }
     };
 
-    // Formato de fecha d/m/Y
+    const processFile = (file) => {
+        setImageFile(file);
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    // Formato de fecha original: d/m/Y
     const formatDate = (dateString) => {
         if (!dateString) return 'N/A';
         const d = new Date(dateString);
@@ -211,22 +216,17 @@ export default function EstanteriasManagement() {
         }
     };
 
-    // Eliminar estantería
+    // Eliminar estantería con el SweetAlert2 original
     const handleDelete = async (estanteria) => {
         const result = await Swal.fire({
             title: '¿Estás seguro?',
-            text: `¿Deseas eliminar la estantería "${estanteria.nombre}"? Todos los documentos y archivos asociados también podrían verse afectados.`,
+            text: `¿Quieres eliminar la estantería "${estanteria.nombre}"? Esta acción no se puede deshacer.`,
             icon: 'warning',
             showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
             confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar',
-            confirmButtonColor: '#F52727',
-            cancelButtonColor: '#2780F5',
-            customClass: {
-                popup: 'rounded-2xl shadow-2xl',
-                confirmButton: 'rounded-xl px-4 py-2 font-semibold',
-                cancelButton: 'rounded-xl px-4 py-2 font-semibold'
-            }
+            cancelButtonText: 'Cancelar'
         });
 
         if (!result.isConfirmed) return;
@@ -270,31 +270,27 @@ export default function EstanteriasManagement() {
 
     return (
         <div className="w-full">
-            {/* Barra de Filtros y Controles Original */}
+            {/* Filtros y controles (Diseño exacto al original Blade) */}
             <div className="sticky top-0 z-10 px-6 mb-6">
-                <div className="p-6 bg-white/80 backdrop-blur-md border border-slate-200/80 rounded-2xl shadow-xs transition-all">
+                <div className="p-6 glass rounded-2xl fade-in">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-wrap items-center gap-4">
                             {/* Búsqueda general */}
                             <div className="relative">
                                 <input
                                     type="text"
+                                    id="generalSearch"
+                                    name="search_general"
+                                    placeholder="Buscar estanterías..."
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Buscar estanterías..."
-                                    className="w-64 px-4 py-2 text-sm bg-white border border-slate-200 backdrop-blur-md rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs text-slate-800"
+                                    className={`w-64 px-4 py-2 text-sm bg-white border border-white/20 backdrop-blur-md rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 ${
+                                        search ? 'bg-blue-100 border-blue-500' : ''
+                                    }`}
                                 />
-                                {search && (
-                                    <button
-                                        type="button"
-                                        onClick={() => setSearch('')}
-                                        className="absolute right-3 top-2.5 text-xs text-slate-400 hover:text-slate-600"
-                                    >
-                                        ✕
-                                    </button>
-                                )}
                             </div>
 
+                            {/* Botón para limpiar filtros */}
                             {search && (
                                 <button
                                     type="button"
@@ -311,7 +307,7 @@ export default function EstanteriasManagement() {
                                 <button
                                     type="button"
                                     onClick={handleOpenCreate}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-md"
+                                    className="btn inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-md"
                                 >
                                     <span>➕</span>
                                     Nueva
@@ -322,10 +318,10 @@ export default function EstanteriasManagement() {
                 </div>
             </div>
 
-            {/* Listado de Estanterías en Grid */}
+            {/* Registro de estanterías (Diseño exacto al original Blade) */}
             <div className="px-6 mb-8">
                 {loading ? (
-                    <div className="flex flex-col items-center justify-center py-16 text-center bg-white/80 rounded-2xl border border-slate-200">
+                    <div className="flex flex-col items-center justify-center py-16 text-center glass rounded-2xl">
                         <div className="w-10 h-10 border-4 border-blue-900 border-t-transparent rounded-full animate-spin mb-3"></div>
                         <p className="text-sm font-semibold text-slate-700">Cargando estanterías...</p>
                     </div>
@@ -341,27 +337,37 @@ export default function EstanteriasManagement() {
                         </button>
                     </div>
                 ) : estanterias.length === 0 ? (
-                    <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 shadow-sm">
-                        <div className="flex items-center justify-center w-16 h-16 mb-4 bg-blue-50 rounded-full mx-auto">
-                            <span className="text-3xl">🗄️</span>
+                    <div className="p-6 text-center col-span-full glass rounded-2xl">
+                        <div className="flex flex-col items-center justify-center py-8">
+                            <div className="flex items-center justify-center w-16 h-16 mb-4 bg-blue-100 rounded-full">
+                                <span className="text-3xl">🗄️</span>
+                            </div>
+                            <h3 className="mb-1 text-lg font-medium text-gray-900">No hay estanterías</h3>
+                            <p className="mb-4 text-sm text-gray-500">No se han registrado estanterías</p>
+                            {permissions.can_create && (
+                                <button
+                                    type="button"
+                                    onClick={handleOpenCreate}
+                                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-md"
+                                >
+                                    <span>➕</span>
+                                    Registrar Estantería
+                                </button>
+                            )}
                         </div>
-                        <h3 className="mb-1 text-lg font-medium text-slate-800">No hay estanterías</h3>
-                        <p className="text-sm text-slate-400">
-                            {search ? 'No se encontraron resultados para la búsqueda' : 'No se han registrado estanterías'}
-                        </p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3 fade-in">
                         {estanterias.map((estanteria) => (
                             <div
                                 key={estanteria.id}
-                                className="bg-white border border-slate-200/80 rounded-2xl p-6 hover:scale-[1.02] transition-transform shadow-xs flex flex-col justify-between"
+                                className="glass rounded-2xl p-6 hover:scale-[1.02] transition-transform"
                             >
                                 <div className="flex flex-col items-center">
-                                    {/* Imagen de la estantería */}
+                                    {/* Imagen de la estantería (Clickable) */}
                                     <a
                                         href={`/administracion/documentos?estanteria_id=${estanteria.id}`}
-                                        className="flex items-center justify-center w-full h-48 mb-4 overflow-hidden bg-slate-50 border border-slate-100 rounded-xl group"
+                                        className="flex items-center justify-center w-full h-48 mb-4 overflow-hidden bg-gray-100 rounded-xl group"
                                         title={`Ver documentos de ${estanteria.nombre}`}
                                     >
                                         {estanteria.imagen ? (
@@ -373,57 +379,55 @@ export default function EstanteriasManagement() {
                                         ) : (
                                             <div className="text-center text-gray-400 group-hover:scale-110 transition-transform">
                                                 <div className="mb-2 text-6xl">🗄️</div>
-                                                <p className="text-xs font-medium">Sin imagen</p>
+                                                <p className="text-sm">Sin imagen</p>
                                             </div>
                                         )}
                                     </a>
 
-                                    {/* Nombre */}
+                                    {/* Nombre (Clickable) */}
                                     <div className="mb-4 text-center">
                                         <a
                                             href={`/administracion/documentos?estanteria_id=${estanteria.id}`}
-                                            className="text-lg font-bold text-blue-900 hover:text-blue-700 transition-colors block"
+                                            className="text-lg font-semibold text-blue-900 hover:text-blue-700 transition-colors"
                                         >
                                             {estanteria.nombre}
                                         </a>
-                                        <p className="text-xs text-gray-400 mt-0.5">
-                                            Creado: {formatDate(estanteria.created_at)}
-                                        </p>
-                                        <span className="inline-flex items-center gap-1 mt-2 px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                        <p className="text-xs text-gray-400">Creado: {formatDate(estanteria.created_at)}</p>
+                                        <span className="inline-flex items-center gap-1 mt-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                             📁 {estanteria.documentos_count ?? 0} documentos
                                         </span>
                                     </div>
-                                </div>
 
-                                {/* Acciones */}
-                                <div className="flex flex-wrap justify-center gap-2 pt-2 border-t border-slate-100">
-                                    <a
-                                        href={`/administracion/documentos?estanteria_id=${estanteria.id}`}
-                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-xs shadow-sm"
-                                    >
-                                        <span>📂</span>
-                                        Ver Documentos
-                                    </a>
-                                    {permissions.can_edit && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleOpenEdit(estanteria)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 text-white border border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs shadow-sm"
+                                    {/* Acciones */}
+                                    <div className="flex flex-wrap justify-center gap-2">
+                                        <a
+                                            href={`/administracion/documentos?estanteria_id=${estanteria.id}`}
+                                            className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-xs shadow-sm"
                                         >
-                                            <span>✏️</span>
-                                            Editar
-                                        </button>
-                                    )}
-                                    {permissions.can_destroy && (
-                                        <button
-                                            type="button"
-                                            onClick={() => handleDelete(estanteria)}
-                                            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold transition-all bg-red-500 text-white active:translate-y-0.5 text-xs shadow-sm hover:bg-red-600"
-                                        >
-                                            <span>🗑️</span>
-                                            Eliminar
-                                        </button>
-                                    )}
+                                            <span>📂</span>
+                                            Ver Documentos
+                                        </a>
+                                        {permissions.can_edit && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleOpenEdit(estanteria)}
+                                                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 text-white border border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs shadow-sm"
+                                            >
+                                                <span>✏️</span>
+                                                Editar
+                                            </button>
+                                        )}
+                                        {permissions.can_destroy && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleDelete(estanteria)}
+                                                className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-red-500 text-white active:translate-y-0.5 text-xs shadow-sm hover:bg-red-600"
+                                            >
+                                                <span>🗑️</span>
+                                                Eliminar
+                                            </button>
+                                        )}
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -433,7 +437,7 @@ export default function EstanteriasManagement() {
                 {/* Paginación */}
                 {pagination.last_page > 1 && (
                     <div className="flex justify-center mt-8">
-                        <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs flex items-center gap-2">
+                        <div className="p-4 glass rounded-xl flex items-center gap-2">
                             <button
                                 type="button"
                                 onClick={() => fetchEstanterias(pagination.current_page - 1)}
@@ -458,18 +462,18 @@ export default function EstanteriasManagement() {
                 )}
             </div>
 
-            {/* MODAL CREAR / EDITAR ESTANTERÍA */}
+            {/* MODAL CREAR / EDITAR ESTANTERÍA (REPLICANDO EXACTO create.blade.php y edit.blade.php) */}
             {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 sm:p-8 border border-slate-200 my-8 transition-all animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+                    <div className="glass rounded-2xl p-8 fade-in max-w-2xl w-full my-8 border border-white/20 shadow-2xl transition-all">
                         {/* Cabecera del modal */}
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800">
+                                <h3 className="text-2xl font-bold text-slate-800">
                                     {modalMode === 'create' ? 'Nueva Estantería' : 'Editar Estantería'}
                                 </h3>
                                 <p className="text-xs text-slate-500 mt-0.5">
-                                    {modalMode === 'create' ? 'Registrar nueva estantería para organizar documentos' : 'Actualizar información e imagen de la estantería'}
+                                    {modalMode === 'create' ? 'Registrar nueva estantería en el sistema' : 'Actualizar información de la estantería'}
                                 </p>
                             </div>
                             <button
@@ -478,17 +482,17 @@ export default function EstanteriasManagement() {
                                 disabled={submitting}
                                 className="text-slate-400 hover:text-slate-600 rounded-lg p-1 transition-colors"
                             >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
                         </div>
 
-                        {/* Formulario */}
+                        {/* Formulario exacto a create.blade.php */}
                         <form onSubmit={handleSubmit} className="space-y-6">
                             {/* Campo: Nombre */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            <div className="mb-6">
+                                <label className="block font-semibold mb-2 text-slate-800 text-sm">
                                     Nombre de la Estantería:
                                 </label>
                                 <input
@@ -496,37 +500,63 @@ export default function EstanteriasManagement() {
                                     value={nombre}
                                     onChange={(e) => setNombre(e.target.value)}
                                     placeholder="Ingresa el nombre de la estantería..."
-                                    className="w-full bg-blue-100 border-none rounded-xl px-4 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                    className="bg-blue-100 border-none rounded-xl p-3 w-full text-slate-900 font-medium focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm"
                                     required
                                     autoFocus
                                     disabled={submitting}
                                 />
                                 {formErrors.nombre && (
-                                    <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.nombre[0]}</p>
+                                    <p className="mt-1 text-sm text-red-500">{formErrors.nombre[0]}</p>
                                 )}
                             </div>
 
-                            {/* Carga de Imagen (Original Upload Area) */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            {/* Área de carga de imagen */}
+                            <div className="mb-8">
+                                <label className="block font-semibold mb-2 text-slate-800 text-sm">
                                     Imagen de la Estantería (Opcional):
                                 </label>
 
-                                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 items-center">
-                                    {/* Área de arrastrar o seleccionar */}
+                                <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+                                    {/* Área de carga */}
                                     <div
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="border-2 border-dashed border-slate-300 hover:border-blue-700 rounded-xl p-4 text-center cursor-pointer transition-all bg-slate-50/50 hover:bg-blue-50/40 min-h-[160px] flex flex-col items-center justify-center"
+                                        onDragOver={(e) => {
+                                            e.preventDefault();
+                                            setIsDragOver(true);
+                                        }}
+                                        onDragLeave={() => setIsDragOver(false)}
+                                        onDrop={(e) => {
+                                            e.preventDefault();
+                                            setIsDragOver(false);
+                                            const file = e.dataTransfer.files?.[0];
+                                            if (file) processFile(file);
+                                        }}
+                                        className={`border-2 border-dashed rounded-xl p-4 text-center cursor-pointer transition-all bg-white min-h-[200px] flex items-center justify-center ${
+                                            isDragOver ? 'border-green-500 bg-green-50/20 scale-[1.02]' : 'border-slate-300 hover:border-blue-900'
+                                        }`}
                                     >
-                                        <div className="text-3xl mb-1">🗄️</div>
-                                        <p className="text-xs font-bold text-slate-700">Seleccionar Imagen</p>
-                                        <p className="text-[11px] text-slate-400 mt-0.5">JPEG, PNG, JPG, SVG (máx. 2MB)</p>
-                                        <button
-                                            type="button"
-                                            className="mt-2.5 px-3 py-1.5 bg-blue-900 text-white text-xs font-semibold rounded-lg hover:bg-blue-800 shadow-xs"
-                                        >
-                                            Examinar
-                                        </button>
+                                        <div className="space-y-2">
+                                            <div className="text-4xl">🗄️</div>
+                                            <div>
+                                                <p className="mb-2 text-sm font-semibold text-slate-800">Seleccionar Imagen</p>
+                                                <p className="mb-3 text-xs text-slate-400">Arrastra y suelta una imagen o haz clic para seleccionar</p>
+                                                <button
+                                                    type="button"
+                                                    className="btn btn-primary bg-blue-900 text-white inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold hover:bg-blue-800 transition-colors"
+                                                >
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                        <polyline points="7,10 12,15 17,10"/>
+                                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                                    </svg>
+                                                    Seleccionar Archivo
+                                                </button>
+                                            </div>
+                                            <div className="text-xs text-slate-500">
+                                                Formatos: JPEG, PNG, JPG, GIF, SVG<br />
+                                                Máximo: 2MB
+                                            </div>
+                                        </div>
                                         <input
                                             ref={fileInputRef}
                                             type="file"
@@ -536,54 +566,67 @@ export default function EstanteriasManagement() {
                                         />
                                     </div>
 
-                                    {/* Preview de la Imagen */}
-                                    <div className="flex flex-col items-center justify-center p-3 border border-slate-200 rounded-xl bg-slate-50 min-h-[160px]">
-                                        {imagePreview ? (
-                                            <div className="relative group w-full flex flex-col items-center">
+                                    {/* Vista previa */}
+                                    <div>
+                                        <label className="block font-semibold mb-2 text-slate-800 text-xs">
+                                            Vista Previa:
+                                        </label>
+                                        <div className="glass rounded-xl p-4 min-h-[200px] flex items-center justify-center border border-slate-200">
+                                            {imagePreview ? (
                                                 <img
+                                                    className="preview-image max-h-[170px] rounded-xl object-contain shadow-xs"
                                                     src={imagePreview}
                                                     alt="Vista previa"
-                                                    className="max-h-28 object-contain rounded-lg shadow-xs"
                                                 />
+                                            ) : (
+                                                <div className="text-center text-slate-400">
+                                                    <div className="mb-3 text-5xl">🗄️</div>
+                                                    <p className="mb-1 text-sm font-semibold">Sin imagen</p>
+                                                    <p className="text-xs">La vista previa aparecerá aquí</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                        {imagePreview && (
+                                            <div className="p-3 mt-3 rounded-lg glass border border-slate-200 flex items-center justify-between text-xs">
+                                                <span className="text-slate-600 font-medium">
+                                                    {imageFile ? imageFile.name : 'Imagen actual'}
+                                                </span>
                                                 <button
                                                     type="button"
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
+                                                    onClick={() => {
                                                         setImageFile(null);
                                                         setImagePreview(null);
                                                     }}
-                                                    className="mt-2 px-2 py-1 text-[11px] font-semibold text-red-600 bg-red-100 rounded-lg hover:bg-red-200 transition-colors"
+                                                    className="text-xs text-red-600 hover:text-red-800 font-bold"
                                                 >
-                                                    Quitar imagen
+                                                    Quitar Imagen
                                                 </button>
-                                            </div>
-                                        ) : (
-                                            <div className="text-center text-slate-400 py-4">
-                                                <div className="text-2xl mb-1">🖼️</div>
-                                                <p className="text-xs">Sin imagen seleccionada</p>
                                             </div>
                                         )}
                                     </div>
                                 </div>
                                 {formErrors.imagen && (
-                                    <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.imagen[0]}</p>
+                                    <p className="mt-1 text-sm text-red-500 font-semibold">{formErrors.imagen[0]}</p>
                                 )}
                             </div>
 
                             {/* Botones de acción */}
-                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                            <div className="flex items-center justify-between gap-4 pt-6 border-t border-slate-200">
                                 <button
                                     type="button"
                                     onClick={handleCloseModal}
                                     disabled={submitting}
-                                    className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 rounded-xl hover:bg-slate-200 transition-colors"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl font-semibold bg-gray-500 text-white hover:bg-gray-600 text-xs transition-colors"
                                 >
-                                    Cancelar
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95z"/>
+                                    </svg>
+                                    Regresar
                                 </button>
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="btn-save inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white rounded-xl shadow-md transition-all disabled:opacity-50"
+                                    className="btn-save inline-flex items-center gap-2 px-6 py-2.5 text-xs font-bold text-white rounded-xl shadow-md transition-all disabled:opacity-50"
                                     style={{
                                         background: 'linear-gradient(135deg, #1e3a8a 0%, #1e40af 50%, #2563eb 100%)'
                                     }}
@@ -595,7 +638,7 @@ export default function EstanteriasManagement() {
                                         </>
                                     ) : (
                                         <>
-                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                                 <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
                                                 <polyline points="17,21 17,13 7,13 7,21"/>
                                                 <polyline points="7,3 7,8 15,8"/>
