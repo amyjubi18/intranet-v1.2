@@ -12,6 +12,9 @@ use App\Http\Controllers\BieneController;
 use App\Http\Controllers\InventarioOficController;
 use App\Http\Controllers\CartuchoController;
 use App\Http\Controllers\DigitalizacioneController;
+use App\Http\Controllers\DocsController;
+use App\Http\Controllers\EstanteriaController;
+use App\Http\Controllers\CategoriaController;
 
 // API routes that need authentication (works with session auth for web)
 Route::middleware(['web', 'auth'])->group(function () {
@@ -73,6 +76,32 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/bienes_publicos', [BieneController::class, 'index'])->name('api.administracion.bienes_publicos.index');
         Route::get('/inventario_oficinas', [InventarioOficController::class, 'index'])->name('api.administracion.inventario_oficinas.index');
         Route::get('/consumibles', [CartuchoController::class, 'index'])->name('api.administracion.consumibles.index');
+
+        // Documentos
+        Route::get('/documentos', [DocsController::class, 'index'])->name('api.administracion.documentos.index');
+        Route::post('/documentos', [DocsController::class, 'store'])->name('api.administracion.documentos.store');
+        Route::get('/documentos/{id}', [DocsController::class, 'edit'])->name('api.administracion.documentos.show');
+        Route::post('/documentos/{id}', [DocsController::class, 'update'])->name('api.administracion.documentos.update');
+        Route::put('/documentos/{id}', [DocsController::class, 'update'])->name('api.administracion.documentos.update.put');
+        Route::delete('/documentos/{id}', [DocsController::class, 'destroy'])->name('api.administracion.documentos.destroy');
+        Route::delete('/documentos/archivo/{id}', [DocsController::class, 'destroyArchivo'])->name('api.administracion.documentos.archivo.destroy');
+
+        // Estanterias
+        Route::get('/estanterias', [EstanteriaController::class, 'index'])->name('api.administracion.estanterias.index');
+        Route::post('/estanterias', [EstanteriaController::class, 'store'])->name('api.administracion.estanterias.store');
+        Route::get('/estanterias/{id}', [EstanteriaController::class, 'edit'])->name('api.administracion.estanterias.show');
+        Route::post('/estanterias/{id}', [EstanteriaController::class, 'update'])->name('api.administracion.estanterias.update');
+        Route::put('/estanterias/{id}', [EstanteriaController::class, 'update'])->name('api.administracion.estanterias.update.put');
+        Route::delete('/estanterias/{id}', [EstanteriaController::class, 'destroy'])->name('api.administracion.estanterias.destroy');
+
+        // Categorias
+        Route::get('/categorias', [CategoriaController::class, 'index'])->name('api.administracion.categorias.index');
+        Route::post('/categorias', [CategoriaController::class, 'store'])->name('api.administracion.categorias.store');
+        Route::post('/categorias/store-ajax', [CategoriaController::class, 'storeAjax'])->name('api.administracion.categorias.store-ajax');
+        Route::get('/categorias/{id}', [CategoriaController::class, 'edit'])->name('api.administracion.categorias.show');
+        Route::put('/categorias/{id}', [CategoriaController::class, 'update'])->name('api.administracion.categorias.update');
+        Route::post('/categorias/{id}', [CategoriaController::class, 'update'])->name('api.administracion.categorias.update.post');
+        Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy'])->name('api.administracion.categorias.destroy');
     });
 
     // OGH Module API (ct-gh: 172.17.50.251)
@@ -80,4 +109,3 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/digitalizacion_documentos', [DigitalizacioneController::class, 'index'])->name('api.gestion_humana.digitalizacion_documentos.index');
     });
 });
-

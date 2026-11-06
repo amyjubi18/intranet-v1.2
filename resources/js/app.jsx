@@ -11,6 +11,9 @@ import DigitalizacionDocumentos from './components/gestion_humana/Digitalizacion
 import UsersManagement from './components/gtic/UsersManagement';
 import RolesManagement from './components/gtic/RolesManagement';
 import PermisosManagement from './components/gtic/PermisosManagement';
+import DocumentosManagement from './components/administracion/DocumentosManagement';
+import EstanteriasManagement from './components/administracion/EstanteriasManagement';
+import CategoriasManagement from './components/administracion/CategoriasManagement';
 
 // Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
@@ -57,11 +60,20 @@ function initReactRoots() {
     mountComponent('Consumibles', Consumibles);
     mountById('consumibles-root', Consumibles);
 
+    // OGA: Documentos, Estanterías y Categorías
+    mountComponent('DocumentosManagement', DocumentosManagement);
+    mountById('documentos-management-root', DocumentosManagement);
+    mountComponent('EstanteriasManagement', EstanteriaSelector);
+    mountComponent('EstanteriasManagement', EstanteriasManagement);
+    mountById('estanterias-management-root', EstanteriasManagement);
+    mountComponent('CategoriasManagement', CategoriasManagement);
+    mountById('categorias-management-root', CategoriasManagement);
+
     // OGH: Digitalización de Documentos
     mountComponent('DigitalizacionDocumentos', DigitalizacionDocumentos);
     mountById('digitalizacion-documentos-root', DigitalizacionDocumentos);
 
-    // Documentos & Selectores existentes
+    // Documentos & Selectores auxiliares
     mountComponent('DocumentViewer', DocumentViewer);
     mountComponent('EstanteriaSelector', EstanteriaSelector);
 
@@ -89,6 +101,9 @@ if (typeof window !== 'undefined') {
         InventarioOficinas,
         Consumibles,
         DigitalizacionDocumentos,
+        DocumentosManagement,
+        EstanteriasManagement,
+        CategoriasManagement,
         DocumentViewer,
         EstanteriaSelector,
         NotificationCenter
@@ -160,10 +175,12 @@ export default {
     InventarioOficinas,
     Consumibles,
     DigitalizacionDocumentos,
+    DocumentosManagement,
+    EstanteriasManagement,
+    CategoriasManagement,
     DocumentViewer,
     EstanteriaSelector,
     NotificationCenter,
     useFetch,
     useDebounce
 };
-
