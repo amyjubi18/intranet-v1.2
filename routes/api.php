@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DirectoryController;
 use App\Http\Controllers\Api\EventController;
+use App\Http\Controllers\ActivityLogController;
 
 // API routes that need authentication (works with session auth for web)
 Route::middleware(['web', 'auth'])->group(function () {
@@ -28,5 +29,11 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::delete("/events/{id}", [EventController::class, "destroy"])->name("api.events.destroy");
     Route::get("/events/by-date", [EventController::class, "byDate"])->name("api.events.by-date");
     Route::get("/events/upcoming", [EventController::class, "upcoming"])->name("api.events.upcoming");
+
+    // GTIC Module API
+    Route::prefix('gtic')->group(function () {
+        Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('api.gtic.activity-log.index');
+        Route::get('/activity-log/{id}', [ActivityLogController::class, 'show'])->name('api.gtic.activity-log.show');
+    });
 });
 

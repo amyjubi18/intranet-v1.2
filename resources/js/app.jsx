@@ -1,11 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import DashboardMetrics from './components/dashboard/DashboardMetrics';
 import DocumentViewer from './components/documents/DocumentViewer';
 import EstanteriaSelector from './components/documents/EstanteriaSelector';
 import NotificationCenter from './components/ui/NotificationCenter';
+import ActivityLog from './components/gtic/ActivityLog';
 
-// Componente de ejemplo para integrar React en Blade
+// Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
     const elements = document.querySelectorAll(`[data-react-component="${componentName}"]`);
 
@@ -18,8 +18,14 @@ function mountComponent(componentName, component) {
 
 // Inicializar componentes cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    // Mount Dashboard Metrics
-    mountComponent('DashboardMetrics', DashboardMetrics);
+    // Mount Activity Log (GTIC)
+    mountComponent('ActivityLog', ActivityLog);
+    const activityLogEl = document.getElementById('activity-log-root');
+    if (activityLogEl && !activityLogEl.hasAttribute('data-react-mounted')) {
+        activityLogEl.setAttribute('data-react-mounted', 'true');
+        const root = ReactDOM.createRoot(activityLogEl);
+        root.render(<ActivityLog />);
+    }
 
     // Mount Document Viewer
     mountComponent('DocumentViewer', DocumentViewer);
@@ -37,7 +43,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Exportar componentes para uso global
 window.ReactComponents = {
-    DashboardMetrics,
+    ActivityLog,
     DocumentViewer,
     EstanteriaSelector,
     NotificationCenter

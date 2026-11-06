@@ -18,9 +18,12 @@
         "vite": "^7.3.1"
     },
     "dependencies": {
+        "@vitejs/plugin-react": "^4.7.0",
         "flatpickr": "^4.6.13",
         "flowbite-datepicker": "^1.2.2",
         "lodash": "^4.17.21",
+        "react": "^18.3.1",
+        "react-dom": "^18.3.1",
         "semver": "^7.6.2",
         "simple-get": "^4.0.1",
         "tom-select": "^2.4.3"

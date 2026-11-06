@@ -35,6 +35,7 @@
 
     <!-- Scripts -->
      @yield('scripts')
+    @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
 
