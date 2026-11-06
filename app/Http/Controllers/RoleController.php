@@ -34,6 +34,23 @@ class RoleController extends Controller
 
         $roles = $query->orderBy($sort, $direction)->paginate(15)->appends($request->query());
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'roles' => $roles,
+                    'available_permissions' => Permission::orderBy('name')->get(['id', 'name']),
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('role_create') ?? true,
+                        'can_edit' => auth()->user()?->can('role_edit') ?? true,
+                        'can_destroy' => auth()->user()?->can('role_destroy') ?? true,
+                    ]
+                ],
+                'message' => 'Roles obtenidos con éxito'
+            ], 200);
+        }
+
         return view('gtic.roles.index', [
             'roles' => $roles,
             'search' => $search,
@@ -76,12 +93,28 @@ class RoleController extends Controller
             $role = Role::create($request->only('name'));
             $role->permissions()->sync($request->input('permissions', []));
 
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 201,
+                    'success' => true,
+                    'data' => $role->load('permissions'),
+                    'message' => 'Rol guardado exitosamente.'
+                ], 201);
+            }
+
             if ($request->action === 'save_and_new') {
                 return redirect()->route('gtic.roles.create')->with('success', 'Rol creado exitosamente. Puede crear otro.');
             }
 
             return redirect()->route('gtic.roles.index')->with('success', 'Rol guardado exitosamente.');
         } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 500,
+                    'success' => false,
+                    'message' => 'Error al crear el rol: ' . $e->getMessage()
+                ], 500);
+            }
             return back()->withInput()->with('error', 'Error al crear el rol: ' . $e->getMessage());
         }
     }
@@ -129,16 +162,34 @@ class RoleController extends Controller
         $role->update($request->only('name'));
         $role->permissions()->sync($request->input('permissions', []));
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => $role->load('permissions'),
+                'message' => 'Rol actualizado exitosamente'
+            ], 200);
+        }
+
         return redirect()->route('gtic.roles.index')->with('success', 'Rol actualizado exitosamente');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Role $role)
+    public function destroy(Role $role, Request $request)
     {
         abort_if(Gate::denies('role_destroy'), 403);
         $role->delete();
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'message' => 'Rol eliminado exitosamente'
+            ], 200);
+        }
+
         return redirect()->route('gtic.roles.index')->with('Rol eliminado');
     }
 

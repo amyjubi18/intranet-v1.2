@@ -6,6 +6,8 @@ use App\Http\Controllers\Api\DirectoryController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\ActivityLogController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\RoleController;
+use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\BieneController;
 use App\Http\Controllers\InventarioOficController;
 use App\Http\Controllers\CartuchoController;
@@ -44,6 +46,19 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/users/{user}', [UserController::class, 'show'])->name('api.gtic.users.show');
         Route::put('/users/{user}', [UserController::class, 'update'])->name('api.gtic.users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('api.gtic.users.destroy');
+
+        // Roles & Permisos
+        Route::get('/roles', [RoleController::class, 'index'])->name('api.gtic.roles.index');
+        Route::post('/roles', [RoleController::class, 'store'])->name('api.gtic.roles.store');
+        Route::get('/roles/{role}', [RoleController::class, 'show'])->name('api.gtic.roles.show');
+        Route::put('/roles/{role}', [RoleController::class, 'update'])->name('api.gtic.roles.update');
+        Route::delete('/roles/{role}', [RoleController::class, 'destroy'])->name('api.gtic.roles.destroy');
+
+        Route::get('/permisos', [PermissionController::class, 'index'])->name('api.gtic.permisos.index');
+        Route::post('/permisos', [PermissionController::class, 'store'])->name('api.gtic.permisos.store');
+        Route::get('/permisos/{permission}', [PermissionController::class, 'show'])->name('api.gtic.permisos.show');
+        Route::put('/permisos/{permission}', [PermissionController::class, 'update'])->name('api.gtic.permisos.update');
+        Route::delete('/permisos/{permission}', [PermissionController::class, 'destroy'])->name('api.gtic.permisos.destroy');
     });
 
     // General Users API

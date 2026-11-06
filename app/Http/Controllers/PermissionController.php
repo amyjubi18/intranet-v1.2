@@ -30,6 +30,22 @@ class PermissionController extends Controller
             ->orderBy($sort, $direction)
             ->paginate(15);
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'permissions' => $permissions,
+                    'auth_permissions' => [
+                        'can_create' => auth()->user()?->can('permission_create') ?? true,
+                        'can_edit' => auth()->user()?->can('permission_edit') ?? true,
+                        'can_destroy' => auth()->user()?->can('permission_destroy') ?? true,
+                    ]
+                ],
+                'message' => 'Permisos obtenidos con éxito'
+            ], 200);
+        }
+
         return view('gtic.permisos.index', compact('permissions', 'search', 'sort', 'direction'));
     }
 
@@ -54,7 +70,17 @@ class PermissionController extends Controller
             'name.unique' => 'Este permiso ya existe',
         ]);
 
-        Permission::create($request->only('name'));
+        $permission = Permission::create($request->only('name'));
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 201,
+                'success' => true,
+                'data' => $permission,
+                'message' => 'Permiso creado exitosamente'
+            ], 201);
+        }
+
         return redirect()->route('gtic.permisos.index')->with('success', 'Permiso creado exitosamente');
     }
 
@@ -90,16 +116,35 @@ class PermissionController extends Controller
         ]);
 
         $permission->update($request->only('name'));
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => $permission,
+                'message' => 'Permiso actualizado exitosamente'
+            ], 200);
+        }
+
         return redirect()->route('gtic.permisos.index')->with('success', 'Permiso actualizado exitosamente');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Permission $permission)
+    public function destroy(Permission $permission, Request $request)
     {
         abort_if(Gate::denies('permission_destroy'), 403);
         $permission->delete();
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'message' => 'Permiso eliminado exitosamente'
+            ], 200);
+        }
+
         return redirect()->route('gtic.permisos.index')->with('Permiso eliminado');
     }
 

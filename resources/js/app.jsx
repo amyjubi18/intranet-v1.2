@@ -9,6 +9,8 @@ import InventarioOficinas from './components/administracion/InventarioOficinas';
 import Consumibles from './components/administracion/Consumibles';
 import DigitalizacionDocumentos from './components/gestion_humana/DigitalizacionDocumentos';
 import UsersManagement from './components/gtic/UsersManagement';
+import RolesManagement from './components/gtic/RolesManagement';
+import PermisosManagement from './components/gtic/PermisosManagement';
 
 // Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
@@ -35,11 +37,15 @@ function mountById(elementId, component) {
 
 // Inicializar componentes cuando el DOM esté listo o inmediatamente si ya cargó
 function initReactRoots() {
-    // GTIC: Registro de Actividades y Gestión de Usuarios
+    // GTIC: Registro de Actividades, Gestión de Usuarios, Roles y Permisos
     mountComponent('ActivityLog', ActivityLog);
     mountById('activity-log-root', ActivityLog);
     mountComponent('UsersManagement', UsersManagement);
     mountById('users-management-root', UsersManagement);
+    mountComponent('RolesManagement', RolesManagement);
+    mountById('roles-management-root', RolesManagement);
+    mountComponent('PermisosManagement', PermisosManagement);
+    mountById('permisos-management-root', PermisosManagement);
 
     // OGA: Bienes Públicos / Muebles
     mountComponent('BienesPublicos', BienesPublicos);
@@ -77,6 +83,8 @@ if (typeof window !== 'undefined') {
     window.ReactComponents = {
         ActivityLog,
         UsersManagement,
+        RolesManagement,
+        PermisosManagement,
         BienesPublicos,
         InventarioOficinas,
         Consumibles,
@@ -146,6 +154,8 @@ export function useDebounce(value, delay = 300) {
 export default {
     ActivityLog,
     UsersManagement,
+    RolesManagement,
+    PermisosManagement,
     BienesPublicos,
     InventarioOficinas,
     Consumibles,
