@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import Swal from 'sweetalert2';
 
 const DEPARTAMENTOS_LIST = [
@@ -49,7 +49,7 @@ export default function UsersManagement() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Filtros y ordenamiento (como la vista original)
+    // Filtros y ordenamiento
     const [search, setSearch] = useState('');
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [filterType, setFilterType] = useState('');
@@ -67,6 +67,15 @@ export default function UsersManagement() {
     const [formData, setFormData] = useState(INITIAL_FORM_STATE);
     const [formErrors, setFormErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+
+    // Visibilidad de contraseñas
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    // Foto de perfil
+    const [photoFile, setPhotoFile] = useState(null);
+    const [photoPreviewUrl, setPhotoPreviewUrl] = useState(null);
+    const fileInputRef = useRef(null);
 
     // Cargar usuarios desde la API REST
     const fetchUsers = useCallback(async (page = 1) => {
@@ -169,10 +178,46 @@ export default function UsersManagement() {
         setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
     };
 
+    // Formatear cédula automáticamente como en el script original
+    const handleCedulaChange = (e) => {
+        let value = e.target.value.replace(/[^\d]/g, '');
+        if (value.length >= 2) {
+            value = value.substring(0, 2) + '.' + value.substring(2);
+        }
+        if (value.length >= 6) {
+            value = value.substring(0, 6) + '.' + value.substring(6);
+        }
+        if (value.length > 10) {
+            value = value.substring(0, 10);
+        }
+        setFormData(prev => ({ ...prev, cedula: value }));
+    };
+
+    // Manejar selección de foto de perfil
+    const handlePhotoChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            if (file.size > 2 * 1024 * 1024) {
+                Swal.fire({ icon: 'warning', title: 'Archivo muy grande', text: 'El archivo excede el límite de 2MB.' });
+                return;
+            }
+            if (!file.type.startsWith('image/')) {
+                Swal.fire({ icon: 'warning', title: 'Formato inválido', text: 'Por favor seleccione una imagen (JPG, PNG, GIF).' });
+                return;
+            }
+            setPhotoFile(file);
+            setPhotoPreviewUrl(URL.createObjectURL(file));
+        }
+    };
+
     // Abrir Modal de Creación
     const openCreateModal = () => {
         setFormData(INITIAL_FORM_STATE);
         setFormErrors({});
+        setPhotoFile(null);
+        setPhotoPreviewUrl(null);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
         setShowCreateModal(true);
     };
 
@@ -198,6 +243,10 @@ export default function UsersManagement() {
             password_confirmation: ''
         });
         setFormErrors({});
+        setPhotoFile(null);
+        setPhotoPreviewUrl(user.profile_photo ? `/archivos/avatars/${user.profile_photo}` : null);
+        setShowPassword(false);
+        setShowConfirmPassword(false);
         setShowEditModal(true);
     };
 
@@ -215,15 +264,32 @@ export default function UsersManagement() {
 
         try {
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            
+            // Construir FormData para soporte de foto de perfil
+            const bodyData = new FormData();
+            bodyData.append('name', formData.name);
+            bodyData.append('lastname', formData.lastname);
+            bodyData.append('username', formData.username);
+            bodyData.append('email', formData.email);
+            bodyData.append('cedula', formData.cedula);
+            bodyData.append('fecha_nacimiento', formData.fecha_nacimiento);
+            bodyData.append('departamento', formData.departamento);
+            bodyData.append('roles', formData.roles);
+            bodyData.append('status', formData.status ? '1' : '0');
+            bodyData.append('password', formData.password);
+            bodyData.append('password_confirmation', formData.password_confirmation);
+            if (photoFile) {
+                bodyData.append('profile_photo', photoFile);
+            }
+
             const res = await fetch('/api/gtic/users', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': token || '',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify(formData)
+                body: bodyData
             });
 
             const data = await res.json();
@@ -266,21 +332,35 @@ export default function UsersManagement() {
 
         try {
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const payload = { ...formData };
-            if (!payload.password) {
-                delete payload.password;
-                delete payload.password_confirmation;
+            
+            // Si hay foto usamos POST con _method=PUT para soporte multipart de Laravel
+            const bodyData = new FormData();
+            bodyData.append('_method', 'PUT');
+            bodyData.append('name', formData.name);
+            bodyData.append('lastname', formData.lastname);
+            bodyData.append('username', formData.username);
+            bodyData.append('email', formData.email);
+            bodyData.append('cedula', formData.cedula);
+            bodyData.append('fecha_nacimiento', formData.fecha_nacimiento);
+            bodyData.append('departamento', formData.departamento);
+            bodyData.append('roles', formData.roles);
+            bodyData.append('status', formData.status ? '1' : '0');
+            if (formData.password) {
+                bodyData.append('password', formData.password);
+                bodyData.append('password_confirmation', formData.password_confirmation);
+            }
+            if (photoFile) {
+                bodyData.append('profile_photo', photoFile);
             }
 
             const res = await fetch(`/api/gtic/users/${selectedUser.id}`, {
-                method: 'PUT',
+                method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': token || '',
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify(payload)
+                body: bodyData
             });
 
             const data = await res.json();
@@ -314,7 +394,7 @@ export default function UsersManagement() {
         }
     };
 
-    // Eliminar o Cambiar Estado
+    // Eliminar Usuario
     const handleDeleteUser = async (user) => {
         if (currentUserId && user.id === currentUserId) {
             Swal.fire({
@@ -708,177 +788,398 @@ export default function UsersManagement() {
                 )}
             </div>
 
-            {/* MODAL REGISTRAR USUARIO (REACT) */}
+            {/* MODAL REGISTRO DE USUARIO (CON DISEÑO ORIGINAL Y BOTONES EXACTOS) */}
             {showCreateModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200 my-8">
-                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xl">➕</span>
-                                <h3 className="text-lg font-bold text-blue-950">Añadir Nuevo Usuario</h3>
+                    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-white/40 my-8 max-h-[92vh] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-3 mb-6 border-b border-gray-200">
+                            <div>
+                                <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M19 8v6m3-3h-6"/>
+                                    </svg>
+                                    Registro de Usuario
+                                </h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Crear nueva cuenta de usuario en el sistema</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowCreateModal(false)}
-                                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+                                className="text-slate-400 hover:text-slate-600 font-bold text-xl p-1"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <form onSubmit={handleCreateUser} className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Nombre *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.name && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.name[0]}</p>}
+                        <form onSubmit={handleCreateUser} className="space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Columna Izquierda */}
+                                <div className="space-y-6">
+                                    {/* Información Personal */}
+                                    <div>
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-blue-950">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-900">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                            Información Personal
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            {/* Nombre */}
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Nombre *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    placeholder="Ingrese el nombre"
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                                {formErrors.name && <div className="text-red-500 text-xs mt-1">{formErrors.name[0]}</div>}
+                                            </div>
+
+                                            {/* Apellido */}
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Apellido *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    placeholder="Ingrese el apellido"
+                                                    value={formData.lastname}
+                                                    onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
+                                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                                {formErrors.lastname && <div className="text-red-500 text-xs mt-1">{formErrors.lastname[0]}</div>}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                                            {/* Cédula */}
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Cédula *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    placeholder="12.345.678"
+                                                    value={formData.cedula}
+                                                    onChange={handleCedulaChange}
+                                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                                {formErrors.cedula && <div className="text-red-500 text-xs mt-1">{formErrors.cedula[0]}</div>}
+                                            </div>
+
+                                            {/* Fecha de Nacimiento */}
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Fec. de Nacimiento *</label>
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    value={formData.fecha_nacimiento}
+                                                    onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
+                                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                                {formErrors.fecha_nacimiento && <div className="text-red-500 text-xs mt-1">{formErrors.fecha_nacimiento[0]}</div>}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Información de Cuenta */}
+                                    <div>
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-blue-950">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-900">
+                                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="9" cy="7" r="4"/>
+                                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                            </svg>
+                                            Información de Cuenta
+                                        </h3>
+
+                                        {/* Usuario */}
+                                        <div className="mb-4">
+                                            <label className="block font-semibold mb-1 text-sm text-blue-900">Usuario *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                placeholder="Nombre de usuario"
+                                                value={formData.username}
+                                                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                            />
+                                            {formErrors.username && <div className="text-red-500 text-xs mt-1">{formErrors.username[0]}</div>}
+                                        </div>
+
+                                        {/* Correo Electrónico */}
+                                        <div className="mb-4">
+                                            <label className="block font-semibold mb-1 text-sm text-blue-900">Correo Electrónico *</label>
+                                            <input
+                                                type="email"
+                                                required
+                                                placeholder="usuario@codecyt.com"
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                            />
+                                            {formErrors.email && <div className="text-red-500 text-xs mt-1">{formErrors.email[0]}</div>}
+                                        </div>
+
+                                        {/* Contraseñas con botón de ojo interactivo */}
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Contraseña *</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={showPassword ? 'text' : 'password'}
+                                                        required
+                                                        placeholder="••••••••"
+                                                        value={formData.password}
+                                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                        className="w-full p-2.5 pr-10 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-blue-600 transition-colors focus:outline-none"
+                                                        title="Ver / Ocultar contraseña"
+                                                    >
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            {showPassword ? (
+                                                                <>
+                                                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                                    <circle cx="12" cy="12" r="3"/>
+                                                                </>
+                                                            )}
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                {formErrors.password && <div className="text-red-500 text-xs mt-1">{formErrors.password[0]}</div>}
+                                            </div>
+
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Confirmar Contraseña *</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={showConfirmPassword ? 'text' : 'password'}
+                                                        required
+                                                        placeholder="••••••••"
+                                                        value={formData.password_confirmation}
+                                                        onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
+                                                        className="w-full p-2.5 pr-10 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-blue-600 transition-colors focus:outline-none"
+                                                        title="Ver / Ocultar contraseña"
+                                                    >
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            {showConfirmPassword ? (
+                                                                <>
+                                                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                                    <circle cx="12" cy="12" r="3"/>
+                                                                </>
+                                                            )}
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
-                                    <input
-                                        type="text"
-                                        value={formData.lastname}
-                                        onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                </div>
+                                {/* Columna Derecha */}
+                                <div className="space-y-6">
+                                    {/* Foto de Perfil */}
+                                    <div>
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-blue-950">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-900">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                                <circle cx="9" cy="9" r="2"/>
+                                                <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                                            </svg>
+                                            Foto de Perfil
+                                        </h3>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Cédula *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.cedula}
-                                        onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.cedula && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.cedula[0]}</p>}
-                                </div>
+                                        <div className="flex items-start gap-4">
+                                            {/* Preview de Foto */}
+                                            <div
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className={`w-40 h-40 sm:w-48 sm:h-48 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 relative overflow-hidden bg-white/90 ${
+                                                    photoPreviewUrl
+                                                        ? 'border-2 border-solid border-green-500'
+                                                        : 'border-2 border-dashed border-slate-300 hover:border-blue-900'
+                                                }`}
+                                            >
+                                                {photoPreviewUrl ? (
+                                                    <img
+                                                        src={photoPreviewUrl}
+                                                        alt="Vista previa"
+                                                        className="w-full h-full object-cover rounded-xl"
+                                                    />
+                                                ) : (
+                                                    <div className="text-center text-slate-500 p-2">
+                                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mx-auto mb-2 text-slate-400">
+                                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                                            <circle cx="9" cy="9" r="2"/>
+                                                            <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                                                        </svg>
+                                                        <p className="text-xs font-semibold">Seleccionar foto</p>
+                                                    </div>
+                                                )}
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Fecha de Nacimiento *</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={formData.fecha_nacimiento}
-                                        onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.fecha_nacimiento && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.fecha_nacimiento[0]}</p>}
-                                </div>
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-xl">
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                                    </svg>
+                                                </div>
+                                            </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de Usuario *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.username}
-                                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.username && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.username[0]}</p>}
-                                </div>
+                                            <div className="flex-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-900 text-white rounded-xl hover:bg-blue-800 mb-2 text-xs font-bold transition-all shadow-sm"
+                                                >
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                        <polyline points="7,10 12,15 17,10"/>
+                                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                                    </svg>
+                                                    Cargar Foto
+                                                </button>
+                                                <p className="text-xs text-slate-400">
+                                                    Formatos: JPG, PNG, GIF<br />
+                                                    Tamaño máximo: 2MB
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handlePhotoChange}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Correo Electrónico *</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.email && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.email[0]}</p>}
-                                </div>
+                                    {/* Asignación Organizacional */}
+                                    <div>
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-blue-950">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-900">
+                                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                            </svg>
+                                            Asignación Organizacional
+                                        </h3>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Departamento *</label>
-                                    <select
-                                        required
-                                        value={formData.departamento}
-                                        onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900 bg-white"
-                                    >
-                                        <option value="">Seleccione Departamento</option>
-                                        {departamentos.map((dep, idx) => (
-                                            <option key={idx} value={dep}>{dep}</option>
-                                        ))}
-                                    </select>
-                                    {formErrors.departamento && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.departamento[0]}</p>}
-                                </div>
+                                        {/* Rol */}
+                                        <div className="mb-4">
+                                            <label className="block font-semibold mb-1 text-sm text-blue-900">Rol *</label>
+                                            <select
+                                                required
+                                                value={formData.roles}
+                                                onChange={(e) => setFormData({ ...formData, roles: e.target.value })}
+                                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                            >
+                                                <option value="">Seleccione el rol</option>
+                                                {roles.map(r => (
+                                                    <option key={r.id} value={r.name}>{r.name}</option>
+                                                ))}
+                                            </select>
+                                            {formErrors.roles && <div className="text-red-500 text-xs mt-1">{formErrors.roles[0]}</div>}
+                                        </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Rol *</label>
-                                    <select
-                                        required
-                                        value={formData.roles}
-                                        onChange={(e) => setFormData({ ...formData, roles: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900 bg-white"
-                                    >
-                                        <option value="">Seleccione Rol</option>
-                                        {roles.map(r => (
-                                            <option key={r.id} value={r.name}>{r.name}</option>
-                                        ))}
-                                    </select>
-                                    {formErrors.roles && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.roles[0]}</p>}
-                                </div>
+                                        {/* Departamento */}
+                                        <div className="mb-4">
+                                            <label className="block font-semibold mb-1 text-sm text-blue-900">Departamento *</label>
+                                            <select
+                                                required
+                                                value={formData.departamento}
+                                                onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
+                                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                            >
+                                                <option value="">Seleccione el departamento</option>
+                                                {departamentos.map((dep, idx) => (
+                                                    <option key={idx} value={dep}>{dep}</option>
+                                                ))}
+                                            </select>
+                                            {formErrors.departamento && <div className="text-red-500 text-xs mt-1">{formErrors.departamento[0]}</div>}
+                                        </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Contraseña *</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.password && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.password[0]}</p>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Confirmar Contraseña *</label>
-                                    <input
-                                        type="password"
-                                        required
-                                        value={formData.password_confirmation}
-                                        onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
+                                        {/* Estado del Usuario con Switch Original */}
+                                        <div>
+                                            <label className="block font-semibold mb-2 text-sm text-blue-900">Estado del Usuario</label>
+                                            <div
+                                                className="cursor-pointer flex items-center gap-3"
+                                                onClick={() => setFormData(prev => ({ ...prev, status: !prev.status }))}
+                                            >
+                                                <div
+                                                    className={`w-[60px] h-[30px] rounded-[15px] relative transition-all duration-300 border-2 ${
+                                                        formData.status ? 'bg-[#22C55E] border-green-500/20' : 'bg-[#dc2626] border-red-500/20'
+                                                    }`}
+                                                >
+                                                    <div
+                                                        className={`w-[22px] h-[22px] bg-white rounded-full absolute top-[2px] transition-transform duration-300 shadow-md ${
+                                                            formData.status ? 'translate-x-[30px]' : 'translate-x-[2px]'
+                                                        }`}
+                                                    />
+                                                </div>
+                                                <span className={`font-semibold text-sm transition-colors duration-300 ${
+                                                    formData.status ? 'text-[#22C55E]' : 'text-[#dc2626]'
+                                                }`}>
+                                                    {formData.status ? 'Activo' : 'Inactivo'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 pt-2">
-                                <input
-                                    type="checkbox"
-                                    id="status_create"
-                                    checked={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
-                                    className="w-4 h-4 text-blue-900 rounded border-slate-300 focus:ring-blue-900"
-                                />
-                                <label htmlFor="status_create" className="text-xs font-bold text-slate-700">Usuario Activo</label>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                            {/* Botones de Acción Inferiores Originales */}
+                            <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200">
+                                {/* Botón Regresar */}
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateModal(false)}
-                                    className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white bg-blue-900 hover:bg-blue-800 transition-all shadow-md active:translate-y-0.5 text-sm"
                                 >
-                                    Cancelar
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1 fill-white" viewBox="0 0 24 24">
+                                        <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path>
+                                    </svg>
+                                    <span>Regresar</span>
                                 </button>
+
+                                {/* Botón Guardar Registro Original (.btn-save con degradado) */}
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-md disabled:opacity-50"
+                                    className="inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-xl font-bold text-white transition-all duration-300 disabled:opacity-60 text-sm hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)'
+                                    }}
                                 >
-                                    {submitting ? 'Guardando...' : 'Crear Usuario'}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                        <polyline points="17,21 17,13 7,13 7,21"/>
+                                        <polyline points="7,3 7,8 15,8"/>
+                                    </svg>
+                                    <span>{submitting ? 'Guardando...' : 'Guardar Registro'}</span>
                                 </button>
                             </div>
                         </form>
@@ -886,177 +1187,374 @@ export default function UsersManagement() {
                 </div>
             )}
 
-            {/* MODAL EDITAR USUARIO (REACT) */}
+            {/* MODAL EDITAR USUARIO (CON EL MISMO DISEÑO Y BOTONES ORIGINALES) */}
             {showEditModal && selectedUser && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 border border-slate-200 my-8">
-                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                            <div className="flex items-center gap-2">
-                                <span className="text-xl">✏️</span>
-                                <h3 className="text-lg font-bold text-blue-950">Editar Usuario: {selectedUser.name}</h3>
+                    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-white/40 my-8 max-h-[92vh] overflow-y-auto">
+                        <div className="flex items-center justify-between pb-3 mb-6 border-b border-gray-200">
+                            <div>
+                                <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
+                                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                    </svg>
+                                    Editar Usuario: {selectedUser.name}
+                                </h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Modificar cuenta de usuario del sistema</p>
                             </div>
                             <button
                                 type="button"
                                 onClick={() => setShowEditModal(false)}
-                                className="text-slate-400 hover:text-slate-600 text-lg font-bold p-1"
+                                className="text-slate-400 hover:text-slate-600 font-bold text-xl p-1"
                             >
                                 ✕
                             </button>
                         </div>
 
-                        <form onSubmit={handleUpdateUser} className="space-y-4">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Nombre *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.name}
-                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.name && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.name[0]}</p>}
+                        <form onSubmit={handleUpdateUser} className="space-y-6">
+                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                {/* Columna Izquierda */}
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-blue-950">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-900">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="12" cy="7" r="4"/>
+                                            </svg>
+                                            Información Personal
+                                        </h3>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Nombre *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={formData.name}
+                                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                                {formErrors.name && <div className="text-red-500 text-xs mt-1">{formErrors.name[0]}</div>}
+                                            </div>
+
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Apellido *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={formData.lastname}
+                                                    onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
+                                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                                {formErrors.lastname && <div className="text-red-500 text-xs mt-1">{formErrors.lastname[0]}</div>}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Cédula *</label>
+                                                <input
+                                                    type="text"
+                                                    required
+                                                    value={formData.cedula}
+                                                    onChange={handleCedulaChange}
+                                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                                {formErrors.cedula && <div className="text-red-500 text-xs mt-1">{formErrors.cedula[0]}</div>}
+                                            </div>
+
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Fec. de Nacimiento *</label>
+                                                <input
+                                                    type="date"
+                                                    required
+                                                    value={formData.fecha_nacimiento}
+                                                    onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
+                                                    className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                />
+                                                {formErrors.fecha_nacimiento && <div className="text-red-500 text-xs mt-1">{formErrors.fecha_nacimiento[0]}</div>}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Información de Cuenta */}
+                                    <div>
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-blue-950">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-900">
+                                                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
+                                                <circle cx="9" cy="7" r="4"/>
+                                                <path d="M22 21v-2a4 4 0 0 0-3-3.87"/>
+                                                <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                            </svg>
+                                            Información de Cuenta
+                                        </h3>
+
+                                        <div className="mb-4">
+                                            <label className="block font-semibold mb-1 text-sm text-blue-900">Usuario *</label>
+                                            <input
+                                                type="text"
+                                                required
+                                                value={formData.username}
+                                                onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                            />
+                                            {formErrors.username && <div className="text-red-500 text-xs mt-1">{formErrors.username[0]}</div>}
+                                        </div>
+
+                                        <div className="mb-4">
+                                            <label className="block font-semibold mb-1 text-sm text-blue-900">Correo Electrónico *</label>
+                                            <input
+                                                type="email"
+                                                required
+                                                value={formData.email}
+                                                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                            />
+                                            {formErrors.email && <div className="text-red-500 text-xs mt-1">{formErrors.email[0]}</div>}
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Nueva Contraseña (Opcional)</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={showPassword ? 'text' : 'password'}
+                                                        placeholder="••••••••"
+                                                        value={formData.password}
+                                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                                        className="w-full p-2.5 pr-10 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowPassword(!showPassword)}
+                                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-blue-600 transition-colors focus:outline-none"
+                                                    >
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            {showPassword ? (
+                                                                <>
+                                                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                                    <circle cx="12" cy="12" r="3"/>
+                                                                </>
+                                                            )}
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                                {formErrors.password && <div className="text-red-500 text-xs mt-1">{formErrors.password[0]}</div>}
+                                            </div>
+
+                                            <div>
+                                                <label className="block font-semibold mb-1 text-sm text-blue-900">Confirmar Contraseña</label>
+                                                <div className="relative">
+                                                    <input
+                                                        type={showConfirmPassword ? 'text' : 'password'}
+                                                        placeholder="••••••••"
+                                                        value={formData.password_confirmation}
+                                                        onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
+                                                        className="w-full p-2.5 pr-10 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-blue-600 transition-colors focus:outline-none"
+                                                    >
+                                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                            {showConfirmPassword ? (
+                                                                <>
+                                                                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/>
+                                                                    <line x1="1" y1="1" x2="23" y2="23"/>
+                                                                </>
+                                                            ) : (
+                                                                <>
+                                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                                                                    <circle cx="12" cy="12" r="3"/>
+                                                                </>
+                                                            )}
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Apellido</label>
-                                    <input
-                                        type="text"
-                                        value={formData.lastname}
-                                        onChange={(e) => setFormData({ ...formData, lastname: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                </div>
+                                {/* Columna Derecha */}
+                                <div className="space-y-6">
+                                    {/* Foto de Perfil */}
+                                    <div>
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-blue-950">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-900">
+                                                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                                <circle cx="9" cy="9" r="2"/>
+                                                <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                                            </svg>
+                                            Foto de Perfil
+                                        </h3>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Cédula *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.cedula}
-                                        onChange={(e) => setFormData({ ...formData, cedula: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.cedula && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.cedula[0]}</p>}
-                                </div>
+                                        <div className="flex items-start gap-4">
+                                            <div
+                                                onClick={() => fileInputRef.current?.click()}
+                                                className={`w-40 h-40 sm:w-48 sm:h-48 rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-200 relative overflow-hidden bg-white/90 ${
+                                                    photoPreviewUrl
+                                                        ? 'border-2 border-solid border-green-500'
+                                                        : 'border-2 border-dashed border-slate-300 hover:border-blue-900'
+                                                }`}
+                                            >
+                                                {photoPreviewUrl ? (
+                                                    <img
+                                                        src={photoPreviewUrl}
+                                                        alt="Vista previa"
+                                                        className="w-full h-full object-cover rounded-xl"
+                                                    />
+                                                ) : (
+                                                    <div className="text-center text-slate-500 p-2">
+                                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mx-auto mb-2 text-slate-400">
+                                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                                                            <circle cx="9" cy="9" r="2"/>
+                                                            <path d="M21 15l-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
+                                                        </svg>
+                                                        <p className="text-xs font-semibold">Seleccionar foto</p>
+                                                    </div>
+                                                )}
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Fecha de Nacimiento *</label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={formData.fecha_nacimiento}
-                                        onChange={(e) => setFormData({ ...formData, fecha_nacimiento: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.fecha_nacimiento && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.fecha_nacimiento[0]}</p>}
-                                </div>
+                                                <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity rounded-xl">
+                                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white">
+                                                        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                                                        <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                                                    </svg>
+                                                </div>
+                                            </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Nombre de Usuario *</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={formData.username}
-                                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.username && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.username[0]}</p>}
-                                </div>
+                                            <div className="flex-1">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => fileInputRef.current?.click()}
+                                                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-blue-900 text-white rounded-xl hover:bg-blue-800 mb-2 text-xs font-bold transition-all shadow-sm"
+                                                >
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                                        <polyline points="7,10 12,15 17,10"/>
+                                                        <line x1="12" y1="15" x2="12" y2="3"/>
+                                                    </svg>
+                                                    Cargar Foto
+                                                </button>
+                                                <p className="text-xs text-slate-400">
+                                                    Formatos: JPG, PNG, GIF<br />
+                                                    Tamaño máximo: 2MB
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <input
+                                            ref={fileInputRef}
+                                            type="file"
+                                            accept="image/*"
+                                            onChange={handlePhotoChange}
+                                            style={{ display: 'none' }}
+                                        />
+                                    </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Correo Electrónico *</label>
-                                    <input
-                                        type="email"
-                                        required
-                                        value={formData.email}
-                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.email && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.email[0]}</p>}
-                                </div>
+                                    {/* Asignación Organizacional */}
+                                    <div>
+                                        <h3 className="text-base font-bold mb-4 flex items-center gap-2 text-blue-950">
+                                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-blue-900">
+                                                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                                                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                                            </svg>
+                                            Asignación Organizacional
+                                        </h3>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Departamento *</label>
-                                    <select
-                                        required
-                                        value={formData.departamento}
-                                        onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900 bg-white"
-                                    >
-                                        <option value="">Seleccione Departamento</option>
-                                        {departamentos.map((dep, idx) => (
-                                            <option key={idx} value={dep}>{dep}</option>
-                                        ))}
-                                    </select>
-                                    {formErrors.departamento && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.departamento[0]}</p>}
-                                </div>
+                                        <div className="mb-4">
+                                            <label className="block font-semibold mb-1 text-sm text-blue-900">Rol *</label>
+                                            <select
+                                                required
+                                                value={formData.roles}
+                                                onChange={(e) => setFormData({ ...formData, roles: e.target.value })}
+                                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                            >
+                                                <option value="">Seleccione el rol</option>
+                                                {roles.map(r => (
+                                                    <option key={r.id} value={r.name}>{r.name}</option>
+                                                ))}
+                                            </select>
+                                            {formErrors.roles && <div className="text-red-500 text-xs mt-1">{formErrors.roles[0]}</div>}
+                                        </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Rol *</label>
-                                    <select
-                                        required
-                                        value={formData.roles}
-                                        onChange={(e) => setFormData({ ...formData, roles: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900 bg-white"
-                                    >
-                                        <option value="">Seleccione Rol</option>
-                                        {roles.map(r => (
-                                            <option key={r.id} value={r.name}>{r.name}</option>
-                                        ))}
-                                    </select>
-                                    {formErrors.roles && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.roles[0]}</p>}
-                                </div>
+                                        <div className="mb-4">
+                                            <label className="block font-semibold mb-1 text-sm text-blue-900">Departamento *</label>
+                                            <select
+                                                required
+                                                value={formData.departamento}
+                                                onChange={(e) => setFormData({ ...formData, departamento: e.target.value })}
+                                                className="w-full p-2.5 border border-slate-200 rounded-xl bg-white/90 text-sm focus:outline-none focus:border-blue-900 focus:ring-2 focus:ring-blue-500/20"
+                                            >
+                                                <option value="">Seleccione el departamento</option>
+                                                {departamentos.map((dep, idx) => (
+                                                    <option key={idx} value={dep}>{dep}</option>
+                                                ))}
+                                            </select>
+                                            {formErrors.departamento && <div className="text-red-500 text-xs mt-1">{formErrors.departamento[0]}</div>}
+                                        </div>
 
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Nueva Contraseña (Opcional)</label>
-                                    <input
-                                        type="password"
-                                        placeholder="Dejar en blanco para conservar"
-                                        value={formData.password}
-                                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
-                                    {formErrors.password && <p className="text-[11px] text-red-600 mt-0.5">{formErrors.password[0]}</p>}
-                                </div>
-
-                                <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Confirmar Contraseña</label>
-                                    <input
-                                        type="password"
-                                        placeholder="Repetir si se cambia contraseña"
-                                        value={formData.password_confirmation}
-                                        onChange={(e) => setFormData({ ...formData, password_confirmation: e.target.value })}
-                                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-blue-900"
-                                    />
+                                        <div>
+                                            <label className="block font-semibold mb-2 text-sm text-blue-900">Estado del Usuario</label>
+                                            <div
+                                                className="cursor-pointer flex items-center gap-3"
+                                                onClick={() => setFormData(prev => ({ ...prev, status: !prev.status }))}
+                                            >
+                                                <div
+                                                    className={`w-[60px] h-[30px] rounded-[15px] relative transition-all duration-300 border-2 ${
+                                                        formData.status ? 'bg-[#22C55E] border-green-500/20' : 'bg-[#dc2626] border-red-500/20'
+                                                    }`}
+                                                >
+                                                    <div
+                                                        className={`w-[22px] h-[22px] bg-white rounded-full absolute top-[2px] transition-transform duration-300 shadow-md ${
+                                                            formData.status ? 'translate-x-[30px]' : 'translate-x-[2px]'
+                                                        }`}
+                                                    />
+                                                </div>
+                                                <span className={`font-semibold text-sm transition-colors duration-300 ${
+                                                    formData.status ? 'text-[#22C55E]' : 'text-[#dc2626]'
+                                                }`}>
+                                                    {formData.status ? 'Activo' : 'Inactivo'}
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
 
-                            <div className="flex items-center gap-2 pt-2">
-                                <input
-                                    type="checkbox"
-                                    id="status_edit"
-                                    checked={formData.status}
-                                    onChange={(e) => setFormData({ ...formData, status: e.target.checked })}
-                                    className="w-4 h-4 text-blue-900 rounded border-slate-300 focus:ring-blue-900"
-                                />
-                                <label htmlFor="status_edit" className="text-xs font-bold text-slate-700">Usuario Activo</label>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                            {/* Botones de Acción Inferiores Originales */}
+                            <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200">
                                 <button
                                     type="button"
                                     onClick={() => setShowEditModal(false)}
-                                    className="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200"
+                                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white bg-blue-900 hover:bg-blue-800 transition-all shadow-md active:translate-y-0.5 text-sm"
                                 >
-                                    Cancelar
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1 fill-white" viewBox="0 0 24 24">
+                                        <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path>
+                                    </svg>
+                                    <span>Regresar</span>
                                 </button>
+
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl shadow-md disabled:opacity-50"
+                                    className="inline-flex items-center justify-center gap-2.5 px-8 py-3.5 rounded-xl font-bold text-white transition-all duration-300 disabled:opacity-60 text-sm hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 14px rgba(99, 102, 241, 0.35)'
+                                    }}
                                 >
-                                    {submitting ? 'Guardando...' : 'Actualizar Usuario'}
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="mr-1">
+                                        <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+                                        <polyline points="17,21 17,13 7,13 7,21"/>
+                                        <polyline points="7,3 7,8 15,8"/>
+                                    </svg>
+                                    <span>{submitting ? 'Guardando...' : 'Guardar Cambios'}</span>
                                 </button>
                             </div>
                         </form>
