@@ -40,13 +40,17 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('api.gtic.activity-log.index');
         Route::get('/activity-log/{id}', [ActivityLogController::class, 'show'])->name('api.gtic.activity-log.show');
         Route::get('/users', [UserController::class, 'index'])->name('api.gtic.users.index');
+        Route::post('/users', [UserController::class, 'store'])->name('api.gtic.users.store');
         Route::get('/users/{user}', [UserController::class, 'show'])->name('api.gtic.users.show');
+        Route::put('/users/{user}', [UserController::class, 'update'])->name('api.gtic.users.update');
         Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('api.gtic.users.destroy');
     });
 
     // General Users API
     Route::get('/users', [UserController::class, 'index'])->name('api.users.index');
+    Route::post('/users', [UserController::class, 'store'])->name('api.users.store');
     Route::get('/users/{user}', [UserController::class, 'show'])->name('api.users.show');
+    Route::put('/users/{user}', [UserController::class, 'update'])->name('api.users.update');
     Route::delete('/users/{user}', [UserController::class, 'destroy'])->name('api.users.destroy');
 
     // OGA Module API (ct-admin: 172.17.50.250)

@@ -1,0 +1,34 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-BF2FgUwW.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-CBG1sfcx.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true,
+    "imports": [
+      "resources/js/app.jsx"
+    ]
+  },
+  "resources/js/app.jsx": {
+    "file": "assets/app-Cl_OhT6I.js",
+    "name": "app",
+    "src": "resources/js/app.jsx",
+    "isEntry": true
+  },
+  "vendor/power-components/livewire-powergrid/dist/powergrid.css": {
+    "file": "assets/powergrid-Bb_2IO2o.css",
+    "src": "vendor/power-components/livewire-powergrid/dist/powergrid.css"
+  },
+  "vendor/power-components/livewire-powergrid/dist/tom-select.css": {
+    "file": "assets/tom-select-BPSqPWfV.css",
+    "src": "vendor/power-components/livewire-powergrid/dist/tom-select.css"
+  }
+}

@@ -32,7 +32,7 @@ class UserCreateRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'password_confirmation' => 'required|string|min:8',
-            'roles' => 'required|integer|min:1',
+            'roles' => 'required',
             'departamento' => 'required|string',
             'status' => 'nullable|boolean',
             'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',

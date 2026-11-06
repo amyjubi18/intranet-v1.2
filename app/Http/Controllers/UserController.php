@@ -17,6 +17,9 @@ class UserController extends Controller
     public function index(Request $request)
     {
         if (!auth()->check()) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['error' => 'unauthenticated', 'message' => 'Tu sesión ha expirado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
 
@@ -123,6 +126,17 @@ class UserController extends Controller
                 'data' => [
                     'users' => $users,
                     'roles' => Role::orderBy('name')->get(['id', 'name']),
+                    'departamentos' => [
+                        'GTIC',
+                        'OGH',
+                        'OAC',
+                        'Consultoria Juridica',
+                        'GEDP',
+                        'OPP',
+                        'OGA',
+                        'Presidencia',
+                        'Auditoría Interna',
+                    ],
                     'current_user_id' => auth()->id(),
                     'permissions' => [
                         'can_create' => auth()->user()?->can('user_create') ?? false,
@@ -171,8 +185,13 @@ class UserController extends Controller
     public function store(UserCreateRequest $request)
     {
         if (!auth()->check()) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['error' => 'unauthenticated', 'message' => 'Tu sesión ha expirado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
+
+        abort_if(Gate::denies('user_create'), 403);
 
         // Crear usuario con todos los campos
         $user = User::create([
@@ -191,11 +210,11 @@ class UserController extends Controller
         // Asignar roles - sincronizar por nombre, no por ID
         $roles = $request->input('roles');
         if (!empty($roles)) {
-            // Convertir ID a nombre de rol (maneja integer o array)
+            // Convertir ID o nombre a rol
             $roleNames = [];
             $roleIds = is_array($roles) ? $roles : [$roles];
             foreach ($roleIds as $roleId) {
-                $role = Role::findById($roleId, 'web');
+                $role = is_numeric($roleId) ? Role::findById($roleId, 'web') : Role::findByName($roleId, 'web');
                 if ($role) {
                     $roleNames[] = $role->name;
                 }
@@ -216,6 +235,15 @@ class UserController extends Controller
             $file->move(public_path('archivos/avatars'), $filename);
             $user->profile_photo = $filename;
             $user->save();
+        }
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            $user->load('roles');
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario creado correctamente',
+                'data' => $user
+            ], 201);
         }
 
         return redirect()->route('users.index')->with('success', 'Usuario creado correctamente');
@@ -264,8 +292,13 @@ class UserController extends Controller
     public function update(UserEditRequest $request, User $user)
     {
         if (!auth()->check()) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['error' => 'unauthenticated', 'message' => 'Tu sesión ha expirado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
+
+        abort_if(Gate::denies('user_edit'), 403);
 
         // Actualizar datos del usuario
         $data = [
@@ -288,14 +321,13 @@ class UserController extends Controller
 
         $user->update($data);
 
-        // Actualizar roles - convertir IDs a nombres de rol
+        // Actualizar roles - convertir IDs o nombres a rol
         $roles = $request->input('roles');
         if (!empty($roles)) {
-            // Convertir ID a nombre de rol (maneja integer o array)
             $roleNames = [];
             $roleIds = is_array($roles) ? $roles : [$roles];
             foreach ($roleIds as $roleId) {
-                $role = Role::findById($roleId, 'web');
+                $role = is_numeric($roleId) ? Role::findById($roleId, 'web') : Role::findByName($roleId, 'web');
                 if ($role) {
                     $roleNames[] = $role->name;
                 }
@@ -320,6 +352,15 @@ class UserController extends Controller
             $file->move(public_path('archivos/avatars'), $filename);
             $user->profile_photo = $filename;
             $user->save();
+        }
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            $user->load('roles');
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario actualizado correctamente',
+                'data' => $user
+            ], 200);
         }
 
         return redirect()->route('users.index')->with('success', 'Usuario actualizado correctamente');

@@ -69,20 +69,23 @@ if (typeof document !== 'undefined') {
     } else {
         initReactRoots();
     }
+    window.addEventListener('load', initReactRoots);
 }
 
 // Exportar componentes para uso global
-window.ReactComponents = {
-    ActivityLog,
-    UsersManagement,
-    BienesPublicos,
-    InventarioOficinas,
-    Consumibles,
-    DigitalizacionDocumentos,
-    DocumentViewer,
-    EstanteriaSelector,
-    NotificationCenter
-};
+if (typeof window !== 'undefined') {
+    window.ReactComponents = {
+        ActivityLog,
+        UsersManagement,
+        BienesPublicos,
+        InventarioOficinas,
+        Consumibles,
+        DigitalizacionDocumentos,
+        DocumentViewer,
+        EstanteriaSelector,
+        NotificationCenter
+    };
+}
 
 // Exportar funciones helpers
 export function useFetch(url, options = {}) {
