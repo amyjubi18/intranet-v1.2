@@ -86,12 +86,21 @@ export default function UsersManagement() {
             if (sortField) params.append('sort', sortField);
             if (sortDirection) params.append('direction', sortDirection);
 
-            const res = await fetch(`/api/gtic/users?${params.toString()}`, {
+            let res = await fetch(`/api/gtic/users?${params.toString()}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
+
+            if (!res.ok && res.status === 404) {
+                res = await fetch(`/api/users?${params.toString()}`, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                });
+            }
 
             if (!res.ok) {
                 if (res.status === 401) {
@@ -101,20 +110,38 @@ export default function UsersManagement() {
                 throw new Error(`Error ${res.status}: No se pudo cargar los usuarios.`);
             }
 
-            const data = await res.json();
-            setUsers(Array.isArray(data.users) ? data.users : (data.users?.data || []));
-            setRoles(Array.isArray(data.roles) ? data.roles : []);
-            if (data.departamentos && Array.isArray(data.departamentos) && data.departamentos.length > 0) {
-                setDepartamentos(data.departamentos);
+            const json = await res.json();
+            const resData = json.data || json;
+            const usersPaginated = resData.users || {};
+            const usersList = Array.isArray(usersPaginated)
+                ? usersPaginated
+                : (Array.isArray(usersPaginated.data) ? usersPaginated.data : []);
+
+            setUsers(usersList);
+
+            if (resData.roles && Array.isArray(resData.roles)) {
+                setRoles(resData.roles);
             }
-            if (data.current_user_id) {
-                setCurrentUserId(data.current_user_id);
+            if (resData.departamentos && Array.isArray(resData.departamentos) && resData.departamentos.length > 0) {
+                setDepartamentos(resData.departamentos);
             }
-            if (data.permissions) {
-                setPermissions(data.permissions);
+            if (resData.current_user_id) {
+                setCurrentUserId(resData.current_user_id);
             }
-            if (data.pagination) {
-                setPagination(data.pagination);
+            if (resData.permissions) {
+                setPermissions(resData.permissions);
+            }
+            if (usersPaginated.current_page) {
+                setPagination({
+                    current_page: usersPaginated.current_page || 1,
+                    last_page: usersPaginated.last_page || 1,
+                    total: usersPaginated.total || usersList.length,
+                    from: usersPaginated.from || 0,
+                    to: usersPaginated.to || 0,
+                    per_page: usersPaginated.per_page || 10
+                });
+            } else if (resData.pagination) {
+                setPagination(resData.pagination);
             }
         } catch (err) {
             console.error('Error fetching users:', err);
