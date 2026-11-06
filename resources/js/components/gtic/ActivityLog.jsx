@@ -8,396 +8,390 @@ export default function ActivityLog() {
         total: 0,
         from: 0,
         to: 0,
-        per_page: 20
+        per_page: 15
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
-    const [eventFilter, setEventFilter] = useState('');
     const [selectedActivity, setSelectedActivity] = useState(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
-    const [permissions, setPermissions] = useState({ can_show: true, can_export: true });
 
-    // Fetch activities from API
+    // Cargar actividades desde la API
     const fetchActivities = useCallback(async (page = 1) => {
         setLoading(true);
         setError(null);
         try {
             const params = new URLSearchParams({
                 page: page,
-                per_page: 20,
+                per_page: 15
             });
             if (search.trim()) params.append('search', search.trim());
-            if (eventFilter) params.append('event', eventFilter);
 
-            const response = await fetch(`/api/gtic/activity-log?${params.toString()}`, {
+            const res = await fetch(`/api/gtic/activity-log?${params.toString()}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
 
-            if (!response.ok) {
-                throw new Error(`Error en el servidor (${response.status})`);
+            if (!res.ok) {
+                if (res.status === 401) {
+                    window.location.href = '/login?timeout=1';
+                    return;
+                }
+                throw new Error(`Error en el servidor (${res.status})`);
             }
 
-            const json = await response.json();
-            const paginatedData = json.data?.activities || json.data || {};
+            const json = await res.json();
+            const resData = json.data?.activities || json.data || {};
 
-            setActivities(paginatedData.data || []);
+            setActivities(resData.data || []);
             setPagination({
-                current_page: paginatedData.current_page || 1,
-                last_page: paginatedData.last_page || 1,
-                total: paginatedData.total || 0,
-                from: paginatedData.from || 0,
-                to: paginatedData.to || 0,
-                per_page: paginatedData.per_page || 20
+                current_page: resData.current_page || 1,
+                last_page: resData.last_page || 1,
+                total: resData.total || 0,
+                from: resData.from || 0,
+                to: resData.to || 0,
+                per_page: resData.per_page || 15
             });
-
-            if (json.data?.permissions) {
-                setPermissions(json.data.permissions);
-            }
         } catch (err) {
-            console.error('Error fetching activity log:', err);
-            setError(err.message || 'No se pudieron cargar los registros de actividades.');
+            console.error('Error fetching activities:', err);
+            setError(err.message || 'No se pudieron cargar las actividades.');
         } finally {
             setLoading(false);
         }
-    }, [search, eventFilter]);
+    }, [search]);
 
-    // Initial load and filter change
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchActivities(1);
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, eventFilter, fetchActivities]);
+    }, [search, fetchActivities]);
 
-    // Helper for event badge styling
-    const getEventBadge = (event) => {
-        switch (event) {
-            case 'created':
-                return { label: 'Registro', bg: 'bg-emerald-100 text-emerald-800 border-emerald-200' };
-            case 'updated':
-                return { label: 'Actualización', bg: 'bg-blue-100 text-blue-800 border-blue-200' };
-            case 'deleted':
-                return { label: 'Eliminación', bg: 'bg-red-100 text-red-800 border-red-200' };
-            case 'exported':
-                return { label: 'Exportación', bg: 'bg-purple-100 text-purple-800 border-purple-200' };
-            default:
-                return { label: event || 'Acción', bg: 'bg-slate-100 text-slate-800 border-slate-200' };
-        }
+    // Formato de fecha exacto original: d/m/Y h:i:s A
+    const formatDate = (dateString) => {
+        if (!dateString) return 'N/A';
+        const d = new Date(dateString);
+        if (isNaN(d.getTime())) return dateString;
+
+        const pad = (n) => String(n).padStart(2, '0');
+        const day = pad(d.getDate());
+        const month = pad(d.getMonth() + 1);
+        const year = d.getFullYear();
+
+        let hours = d.getHours();
+        const minutes = pad(d.getMinutes());
+        const seconds = pad(d.getSeconds());
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12;
+        hours = hours ? hours : 12;
+        const strHours = pad(hours);
+
+        return `${day}/${month}/${year} ${strHours}:${minutes}:${seconds} ${ampm}`;
     };
 
-    // Helper for subject model name
-    const formatModelName = (subjectType) => {
+    // Nombre simple del modelo: class_basename
+    const getModelName = (subjectType) => {
         if (!subjectType) return 'N/A';
         const parts = subjectType.split('\\');
         return parts[parts.length - 1];
     };
 
-    // Helper for date formatting
-    const formatDate = (dateString) => {
-        if (!dateString) return '-';
-        const date = new Date(dateString);
-        return date.toLocaleString('es-VE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit',
-            hour12: true
-        });
+    // Nombre de usuario causer
+    const getCauserName = (causer) => {
+        if (!causer) return 'Sistema';
+        return causer.name || causer.username || 'Sistema';
     };
 
-    // Open detail modal
-    const handleViewDetail = (activity) => {
-        setSelectedActivity(activity);
-        setDetailModalOpen(true);
+    // Badge de acción con los colores exactos originales
+    const renderActionBadge = (event) => {
+        let badgeClass = 'bg-gray-100 text-gray-800';
+        let label = event || 'N/A';
+
+        if (event === 'created') {
+            badgeClass = 'bg-green-100 text-green-800';
+            label = 'Registro';
+        } else if (event === 'updated') {
+            badgeClass = 'bg-blue-100 text-blue-800';
+            label = 'Actualización';
+        } else if (event === 'deleted') {
+            badgeClass = 'bg-red-100 text-red-800';
+            label = 'Eliminación';
+        } else if (event === 'exported') {
+            badgeClass = 'bg-purple-100 text-purple-800';
+            label = 'Exportación';
+        }
+
+        return (
+            <span className={`px-2 py-1 text-xs rounded-full font-medium ${badgeClass}`}>
+                {label}
+            </span>
+        );
+    };
+
+    // Descripción con el formato exacto original
+    const renderDescription = (activity) => {
+        const username = getCauserName(activity.causer);
+        const modelName = getModelName(activity.subject_type);
+
+        if (activity.event === 'created') {
+            return (
+                <span>
+                    <b className="text-blue-900">{username}</b> hizo un registro en el modelo {modelName}
+                </span>
+            );
+        }
+        if (activity.event === 'updated') {
+            return (
+                <span>
+                    <b className="text-blue-900">{username}</b> realizó un cambio en el modelo {modelName}
+                </span>
+            );
+        }
+        if (activity.event === 'deleted') {
+            return (
+                <span>
+                    <b className="text-blue-900">{username}</b> hizo una eliminación en {modelName}
+                </span>
+            );
+        }
+
+        return (
+            <span>
+                {activity.description || activity.properties?.url || '/'}
+            </span>
+        );
     };
 
     return (
-        <div className="space-y-6">
-            {/* Header con acciones */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl p-6 shadow-sm border border-slate-200/80">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                            <span>🛡️</span> Registro de Actividades
-                        </h2>
-                        <p className="text-sm text-slate-500 mt-1">
-                            Auditoría en tiempo real de cambios, accesos y eventos en el sistema.
-                        </p>
-                    </div>
+        <div className="bg-white rounded-lg shadow-md p-6">
+            {/* Cabecera con Buscador */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                <h1 className="text-2xl font-bold">Registro de Actividades</h1>
 
-                    <div className="flex items-center gap-2.5 flex-wrap">
-                        <button
-                            type="button"
-                            onClick={() => fetchActivities(pagination.current_page)}
-                            className="inline-flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-                            title="Recargar datos"
-                        >
-                            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>Refrescar</span>
-                        </button>
-
-                        <a
-                            href="/gtic/activity-log/export/pdf"
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-all shadow-sm"
-                        >
-                            <span>📄</span>
-                            <span>Exportar PDF</span>
-                        </a>
-                    </div>
-                </div>
-
-                {/* Barra de Filtros */}
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-6 pt-5 border-t border-slate-100">
-                    <div className="relative md:col-span-2">
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Buscar por usuario, descripción o modelo..."
-                            className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-800"
-                        />
-                        <svg className="w-5 h-5 absolute left-3.5 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-
-                    <div>
-                        <select
-                            value={eventFilter}
-                            onChange={(e) => setEventFilter(e.target.value)}
-                            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all text-slate-800"
-                        >
-                            <option value="">Todos los eventos</option>
-                            <option value="created">Registro (Created)</option>
-                            <option value="updated">Actualización (Updated)</option>
-                            <option value="deleted">Eliminación (Deleted)</option>
-                            <option value="exported">Exportación (Exported)</option>
-                        </select>
-                    </div>
+                <div className="relative">
+                    <input
+                        type="search"
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                        placeholder="Buscar en el registro..."
+                        className="w-full sm:w-64 pl-9 pr-4 py-2 text-sm rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-800"
+                    />
+                    <svg className="w-4 h-4 text-gray-400 absolute left-3 top-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
                 </div>
             </div>
 
-            {/* Estado de Error */}
-            {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between text-red-700">
-                    <div className="flex items-center gap-3">
-                        <span className="text-xl">⚠️</span>
-                        <p className="text-sm font-semibold">{error}</p>
+            {/* Tabla de Actividades (Diseño Original Exacto) */}
+            <div className="overflow-x-auto">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-16 text-center">
+                        <div className="w-10 h-10 border-4 border-blue-900 border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <p className="text-sm font-semibold text-gray-700">Cargando registros de actividad...</p>
                     </div>
-                    <button
-                        onClick={() => fetchActivities(pagination.current_page)}
-                        className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg hover:bg-red-700 font-semibold transition-all"
-                    >
-                        Reintentar
-                    </button>
-                </div>
-            )}
-
-            {/* Tabla de Actividades */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-200 text-left">
-                        <thead className="bg-slate-50/80 text-xs font-bold text-slate-600 uppercase tracking-wider">
+                ) : error ? (
+                    <div className="p-6 text-center text-red-600 bg-red-50 rounded-lg">
+                        <p className="text-sm font-semibold mb-2">{error}</p>
+                        <button
+                            type="button"
+                            onClick={() => fetchActivities(pagination.current_page)}
+                            className="px-4 py-2 text-xs font-bold text-white bg-red-600 rounded-lg hover:bg-red-700"
+                        >
+                            Reintentar
+                        </button>
+                    </div>
+                ) : activities.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">
+                        No se encontraron registros de actividades.
+                    </div>
+                ) : (
+                    <table className="min-w-full table-auto">
+                        <thead className="bg-gray-50">
                             <tr>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Fecha y Hora</th>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Usuario</th>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Acción</th>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Módulo / Modelo</th>
-                                <th className="px-5 py-3.5">Descripción del Evento</th>
-                                <th className="px-5 py-3.5 text-right whitespace-nowrap">Acciones</th>
+                                <th className="px-4 py-2 text-left whitespace-nowrap">Fecha</th>
+                                <th className="px-4 py-2 text-left whitespace-nowrap">Usuario</th>
+                                <th className="px-4 py-2 text-left whitespace-nowrap">Acción</th>
+                                <th className="px-4 py-2 text-left whitespace-nowrap">Modelo</th>
+                                <th className="px-4 py-2 text-left">Descripción</th>
+                                <th className="px-4 py-2 text-left whitespace-nowrap">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm">
-                            {loading ? (
-                                Array.from({ length: 5 }).map((_, idx) => (
-                                    <tr key={idx} className="animate-pulse">
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-28"></div></td>
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
-                                        <td className="px-5 py-4"><div className="h-6 bg-slate-200 rounded-full w-20"></div></td>
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-28"></div></td>
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-64"></div></td>
-                                        <td className="px-5 py-4 text-right"><div className="h-4 bg-slate-200 rounded w-16 ml-auto"></div></td>
-                                    </tr>
-                                ))
-                            ) : activities.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="text-center py-12 text-slate-400">
-                                        <div className="text-4xl mb-2">🔍</div>
-                                        <p className="font-semibold text-slate-600">No se encontraron actividades</p>
-                                        <p className="text-xs text-slate-400 mt-1">Intenta con otros filtros o términos de búsqueda</p>
+                        <tbody className="divide-y divide-gray-200">
+                            {activities.map((activity) => (
+                                <tr key={activity.id} className="hover:bg-gray-50">
+                                    <td className="px-4 py-2 whitespace-nowrap">
+                                        {formatDate(activity.created_at)}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap text-bold text-blue-900">
+                                        <b className="text-blue-900">{getCauserName(activity.causer)}</b>
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap">
+                                        {renderActionBadge(activity.event)}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap">
+                                        {getModelName(activity.subject_type)}
+                                    </td>
+                                    <td className="px-4 py-2 break-words">
+                                        {renderDescription(activity)}
+                                    </td>
+                                    <td className="px-4 py-2 whitespace-nowrap">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                setSelectedActivity(activity);
+                                                setDetailModalOpen(true);
+                                            }}
+                                            className="text-blue-600 hover:text-blue-800"
+                                        >
+                                            Ver detalles
+                                        </button>
                                     </td>
                                 </tr>
-                            ) : (
-                                activities.map((activity) => {
-                                    const badge = getEventBadge(activity.event);
-                                    const username = activity.causer ? (activity.causer.username || activity.causer.name) : 'Sistema';
-                                    const model = formatModelName(activity.subject_type);
-
-                                    return (
-                                        <tr key={activity.id} className="hover:bg-slate-50/70 transition-colors">
-                                            <td className="px-5 py-3.5 whitespace-nowrap text-slate-500 font-mono text-xs">
-                                                {formatDate(activity.created_at)}
-                                            </td>
-                                            <td className="px-5 py-3.5 whitespace-nowrap font-bold text-blue-900">
-                                                {username}
-                                            </td>
-                                            <td className="px-5 py-3.5 whitespace-nowrap">
-                                                <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badge.bg}`}>
-                                                    {badge.label}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-3.5 whitespace-nowrap text-slate-700 font-medium">
-                                                <span className="px-2 py-1 bg-slate-100 rounded-md text-xs font-mono">
-                                                    {model}
-                                                </span>
-                                            </td>
-                                            <td className="px-5 py-3.5 text-slate-600 max-w-md break-words">
-                                                {activity.description ? (
-                                                    activity.description
-                                                ) : (
-                                                    <span>
-                                                        <strong className="text-slate-800">{username}</strong> ejecutó una acción sobre <code className="text-blue-700 font-mono text-xs">{model}</code>
-                                                    </span>
-                                                )}
-                                            </td>
-                                            <td className="px-5 py-3.5 text-right whitespace-nowrap">
-                                                {permissions.can_show ? (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => handleViewDetail(activity)}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-blue-700 hover:text-blue-900 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all"
-                                                    >
-                                                        <span>Ver detalle</span>
-                                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                                                        </svg>
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-xs text-slate-400 italic">Sin permiso</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
+                            ))}
                         </tbody>
                     </table>
-                </div>
+                )}
+            </div>
 
-                {/* Barra de Paginación */}
-                {pagination.total > 0 && (
-                    <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <div className="text-xs text-slate-500">
-                            Mostrando <span className="font-semibold text-slate-800">{pagination.from || 0}</span> a{' '}
-                            <span className="font-semibold text-slate-800">{pagination.to || 0}</span> de{' '}
-                            <span className="font-semibold text-slate-800">{pagination.total}</span> registros
-                        </div>
-
-                        <div className="flex items-center gap-1">
+            {/* Pie de Tabla: Paginación y Botón Exportar PDF Original */}
+            <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div>
+                    {pagination.last_page > 1 ? (
+                        <div className="flex items-center gap-2">
                             <button
                                 type="button"
-                                disabled={pagination.current_page <= 1 || loading}
                                 onClick={() => fetchActivities(pagination.current_page - 1)}
-                                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                disabled={pagination.current_page <= 1}
+                                className="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40"
                             >
                                 Anterior
                             </button>
-
-                            <span className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg">
-                                {pagination.current_page} / {pagination.last_page}
+                            <span className="text-xs text-gray-600 px-2">
+                                Página {pagination.current_page} de {pagination.last_page} ({pagination.total} registros)
                             </span>
-
                             <button
                                 type="button"
-                                disabled={pagination.current_page >= pagination.last_page || loading}
                                 onClick={() => fetchActivities(pagination.current_page + 1)}
-                                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                                disabled={pagination.current_page >= pagination.last_page}
+                                className="px-3 py-1.5 rounded border border-gray-300 bg-white text-xs font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-40"
                             >
                                 Siguiente
                             </button>
                         </div>
-                    </div>
-                )}
+                    ) : (
+                        <span className="text-xs text-gray-500">
+                            Total: {pagination.total} registros
+                        </span>
+                    )}
+                </div>
+
+                <div className="flex space-x-2">
+                    <a
+                        href="/gtic/activity-log/export/pdf"
+                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors inline-flex items-center gap-1.5 text-sm"
+                    >
+                        📄 Exportar PDF
+                    </a>
+                </div>
             </div>
 
-            {/* Modal de Detalle de Actividad */}
+            {/* MODAL DETALLES DE ACTIVIDAD (DISEÑO EXACTO A show.blade.php) */}
             {detailModalOpen && selectedActivity && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
-                        {/* Header */}
-                        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
-                            <div className="flex items-center gap-3">
-                                <span className="text-2xl">📋</span>
-                                <div>
-                                    <h3 className="text-lg font-bold text-slate-800">Detalle de Actividad #{selectedActivity.id}</h3>
-                                    <p className="text-xs text-slate-500 font-mono">{formatDate(selectedActivity.created_at)}</p>
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => setDetailModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors"
-                            >
-                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        {/* Contenido */}
-                        <div className="p-6 overflow-y-auto space-y-4 text-sm">
-                            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl border border-slate-100">
-                                <div>
-                                    <span className="text-xs text-slate-400 uppercase font-semibold">Usuario:</span>
-                                    <p className="font-bold text-blue-900 mt-0.5">
-                                        {selectedActivity.causer ? (selectedActivity.causer.username || selectedActivity.causer.name) : 'Sistema'}
-                                    </p>
-                                </div>
-                                <div>
-                                    <span className="text-xs text-slate-400 uppercase font-semibold">Acción:</span>
-                                    <div className="mt-0.5">
-                                        <span className={`inline-flex px-2 py-0.5 rounded text-xs font-semibold ${getEventBadge(selectedActivity.event).bg}`}>
-                                            {getEventBadge(selectedActivity.event).label}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div>
-                                    <span className="text-xs text-slate-400 uppercase font-semibold">Modelo:</span>
-                                    <p className="font-mono text-slate-800 mt-0.5">{formatModelName(selectedActivity.subject_type)}</p>
-                                </div>
-                                <div>
-                                    <span className="text-xs text-slate-400 uppercase font-semibold">ID Registro:</span>
-                                    <p className="font-mono text-slate-800 mt-0.5">{selectedActivity.subject_id || '-'}</p>
-                                </div>
-                            </div>
-
-                            {selectedActivity.properties && Object.keys(selectedActivity.properties).length > 0 && (
-                                <div>
-                                    <h4 className="text-xs uppercase font-bold text-slate-500 mb-2">Propiedades / Cambios:</h4>
-                                    <pre className="p-4 bg-slate-900 text-emerald-400 rounded-xl text-xs font-mono overflow-x-auto max-h-60">
-                                        {JSON.stringify(selectedActivity.properties, null, 2)}
-                                    </pre>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Footer */}
-                        <div className="px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex justify-end">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
+                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 border border-gray-200 my-8 max-h-[90vh] overflow-y-auto">
+                        {/* Cabecera del Modal */}
+                        <div className="flex justify-between items-center mb-6">
+                            <h1 className="text-2xl font-bold">Detalles de Actividad</h1>
                             <button
                                 type="button"
                                 onClick={() => setDetailModalOpen(false)}
-                                className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold rounded-xl text-xs transition-all"
+                                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 text-sm"
                             >
-                                Cerrar
+                                ← Volver
                             </button>
                         </div>
+
+                        {/* Grid de 2 Columnas Original */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Información General */}
+                            <div>
+                                <h2 className="text-lg font-semibold mb-4">Información General</h2>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="font-medium text-gray-700 block">Fecha:</label>
+                                        <p>{formatDate(selectedActivity.created_at)}</p>
+                                    </div>
+                                    <div>
+                                        <label className="font-medium text-gray-700 block">Usuario:</label>
+                                        <p>{getCauserName(selectedActivity.causer)}</p>
+                                    </div>
+                                    <div>
+                                        <label className="font-medium text-gray-700 block">Acción:</label>
+                                        <div className="mt-1">{renderActionBadge(selectedActivity.event)}</div>
+                                    </div>
+                                    <div>
+                                        <label className="font-medium text-gray-700 block">Modelo:</label>
+                                        <p>{getModelName(selectedActivity.subject_type)}</p>
+                                    </div>
+                                    <div>
+                                        <label className="font-medium text-gray-700 block">ID del Registro:</label>
+                                        <p>{selectedActivity.subject_id || 'N/A'}</p>
+                                    </div>
+                                    <div>
+                                        <label className="font-medium text-gray-700 block">Ruta:</label>
+                                        <p className="break-all">{selectedActivity.properties?.url || '/'}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Cambios Realizados */}
+                            <div>
+                                <h2 className="text-lg font-semibold mb-4">Cambios Realizados</h2>
+                                {selectedActivity.properties && (selectedActivity.properties.old || selectedActivity.properties.attributes) ? (
+                                    <div className="space-y-4">
+                                        {selectedActivity.properties.old && (
+                                            <div>
+                                                <h3 className="font-medium text-red-700 mb-2">Valores Anteriores:</h3>
+                                                <pre className="bg-red-50 p-3 rounded text-sm overflow-x-auto border border-red-100 text-red-950 font-mono max-h-48">
+                                                    {JSON.stringify(selectedActivity.properties.old, null, 2)}
+                                                </pre>
+                                            </div>
+                                        )}
+
+                                        {selectedActivity.properties.attributes && (
+                                            <div>
+                                                <h3 className="font-medium text-green-700 mb-2">Valores Nuevos:</h3>
+                                                <pre className="bg-green-50 p-3 rounded text-sm overflow-x-auto border border-green-100 text-green-950 font-mono max-h-48">
+                                                    {JSON.stringify(selectedActivity.properties.attributes, null, 2)}
+                                                </pre>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <p className="text-gray-500">No hay cambios registrados para esta actividad.</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Descripción */}
+                        <div className="mt-6">
+                            <h2 className="text-lg font-semibold mb-4">Descripción</h2>
+                            <p className="bg-gray-50 p-4 rounded text-gray-800">
+                                {renderDescription(selectedActivity)}
+                            </p>
+                        </div>
+
+                        {/* Propiedades Adicionales si las hay */}
+                        {selectedActivity.properties && Object.keys(selectedActivity.properties).length > 0 && (
+                            <div className="mt-6">
+                                <h2 className="text-lg font-semibold mb-4">Propiedades Adicionales</h2>
+                                <pre className="bg-gray-50 p-4 rounded text-sm overflow-x-auto border border-gray-200 font-mono max-h-48">
+                                    {JSON.stringify(selectedActivity.properties, null, 2)}
+                                </pre>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}
