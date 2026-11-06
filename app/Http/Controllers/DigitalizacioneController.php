@@ -62,6 +62,21 @@ class DigitalizacioneController extends Controller
 
         $digitalizaciones = $query->orderBy($sort, $direction)->paginate(15);
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'digitalizaciones' => $digitalizaciones,
+                    'areas_adscritas' => AreaAdscrita::all(),
+                    'tipo_documentos' => TipoDocumento::all(),
+                    'total' => Digitalizacione::count(),
+                    'totalDocumentos' => DigitalizacionDocumento::count(),
+                ],
+                'message' => 'Digitalizaciones obtenidas exitosamente'
+            ], 200);
+        }
+
         return view('gestion-humana.digitalizacion_documentos.index', [
             'digitalizaciones' => $digitalizaciones,
             'areas_adscritas' => AreaAdscrita::all(),

@@ -181,6 +181,32 @@ case 'busqueda':
         $unidad_medidas = UnidadMedida::all();
         $facturas = InventarioOficina::distinct()->pluck('n_factura')->filter()->sort()->values();
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'inventario' => $inventario_oficinas,
+                    'metrics' => [
+                        'ultimasFechas' => $ultimasFechas,
+                        'totalItemsRegistrados' => $totalItemsRegistrados,
+                        'itemsEsteMes' => $itemsEsteMes,
+                        'porcentajeItems' => $porcentajeItems,
+                        'stockBajo' => $stockBajo,
+                        'articulosStockBajo' => $articulosStockBajo,
+                        'articuloMasRegistros' => $articuloMasRegistros,
+                    ],
+                    'catalogs' => [
+                        'proveedores' => $proveedores,
+                        'articulos' => $articulos,
+                        'unidad_medidas' => $unidad_medidas,
+                        'facturas' => $facturas,
+                    ]
+                ],
+                'message' => 'Inventario de oficina obtenido exitosamente'
+            ], 200);
+        }
+
         return view('administracion.inventario_oficinas.index', compact(
             'inventario_oficinas',
             'ultimasFechas',

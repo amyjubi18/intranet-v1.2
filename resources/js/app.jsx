@@ -4,46 +4,65 @@ import DocumentViewer from './components/documents/DocumentViewer';
 import EstanteriaSelector from './components/documents/EstanteriaSelector';
 import NotificationCenter from './components/ui/NotificationCenter';
 import ActivityLog from './components/gtic/ActivityLog';
+import BienesPublicos from './components/administracion/BienesPublicos';
+import InventarioOficinas from './components/administracion/InventarioOficinas';
+import DigitalizacionDocumentos from './components/gestion_humana/DigitalizacionDocumentos';
 
 // Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
     const elements = document.querySelectorAll(`[data-react-component="${componentName}"]`);
 
     elements.forEach(element => {
-        const props = JSON.parse(element.dataset.props || '{}');
-        const root = ReactDOM.createRoot(element);
-        root.render(React.createElement(component, props));
+        if (!element.hasAttribute('data-react-mounted')) {
+            element.setAttribute('data-react-mounted', 'true');
+            const props = JSON.parse(element.dataset.props || '{}');
+            const root = ReactDOM.createRoot(element);
+            root.render(React.createElement(component, props));
+        }
     });
+}
+
+function mountById(elementId, component) {
+    const el = document.getElementById(elementId);
+    if (el && !el.hasAttribute('data-react-mounted')) {
+        el.setAttribute('data-react-mounted', 'true');
+        const root = ReactDOM.createRoot(el);
+        root.render(React.createElement(component));
+    }
 }
 
 // Inicializar componentes cuando el DOM esté listo
 document.addEventListener('DOMContentLoaded', () => {
-    // Mount Activity Log (GTIC)
+    // GTIC: Registro de Actividades
     mountComponent('ActivityLog', ActivityLog);
-    const activityLogEl = document.getElementById('activity-log-root');
-    if (activityLogEl && !activityLogEl.hasAttribute('data-react-mounted')) {
-        activityLogEl.setAttribute('data-react-mounted', 'true');
-        const root = ReactDOM.createRoot(activityLogEl);
-        root.render(<ActivityLog />);
-    }
+    mountById('activity-log-root', ActivityLog);
 
-    // Mount Document Viewer
+    // OGA: Bienes Públicos / Muebles
+    mountComponent('BienesPublicos', BienesPublicos);
+    mountById('bienes-publicos-root', BienesPublicos);
+
+    // OGA: Inventario de Oficina
+    mountComponent('InventarioOficinas', InventarioOficinas);
+    mountById('inventario-oficinas-root', InventarioOficinas);
+
+    // OGH: Digitalización de Documentos
+    mountComponent('DigitalizacionDocumentos', DigitalizacionDocumentos);
+    mountById('digitalizacion-documentos-root', DigitalizacionDocumentos);
+
+    // Documentos & Selectores existentes
     mountComponent('DocumentViewer', DocumentViewer);
-
-    // Mount Estanteria Selector
     mountComponent('EstanteriaSelector', EstanteriaSelector);
 
-    // Mount Notification Center (solo si existe el elemento)
-    const notificationElement = document.getElementById('react-notification-center');
-    if (notificationElement) {
-        const root = ReactDOM.createRoot(notificationElement);
-        root.render(<NotificationCenter />);
-    }
+    // Notification Center (si existe el elemento)
+    mountById('react-notification-center', NotificationCenter);
 });
 
 // Exportar componentes para uso global
 window.ReactComponents = {
     ActivityLog,
+    BienesPublicos,
+    InventarioOficinas,
+    DigitalizacionDocumentos,
     DocumentViewer,
     EstanteriaSelector,
     NotificationCenter

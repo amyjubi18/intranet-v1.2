@@ -211,6 +211,36 @@ class BieneController extends Controller
         $usuarios_de_uso = \App\Models\UsuarioDeUso::all();
         $usuarios_administrativos = \App\Models\UsuarioAdministrativo::all();
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'bienes' => $bienes,
+                    'metrics' => [
+                        'totalBienes' => $totalBienes,
+                        'bienesEnUso' => $bienesEnUso,
+                        'valorTotal' => $valorTotal,
+                        'ultimoBien' => $ultimoBien,
+                    ],
+                    'catalogs' => [
+                        'estado_del_usos' => $estado_del_usos,
+                        'condiciones' => $condiciones,
+                        'unidad_administrativas' => $unidad_administrativas,
+                        'forma_adquisiciones' => $forma_adquisiciones,
+                        'colors' => $colors,
+                        'descripciones' => $descripciones,
+                        'marcas' => $marcas,
+                        'modelos' => $modelos,
+                        'n_internos' => $n_internos,
+                        'usuarios_de_uso' => $usuarios_de_uso,
+                        'usuarios_administrativos' => $usuarios_administrativos,
+                    ]
+                ],
+                'message' => 'Bienes públicos obtenidos exitosamente'
+            ], 200);
+        }
+
         return view('administracion.bienes_publicos.index', compact(
             'bienes', 'ultimoBien', 'valorTotal', 'bienesEnUso', 'totalBienes',
             'estado_del_usos', 'condiciones', 'unidad_administrativas',

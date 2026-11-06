@@ -5,6 +5,9 @@ use App\Http\Controllers\Api\DashboardController;
 use App\Http\Controllers\Api\DirectoryController;
 use App\Http\Controllers\Api\EventController;
 use App\Http\Controllers\ActivityLogController;
+use App\Http\Controllers\BieneController;
+use App\Http\Controllers\InventarioOficController;
+use App\Http\Controllers\DigitalizacioneController;
 
 // API routes that need authentication (works with session auth for web)
 Route::middleware(['web', 'auth'])->group(function () {
@@ -30,10 +33,21 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::get("/events/by-date", [EventController::class, "byDate"])->name("api.events.by-date");
     Route::get("/events/upcoming", [EventController::class, "upcoming"])->name("api.events.upcoming");
 
-    // GTIC Module API
+    // GTIC Module API (ct-gtic: 172.17.50.252)
     Route::prefix('gtic')->group(function () {
         Route::get('/activity-log', [ActivityLogController::class, 'index'])->name('api.gtic.activity-log.index');
         Route::get('/activity-log/{id}', [ActivityLogController::class, 'show'])->name('api.gtic.activity-log.show');
+    });
+
+    // OGA Module API (ct-admin: 172.17.50.250)
+    Route::prefix('administracion')->group(function () {
+        Route::get('/bienes_publicos', [BieneController::class, 'index'])->name('api.administracion.bienes_publicos.index');
+        Route::get('/inventario_oficinas', [InventarioOficController::class, 'index'])->name('api.administracion.inventario_oficinas.index');
+    });
+
+    // OGH Module API (ct-gh: 172.17.50.251)
+    Route::prefix('gestion-humana')->group(function () {
+        Route::get('/digitalizacion_documentos', [DigitalizacioneController::class, 'index'])->name('api.gestion_humana.digitalizacion_documentos.index');
     });
 });
 
