@@ -1,25 +1,25 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import Swal from 'sweetalert2';
 
 export default function BienesPublicos() {
     const [bienes, setBienes] = useState([]);
     const [metrics, setMetrics] = useState({
         totalBienes: 0,
         bienesEnUso: 0,
-        valorTotal: 0,
         ultimoBien: null
     });
     const [catalogs, setCatalogs] = useState({
-        estado_del_usos: [],
-        condiciones: [],
-        unidad_administrativas: [],
-        forma_adquisiciones: [],
-        colors: [],
+        n_internos: [],
         descripciones: [],
+        unidad_administrativas: [],
+        usuarios_de_uso: [],
+        usuarios_administrativos: [],
+        estado_del_usos: [],
+        forma_adquisiciones: [],
         marcas: [],
         modelos: [],
-        n_internos: [],
-        usuarios_de_uso: [],
-        usuarios_administrativos: []
+        condiciones: [],
+        colors: []
     });
     const [pagination, setPagination] = useState({
         current_page: 1,
@@ -31,32 +31,40 @@ export default function BienesPublicos() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [permissions, setPermissions] = useState({ can_create: false, can_edit: false, can_destroy: false, can_export: false });
+    const [permissions, setPermissions] = useState({
+        can_create: false,
+        can_edit: false,
+        can_destroy: false,
+        can_export: false
+    });
 
-    // Filtros
-    const [search, setSearch] = useState('');
+    // Filtros originales
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [filterType, setFilterType] = useState('');
     const [secondFilter, setSecondFilter] = useState('');
+    const [busqueda, setBusqueda] = useState('');
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
 
-    // Modal de detalle y QR
+    // Modales
     const [selectedBien, setSelectedBien] = useState(null);
     const [detailModalOpen, setDetailModalOpen] = useState(false);
     const [qrModalOpen, setQrModalOpen] = useState(false);
 
-    // Cargar datos desde la API
+    // Cargar datos
     const fetchBienes = useCallback(async (page = 1) => {
         setLoading(true);
         setError(null);
         try {
             const params = new URLSearchParams({ page });
-            if (search.trim()) params.append('search', search.trim());
+            if (busqueda.trim()) params.append('busqueda', busqueda.trim());
             if (filterType) {
                 params.append('filterType', filterType);
                 if (filterType === 'fecha') {
                     if (fechaDesde) params.append('fecha_desde', fechaDesde);
                     if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+                } else if (filterType === 'busqueda') {
+                    if (busqueda) params.append('busqueda', busqueda);
                 } else if (secondFilter) {
                     params.append('secondFilter', secondFilter);
                 }
@@ -70,6 +78,10 @@ export default function BienesPublicos() {
             });
 
             if (!response.ok) {
+                if (response.status === 401) {
+                    window.location.href = '/login?timeout=1';
+                    return;
+                }
                 throw new Error(`Error en el servidor (${response.status})`);
             }
 
@@ -87,445 +99,559 @@ export default function BienesPublicos() {
                 per_page: paginated.per_page || 10
             });
 
-            if (resData.metrics) setMetrics(resData.metrics);
-            if (resData.catalogs) setCatalogs(resData.catalogs);
-            if (resData.permissions) setPermissions(resData.permissions);
+            setMetrics({
+                totalBienes: resData.totalBienes || paginated.total || 0,
+                bienesEnUso: resData.bienesEnUso || 0,
+                ultimoBien: resData.ultimoBien || null
+            });
+
+            if (resData.catalogs) {
+                setCatalogs(resData.catalogs);
+            }
+            if (resData.permissions) {
+                setPermissions(resData.permissions);
+            }
         } catch (err) {
             console.error('Error fetching bienes:', err);
-            setError(err.message || 'No se pudieron cargar los registros de bienes.');
+            setError(err.message || 'No se pudieron cargar los datos.');
         } finally {
             setLoading(false);
         }
-    }, [search, filterType, secondFilter, fechaDesde, fechaHasta]);
+    }, [filterType, secondFilter, busqueda, fechaDesde, fechaHasta]);
 
-    // Debounce para búsqueda y filtros
     useEffect(() => {
-        const timer = setTimeout(() => {
-            fetchBienes(1);
-        }, 300);
-        return () => clearTimeout(timer);
-    }, [search, filterType, secondFilter, fechaDesde, fechaHasta, fetchBienes]);
+        fetchBienes(1);
+    }, [fetchBienes]);
 
     const handleClearFilters = () => {
-        setSearch('');
         setFilterType('');
         setSecondFilter('');
+        setBusqueda('');
         setFechaDesde('');
         setFechaHasta('');
     };
 
-    const formatCurrency = (val) => {
-        const num = parseFloat(val) || 0;
-        return num.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Función para obtener icono según descripción
+    const getIconForDescription = (desc = '') => {
+        const d = (desc || '').toLowerCase();
+        if (d.includes('computador') || d.includes('laptop') || d.includes('pc') || d.includes('servidor')) return '💻';
+        if (d.includes('impresora') || d.includes('multifuncional')) return '🖨️';
+        if (d.includes('silla') || d.includes('sillón') || d.includes('butaca')) return '🪑';
+        if (d.includes('escritorio') || d.includes('mesa') || d.includes('estante')) return '🛋️';
+        if (d.includes('vehiculo') || d.includes('carro') || d.includes('camioneta')) return '🚗';
+        if (d.includes('telefono') || d.includes('celular')) return '📞';
+        if (d.includes('aire') || d.includes('split')) return '❄️';
+        return '📦';
+    };
+
+    const handleDelete = async (bien) => {
+        const result = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: `Se eliminará el bien "${bien.descripcion}" (N° Interno: ${bien.n_interno_bien || 'S/N'})`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#F52727',
+            cancelButtonColor: '#2780F5',
+            confirmButtonText: 'Sí, eliminar',
+            cancelButtonText: 'Cancelar'
+        });
+
+        if (!result.isConfirmed) return;
+
+        try {
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const res = await fetch(`/api/administracion/bienes_publicos/${bien.id}`, {
+                method: 'DELETE',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            });
+
+            if (!res.ok) throw new Error('Error al eliminar');
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Eliminado',
+                text: 'El bien fue eliminado con éxito.',
+                timer: 2000,
+                showConfirmButton: false
+            });
+            fetchBienes(pagination.current_page);
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.message || 'No se pudo eliminar el bien.'
+            });
+        }
+    };
+
+    const openQrModal = (bien) => {
+        setSelectedBien(bien);
+        setQrModalOpen(true);
+    };
+
+    const openDetailModal = (bien) => {
+        setSelectedBien(bien);
+        setDetailModalOpen(true);
     };
 
     return (
-        <div className="space-y-6">
-            {/* Tarjetas de Métricas */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center text-2xl shrink-0">
-                        📦
+        <div className="w-full">
+            {/* Tarjetas superiores de estadísticas (Diseño Original Exacto) */}
+            <div className="px-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* Total de Bienes */}
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded-xl grid place-items-center bg-blue-500/20">
+                                <span className="text-blue-500 text-2xl">📦</span>
+                            </div>
+                        </div>
+                        <h3 className="text-2xl font-bold mb-1 text-slate-800">{metrics.totalBienes}</h3>
+                        <p className="text-sm text-blue-900 font-semibold">Total de Bienes</p>
                     </div>
-                    <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total de Bienes</p>
-                        <h3 className="text-2xl font-extrabold text-slate-900 mt-0.5">{metrics.totalBienes}</h3>
-                    </div>
-                </div>
 
-                <div className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl shrink-0">
-                        ✅
-                    </div>
-                    <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Bienes en Uso</p>
-                        <h3 className="text-2xl font-extrabold text-slate-900 mt-0.5">{metrics.bienesEnUso}</h3>
-                    </div>
-                </div>
-
-                <div className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl shrink-0">
-                        💰
-                    </div>
-                    <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Valor en Facturas</p>
-                        <h3 className="text-xl font-extrabold text-slate-900 mt-0.5">Bs. {formatCurrency(metrics.valorTotal)}</h3>
-                    </div>
-                </div>
-
-                <div className="bg-white/90 backdrop-blur rounded-2xl p-5 shadow-sm border border-slate-200 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center text-2xl shrink-0">
-                        🕒
-                    </div>
-                    <div>
-                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Último Ingreso</p>
-                        <h3 className="text-sm font-bold text-slate-900 mt-0.5 truncate max-w-[150px]">
-                            {metrics.ultimoBien ? (metrics.ultimoBien.fecha_adquisicion || 'Reciente') : 'N/A'}
+                    {/* Última Fecha de Adquisición */}
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded-xl grid place-items-center bg-green-500/20">
+                                <span className="text-green-500 text-2xl">📅</span>
+                            </div>
+                        </div>
+                        <h3 className="text-2xl font-bold mb-1 text-slate-800">
+                            {metrics.ultimoBien && metrics.ultimoBien.fecha_adquisicion
+                                ? metrics.ultimoBien.fecha_adquisicion.split('T')[0].split('-').reverse().join('/')
+                                : 'N/A'}
                         </h3>
+                        <p className="text-sm text-blue-900 font-semibold">Última Fecha de Adquisición</p>
+                    </div>
+
+                    {/* Bienes en Uso */}
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded-xl grid place-items-center bg-yellow-500/20">
+                                <span className="text-yellow-500 text-2xl">✅</span>
+                            </div>
+                        </div>
+                        <h3 className="text-2xl font-bold mb-1 text-slate-800">{metrics.bienesEnUso}</h3>
+                        <p className="text-sm text-blue-900 font-semibold">Bienes en Uso</p>
                     </div>
                 </div>
             </div>
 
-            {/* Cabecera y Barra de Filtros */}
-            <div className="bg-white/90 backdrop-blur rounded-2xl p-6 shadow-sm border border-slate-200">
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <h2 className="text-2xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                            <span>🏛️</span> Bienes Públicos / Muebles
-                        </h2>
-                        <p className="text-sm text-slate-500 mt-1">
-                            Gestión, inventario patrimonial, asignación y códigos QR de la Corporación.
-                        </p>
-                    </div>
+            {/* Filtros y Controles (Diseño Original Exacto) */}
+            <div className="px-6 mb-6">
+                <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
+                    <div className="flex flex-col gap-4">
+                        {/* Fila de acciones (Exportar, Nuevo) */}
+                        <div className="flex flex-wrap items-center justify-end gap-3 pb-4 border-b border-gray-100">
+                            <select
+                                onChange={(e) => {
+                                    if (e.target.value) window.location.href = e.target.value;
+                                }}
+                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm"
+                            >
+                                <option value="">📤 Exportar</option>
+                                <option value="/administracion/bienes_publicos/export/excel">Excel</option>
+                                <option value="/administracion/bienes_publicos/export/pdf">PDF</option>
+                            </select>
 
-                    <div className="flex items-center gap-2.5 flex-wrap">
+                            {permissions.can_create && (
+                                <a
+                                    href="/administracion/bienes_publicos/create"
+                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"
+                                >
+                                    <span>➕</span>
+                                    <span>Nuevo</span>
+                                </a>
+                            )}
+                        </div>
+
+                        {/* Fila de filtros */}
+                        <div className="flex flex-wrap items-center gap-4">
+                            <button
+                                type="button"
+                                onClick={() => Swal.fire({ title: 'Escáner QR', text: 'Activa tu cámara para leer el código QR del bien', icon: 'info' })}
+                                className="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
+                            >
+                                📷 Escanear QR
+                            </button>
+
+                            <button
+                                type="button"
+                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                className="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            >
+                                Filtros Avanzados
+                            </button>
+
+                            {showAdvancedFilters && (
+                                <select
+                                    value={filterType}
+                                    onChange={(e) => {
+                                        setFilterType(e.target.value);
+                                        setSecondFilter('');
+                                    }}
+                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm"
+                                >
+                                    <option value="">Seleccionar filtro</option>
+                                    <option value="n_interno_bien">N° Interno</option>
+                                    <option value="descripcion">Descripción</option>
+                                    <option value="unidad_administrativa_id">Unidad Administrativa</option>
+                                    <option value="usuario_de_uso_id">Usuario de Uso</option>
+                                    <option value="usuario_administrativo_id">Usuario Administrativo</option>
+                                    <option value="estado_del_uso_id">Estado del Uso</option>
+                                    <option value="forma_adquisicion_id">Forma de Adquisición</option>
+                                    <option value="marca">Marca</option>
+                                    <option value="modelo">Modelo</option>
+                                    <option value="condicion_id">Condición</option>
+                                    <option value="color_id">Color</option>
+                                    <option value="serial">Serial</option>
+                                    <option value="codigo_qr">Código QR</option>
+                                    <option value="fecha">Fecha de Adquisición</option>
+                                    <option value="busqueda">Búsqueda General</option>
+                                </select>
+                            )}
+
+                            {/* Segundo filtro según tipo */}
+                            {filterType === 'n_interno_bien' && (
+                                <select
+                                    value={secondFilter}
+                                    onChange={(e) => setSecondFilter(e.target.value)}
+                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm"
+                                >
+                                    <option value="">Seleccionar N° Interno</option>
+                                    {(catalogs.n_internos || []).map((n, i) => (
+                                        <option key={i} value={n}>{n}</option>
+                                    ))}
+                                </select>
+                            )}
+
+                            {filterType === 'unidad_administrativa_id' && (
+                                <select
+                                    value={secondFilter}
+                                    onChange={(e) => setSecondFilter(e.target.value)}
+                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm"
+                                >
+                                    <option value="">Seleccionar Unidad</option>
+                                    {(catalogs.unidad_administrativas || []).map(u => (
+                                        <option key={u.id} value={u.id}>{u.name}</option>
+                                    ))}
+                                </select>
+                            )}
+
+                            {filterType === 'estado_del_uso_id' && (
+                                <select
+                                    value={secondFilter}
+                                    onChange={(e) => setSecondFilter(e.target.value)}
+                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm"
+                                >
+                                    <option value="">Seleccionar Estado</option>
+                                    {(catalogs.estado_del_usos || []).map(e => (
+                                        <option key={e.id} value={e.id}>{e.nombre}</option>
+                                    ))}
+                                </select>
+                            )}
+
+                            {filterType === 'fecha' && (
+                                <div className="flex items-center gap-2">
+                                    <input
+                                        type="date"
+                                        value={fechaDesde}
+                                        onChange={(e) => setFechaDesde(e.target.value)}
+                                        className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-3 py-1.5 text-xs"
+                                    />
+                                    <span className="text-xs text-slate-500">hasta</span>
+                                    <input
+                                        type="date"
+                                        value={fechaHasta}
+                                        onChange={(e) => setFechaHasta(e.target.value)}
+                                        className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-3 py-1.5 text-xs"
+                                    />
+                                </div>
+                            )}
+
+                            {['serial', 'codigo_qr', 'marca', 'modelo', 'descripcion'].includes(filterType) && (
+                                <input
+                                    type="text"
+                                    value={secondFilter}
+                                    onChange={(e) => setSecondFilter(e.target.value)}
+                                    placeholder="Ingresa el valor..."
+                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm"
+                                />
+                            )}
+
+                            {/* Búsqueda General */}
+                            <input
+                                type="text"
+                                value={busqueda}
+                                onChange={(e) => setBusqueda(e.target.value)}
+                                placeholder="Buscar en todos los campos..."
+                                className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm w-48 sm:w-64"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={handleClearFilters}
+                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"
+                            >
+                                🗑️ Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Listado de Bienes en Tarjetas Originales */}
+            <div className="px-6 mb-8">
+                {loading ? (
+                    <div className="flex flex-col items-center justify-center py-16 bg-white/60 backdrop-blur-md rounded-2xl border border-blue-100">
+                        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
+                        <p className="text-sm font-semibold text-blue-900">Cargando bienes públicos...</p>
+                    </div>
+                ) : error ? (
+                    <div className="p-6 text-center bg-red-50 border border-red-200 rounded-2xl">
+                        <p className="text-sm font-semibold text-red-600 mb-2">{error}</p>
                         <button
                             type="button"
                             onClick={() => fetchBienes(pagination.current_page)}
-                            className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-                            title="Recargar datos"
+                            className="px-4 py-2 text-xs font-bold text-white bg-red-600 rounded-xl hover:bg-red-700"
                         >
-                            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>Refrescar</span>
-                        </button>
-
-                        {permissions.can_create && (
-                            <a
-                                href="/administracion/bienes_publicos/create"
-                                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-sm transition-all"
-                            >
-                                <span>➕</span>
-                                <span>Nuevo Bien</span>
-                            </a>
-                        )}
-
-                        <a
-                            href="/administracion/bienes_publicos/export/excel"
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl shadow-sm transition-all"
-                        >
-                            <span>📊</span>
-                            <span>Excel</span>
-                        </a>
-
-                        <a
-                            href="/administracion/bienes_publicos/export/pdf"
-                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl shadow-sm transition-all"
-                        >
-                            <span>📄</span>
-                            <span>PDF</span>
-                        </a>
-                    </div>
-                </div>
-
-                {/* Filtros Dinámicos */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-6 pt-5 border-t border-slate-100">
-                    {/* Búsqueda General */}
-                    <div className="relative">
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Buscar por serial, marca, descripción..."
-                            className="w-full pl-10 pr-4 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-800"
-                        />
-                        <svg className="w-5 h-5 absolute left-3 top-2.5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-
-                    {/* Selector de Criterio */}
-                    <div>
-                        <select
-                            value={filterType}
-                            onChange={(e) => {
-                                setFilterType(e.target.value);
-                                setSecondFilter('');
-                            }}
-                            className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-800"
-                        >
-                            <option value="">Filtrar por categoría...</option>
-                            <option value="unidad_administrativa_id">Unidad Administrativa</option>
-                            <option value="usuario_de_uso_id">Usuario de Uso</option>
-                            <option value="estado_del_uso_id">Estado del Uso</option>
-                            <option value="condicion_id">Condición Física</option>
-                            <option value="descripcion">Descripción</option>
-                            <option value="marca">Marca</option>
-                            <option value="modelo">Modelo</option>
-                            <option value="fecha">Rango de Fechas</option>
-                        </select>
-                    </div>
-
-                    {/* Filtro Secundario Dinámico */}
-                    {filterType === 'fecha' ? (
-                        <div className="flex gap-2">
-                            <input
-                                type="date"
-                                value={fechaDesde}
-                                onChange={(e) => setFechaDesde(e.target.value)}
-                                className="w-1/2 px-2.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700"
-                            />
-                            <input
-                                type="date"
-                                value={fechaHasta}
-                                onChange={(e) => setFechaHasta(e.target.value)}
-                                className="w-1/2 px-2.5 py-2 text-xs bg-slate-50 border border-slate-200 rounded-xl text-slate-700"
-                            />
-                        </div>
-                    ) : (
-                        <div>
-                            <select
-                                value={secondFilter}
-                                onChange={(e) => setSecondFilter(e.target.value)}
-                                disabled={!filterType}
-                                className="w-full px-3.5 py-2.5 text-sm bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white text-slate-800 disabled:opacity-50"
-                            >
-                                <option value="">Seleccione opción...</option>
-                                {filterType === 'unidad_administrativa_id' && (Array.isArray(catalogs.unidad_administrativas) ? catalogs.unidad_administrativas : []).map(u => (
-                                    <option key={u.id} value={u.id}>{u.unidad_administrativa}</option>
-                                ))}
-                                {filterType === 'usuario_de_uso_id' && (Array.isArray(catalogs.usuarios_de_uso) ? catalogs.usuarios_de_uso : []).map(u => (
-                                    <option key={u.id} value={u.id}>{u.nombre_usuario || u.name}</option>
-                                ))}
-                                {filterType === 'estado_del_uso_id' && (Array.isArray(catalogs.estado_del_usos) ? catalogs.estado_del_usos : []).map(e => (
-                                    <option key={e.id} value={e.id}>{e.estado_del_uso}</option>
-                                ))}
-                                {filterType === 'condicion_id' && (Array.isArray(catalogs.condiciones) ? catalogs.condiciones : []).map(c => (
-                                    <option key={c.id} value={c.id}>{c.condicion}</option>
-                                ))}
-                                {filterType === 'descripcion' && (Array.isArray(catalogs.descripciones) ? catalogs.descripciones : []).map((d, i) => (
-                                    <option key={i} value={d}>{d}</option>
-                                ))}
-                                {filterType === 'marca' && (Array.isArray(catalogs.marcas) ? catalogs.marcas : []).map((m, i) => (
-                                    <option key={i} value={m}>{m}</option>
-                                ))}
-                                {filterType === 'modelo' && (Array.isArray(catalogs.modelos) ? catalogs.modelos : []).map((mo, i) => (
-                                    <option key={i} value={mo}>{mo}</option>
-                                ))}
-                            </select>
-                        </div>
-                    )}
-
-                    <div>
-                        <button
-                            type="button"
-                            onClick={handleClearFilters}
-                            className="w-full py-2.5 px-4 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all"
-                        >
-                            Limpiar Filtros
+                            Reintentar
                         </button>
                     </div>
-                </div>
-            </div>
+                ) : bienes.length === 0 ? (
+                    <div className="p-12 text-center bg-white/70 backdrop-blur-md rounded-2xl border border-blue-100">
+                        <div className="w-16 h-16 mx-auto mb-3 text-4xl">🏛️</div>
+                        <h3 className="text-base font-bold text-slate-800">No se encontraron bienes</h3>
+                        <p className="text-xs text-slate-500 mt-1">Prueba ajustando los filtros de búsqueda.</p>
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {bienes.map((item) => (
+                            <div
+                                key={item.id}
+                                className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 hover:scale-[1.02] transition-transform duration-200 shadow-sm"
+                            >
+                                <div className="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+                                    {/* Icono del bien con gradiente original */}
+                                    <div className="flex items-center justify-center flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-to-br from-blue-500 to-blue-900 text-white shadow-md">
+                                        <span className="text-3xl">{getIconForDescription(item.descripcion)}</span>
+                                    </div>
 
-            {/* Error Message */}
-            {error && (
-                <div className="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center justify-between text-red-700">
-                    <p className="text-sm font-semibold">{error}</p>
-                    <button onClick={() => fetchBienes(pagination.current_page)} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded-lg font-bold">
-                        Reintentar
-                    </button>
-                </div>
-            )}
+                                    {/* Información principal en columnas originales */}
+                                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
+                                        <div>
+                                            <p className="text-xs text-blue-900 font-semibold mb-1">Sede</p>
+                                            <p className="font-semibold text-slate-800 text-sm">{item.sede || 'Principal'}</p>
+                                            <p className="text-xs text-blue-900 font-semibold mt-2 mb-1">Descripción</p>
+                                            <p className="font-bold truncate text-sm text-slate-900" title={item.descripcion}>
+                                                {item.descripcion || 'Sin descripción'}
+                                            </p>
+                                        </div>
 
-            {/* Tabla de Bienes */}
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-slate-200 text-left">
-                        <thead className="bg-slate-50/80 text-xs font-bold text-slate-600 uppercase tracking-wider">
-                            <tr>
-                                <th className="px-5 py-3.5 whitespace-nowrap">N° Interno / QR</th>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Descripción</th>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Marca / Modelo</th>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Serial</th>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Unidad / Asignado</th>
-                                <th className="px-5 py-3.5 whitespace-nowrap">Estado / Condición</th>
-                                <th className="px-5 py-3.5 text-right whitespace-nowrap">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-100 text-sm">
-                            {loading ? (
-                                Array.from({ length: 5 }).map((_, idx) => (
-                                    <tr key={idx} className="animate-pulse">
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-24"></div></td>
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-48"></div></td>
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-32"></div></td>
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-28"></div></td>
-                                        <td className="px-5 py-4"><div className="h-4 bg-slate-200 rounded w-36"></div></td>
-                                        <td className="px-5 py-4"><div className="h-6 bg-slate-200 rounded-full w-20"></div></td>
-                                        <td className="px-5 py-4 text-right"><div className="h-4 bg-slate-200 rounded w-16 ml-auto"></div></td>
-                                    </tr>
-                                ))
-                            ) : bienes.length === 0 ? (
-                                <tr>
-                                    <td colSpan="7" className="text-center py-12 text-slate-400">
-                                        <div className="text-4xl mb-2">📦</div>
-                                        <p className="font-semibold text-slate-600">No se encontraron bienes muebles</p>
-                                        <p className="text-xs text-slate-400 mt-1">Verifica los filtros aplicados</p>
-                                    </td>
-                                </tr>
-                            ) : (
-                                bienes.map((bien) => {
-                                    const estado = bien.estado_del_usos?.estado_del_uso || 'No especificado';
-                                    const condicion = bien.condicions?.condicion || 'N/A';
-                                    const unidad = bien.unidad_administrativas?.unidad_administrativa || 'Sin asignar';
-                                    const usuarioUso = bien.usuario_de_usos?.nombre_usuario || 'Sin asignar';
+                                        <div>
+                                            <p className="text-xs text-blue-900 font-semibold mb-1">N° Interno</p>
+                                            <p className="font-mono text-sm font-bold text-blue-950">{item.n_interno_bien || 'N/A'}</p>
+                                            <p className="text-xs text-blue-900 font-semibold mt-2 mb-1">Unidad Admin.</p>
+                                            <p className="text-xs font-semibold text-slate-700">
+                                                {item.unidad_administrativas ? item.unidad_administrativas.name : 'N/A'}
+                                            </p>
+                                        </div>
 
-                                    return (
-                                        <tr key={bien.id} className="hover:bg-slate-50/70 transition-colors">
-                                            <td className="px-5 py-3.5 whitespace-nowrap font-mono font-bold text-blue-900 text-xs">
-                                                <div className="flex items-center gap-1.5">
-                                                    <span className="bg-blue-50 text-blue-800 px-2.5 py-1 rounded-md border border-blue-200">
-                                                        {bien.n_interno_bien || `#${bien.id}`}
-                                                    </span>
-                                                </div>
-                                            </td>
-                                            <td className="px-5 py-3.5 font-semibold text-slate-800">
-                                                {bien.descripcion || '-'}
-                                            </td>
-                                            <td className="px-5 py-3.5 text-slate-600 whitespace-nowrap text-xs">
-                                                <span className="font-medium text-slate-800">{bien.marca || '-'}</span>
-                                                <span className="text-slate-400"> / {bien.modelo || '-'}</span>
-                                            </td>
-                                            <td className="px-5 py-3.5 text-slate-500 font-mono text-xs whitespace-nowrap">
-                                                {bien.serial || 'S/N'}
-                                            </td>
-                                            <td className="px-5 py-3.5 text-xs text-slate-600 max-w-xs truncate">
-                                                <div className="font-medium text-slate-800 truncate">{unidad}</div>
-                                                <div className="text-slate-400 truncate">👤 {usuarioUso}</div>
-                                            </td>
-                                            <td className="px-5 py-3.5 whitespace-nowrap text-xs">
-                                                <span className={`inline-flex px-2.5 py-0.5 rounded-full font-semibold border ${
-                                                    estado.toLowerCase().includes('uso') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                    estado.toLowerCase().includes('desuso') ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                                    'bg-slate-100 text-slate-700 border-slate-200'
-                                                }`}>
-                                                    {estado}
-                                                </span>
-                                                <div className="text-[11px] text-slate-400 mt-0.5 font-medium">{condicion}</div>
-                                            </td>
-                                            <td className="px-5 py-3.5 text-right whitespace-nowrap text-xs">
-                                                <div className="flex items-center justify-end gap-1.5">
+                                        <div>
+                                            <p className="text-xs text-blue-900 font-semibold mb-1">Estado del Uso</p>
+                                            <span className="inline-block px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800">
+                                                {item.estado_del_usos ? item.estado_del_usos.nombre : 'En Uso'}
+                                            </span>
+                                            <p className="text-xs text-blue-900 font-semibold mt-2 mb-1">Marca / Modelo</p>
+                                            <p className="text-xs font-medium text-slate-700 truncate">
+                                                {item.marca || 'N/A'} {item.modelo ? `- ${item.modelo}` : ''}
+                                            </p>
+                                        </div>
+
+                                        <div>
+                                            <p className="text-xs text-blue-900 font-semibold mb-1">Serial</p>
+                                            <p className="font-mono text-xs text-slate-600 truncate">{item.serial || 'S/N'}</p>
+
+                                            {/* Botones de acción */}
+                                            <div className="flex flex-wrap gap-1.5 mt-3 justify-start sm:justify-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openDetailModal(item)}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-blue-100 hover:bg-blue-200 text-blue-900 transition-colors"
+                                                    title="Ver Detalles"
+                                                >
+                                                    <span>👁️</span>
+                                                    <span>Ver</span>
+                                                </button>
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => openQrModal(item)}
+                                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                                                    title="Ver Código QR"
+                                                >
+                                                    <span>📱</span>
+                                                    <span>QR</span>
+                                                </button>
+
+                                                {permissions.can_edit && (
+                                                    <a
+                                                        href={`/administracion/bienes_publicos/${item.id}/edit`}
+                                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl text-xs font-semibold bg-green-600 hover:bg-green-700 text-white transition-colors"
+                                                        title="Editar Bien"
+                                                    >
+                                                        <span>✏️</span>
+                                                        <span>Editar</span>
+                                                    </a>
+                                                )}
+
+                                                {permissions.can_destroy && (
                                                     <button
                                                         type="button"
-                                                        onClick={() => {
-                                                            setSelectedBien(bien);
-                                                            setQrModalOpen(true);
-                                                        }}
-                                                        className="p-1.5 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
-                                                        title="Ver Código QR"
+                                                        onClick={() => handleDelete(item)}
+                                                        className="inline-flex items-center px-2 py-1.5 rounded-xl text-xs font-semibold bg-red-600 hover:bg-red-700 text-white transition-colors"
+                                                        title="Eliminar Bien"
                                                     >
-                                                        📱
+                                                        <span>🗑️</span>
                                                     </button>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => {
-                                                            setSelectedBien(bien);
-                                                            setDetailModalOpen(true);
-                                                        }}
-                                                        className="px-2.5 py-1 text-xs font-semibold text-blue-700 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
-                                                    >
-                                                        Detalles
-                                                    </button>
-                                                    {permissions.can_edit && (
-                                                        <a
-                                                            href={`/administracion/bienes_publicos/${bien.id}/edit`}
-                                                            className="p-1.5 text-amber-600 hover:text-amber-800 bg-amber-50 hover:bg-amber-100 rounded-lg transition-colors"
-                                                            title="Editar"
-                                                        >
-                                                            ✏️
-                                                        </a>
-                                                    )}
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )}
 
                 {/* Paginación */}
-                {pagination.total > 0 && (
-                    <div className="px-5 py-4 bg-slate-50/50 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <div className="text-xs text-slate-500">
-                            Mostrando <span className="font-semibold text-slate-800">{pagination.from || 0}</span> a{' '}
-                            <span className="font-semibold text-slate-800">{pagination.to || 0}</span> de{' '}
-                            <span className="font-semibold text-slate-800">{pagination.total}</span> bienes registrados
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                            <button
-                                type="button"
-                                disabled={pagination.current_page <= 1 || loading}
-                                onClick={() => fetchBienes(pagination.current_page - 1)}
-                                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                            >
-                                Anterior
-                            </button>
-                            <span className="px-3 py-1.5 text-xs font-bold text-slate-700 bg-slate-100 rounded-lg">
-                                {pagination.current_page} / {pagination.last_page}
-                            </span>
-                            <button
-                                type="button"
-                                disabled={pagination.current_page >= pagination.last_page || loading}
-                                onClick={() => fetchBienes(pagination.current_page + 1)}
-                                className="px-3 py-1.5 text-xs font-semibold rounded-lg border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                            >
-                                Siguiente
-                            </button>
-                        </div>
+                {pagination.last_page > 1 && (
+                    <div className="flex items-center justify-center gap-2 mt-8">
+                        <button
+                            type="button"
+                            onClick={() => fetchBienes(pagination.current_page - 1)}
+                            disabled={pagination.current_page <= 1}
+                            className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                        >
+                            Anterior
+                        </button>
+                        <span className="text-xs font-bold text-blue-900 px-3">
+                            Página {pagination.current_page} de {pagination.last_page} ({pagination.total} registros)
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => fetchBienes(pagination.current_page + 1)}
+                            disabled={pagination.current_page >= pagination.last_page}
+                            className="px-3.5 py-2 rounded-xl border border-slate-200 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
+                        >
+                            Siguiente
+                        </button>
                     </div>
                 )}
             </div>
 
-            {/* Modal de Detalle */}
+            {/* Modal de Detalle (React) */}
             {detailModalOpen && selectedBien && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col overflow-hidden border border-slate-200">
-                        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-                            <div>
-                                <h3 className="text-lg font-bold text-slate-900">{selectedBien.descripcion}</h3>
-                                <p className="text-xs text-slate-500 font-mono">N° Interno: {selectedBien.n_interno_bien}</p>
-                            </div>
-                            <button onClick={() => setDetailModalOpen(false)} className="text-slate-400 hover:text-slate-600 p-1.5">✕</button>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-xl w-full p-6 border border-slate-200 my-8">
+                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                            <h3 className="text-base font-bold text-blue-950">Ficha del Bien Público</h3>
+                            <button
+                                type="button"
+                                onClick={() => setDetailModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 font-bold"
+                            >
+                                ✕
+                            </button>
                         </div>
-                        <div className="p-6 overflow-y-auto space-y-4 text-sm">
-                            <div className="grid grid-cols-2 gap-4 bg-slate-50 p-4 rounded-xl text-xs">
-                                <div><strong className="text-slate-400 uppercase">Marca:</strong> <p className="text-slate-800 font-semibold mt-0.5">{selectedBien.marca || '-'}</p></div>
-                                <div><strong className="text-slate-400 uppercase">Modelo:</strong> <p className="text-slate-800 font-semibold mt-0.5">{selectedBien.modelo || '-'}</p></div>
-                                <div><strong className="text-slate-400 uppercase">Serial:</strong> <p className="text-slate-800 font-mono font-semibold mt-0.5">{selectedBien.serial || '-'}</p></div>
-                                <div><strong className="text-slate-400 uppercase">N° Factura:</strong> <p className="text-slate-800 font-mono font-semibold mt-0.5">{selectedBien.n_factura || '-'}</p></div>
-                                <div><strong className="text-slate-400 uppercase">Fecha Adquisición:</strong> <p className="text-slate-800 mt-0.5">{selectedBien.fecha_adquisicion || '-'}</p></div>
-                                <div><strong className="text-slate-400 uppercase">Valor Factura:</strong> <p className="text-slate-800 font-semibold mt-0.5">Bs. {formatCurrency(selectedBien.valor_factura)}</p></div>
-                                <div className="col-span-2"><strong className="text-slate-400 uppercase">Unidad Administrativa:</strong> <p className="text-slate-800 mt-0.5">{selectedBien.unidad_administrativas?.unidad_administrativa || '-'}</p></div>
-                                <div className="col-span-2"><strong className="text-slate-400 uppercase">Usuario Asignado:</strong> <p className="text-slate-800 mt-0.5">{selectedBien.usuario_de_usos?.nombre_usuario || '-'}</p></div>
+
+                        <div className="space-y-2 text-xs">
+                            <div className="flex justify-between py-1.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-semibold">Descripción:</span>
+                                <span className="font-bold text-slate-800 text-right">{selectedBien.descripcion}</span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-semibold">N° Interno:</span>
+                                <span className="font-mono font-bold text-blue-900">{selectedBien.n_interno_bien || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-semibold">Sede:</span>
+                                <span className="font-semibold text-slate-800">{selectedBien.sede || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-semibold">Unidad Administrativa:</span>
+                                <span className="font-semibold text-slate-800">
+                                    {selectedBien.unidad_administrativas?.name || 'N/A'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-semibold">Marca / Modelo:</span>
+                                <span className="font-semibold text-slate-800">
+                                    {selectedBien.marca || 'N/A'} {selectedBien.modelo ? `/ ${selectedBien.modelo}` : ''}
+                                </span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-semibold">Serial:</span>
+                                <span className="font-mono text-slate-700">{selectedBien.serial || 'N/A'}</span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-semibold">Estado del Uso:</span>
+                                <span className="font-semibold text-blue-900">
+                                    {selectedBien.estado_del_usos?.nombre || 'En Uso'}
+                                </span>
+                            </div>
+                            <div className="flex justify-between py-1.5 border-b border-slate-100">
+                                <span className="text-slate-500 font-semibold">Fecha de Adquisición:</span>
+                                <span className="font-semibold text-slate-800">
+                                    {selectedBien.fecha_adquisicion ? selectedBien.fecha_adquisicion.split('T')[0] : 'N/A'}
+                                </span>
                             </div>
                         </div>
-                        <div className="px-6 py-3 bg-slate-50 border-t border-slate-200 flex justify-end">
-                            <button onClick={() => setDetailModalOpen(false)} className="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded-xl text-xs font-semibold">Cerrar</button>
+
+                        <div className="mt-5 flex justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setDetailModalOpen(false)}
+                                className="px-5 py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl"
+                            >
+                                Cerrar
+                            </button>
                         </div>
                     </div>
                 </div>
             )}
 
-            {/* Modal Código QR */}
+            {/* Modal de Código QR */}
             {qrModalOpen && selectedBien && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                     <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center border border-slate-200">
-                        <h4 className="font-bold text-slate-800 mb-1">Código QR del Bien</h4>
-                        <p className="text-xs text-slate-500 font-mono mb-4">{selectedBien.n_interno_bien}</p>
-                        <img
-                            src={`https://quickchart.io/chart?cht=qr&chs=220x220&chl=${encodeURIComponent(window.location.origin + '/bienes/qr/' + encodeURIComponent(selectedBien.n_interno_bien))}`}
-                            alt="Código QR"
-                            className="mx-auto rounded-xl border border-slate-200 shadow-sm"
-                        />
+                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+                            <h3 className="text-sm font-bold text-blue-950">Código QR del Bien</h3>
+                            <button
+                                type="button"
+                                onClick={() => setQrModalOpen(false)}
+                                className="text-slate-400 hover:text-slate-600 font-bold"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 inline-block mb-3">
+                            <div className="text-6xl my-4">📱</div>
+                            <p className="font-mono text-xs font-bold text-blue-900">{selectedBien.codigo_qr || selectedBien.n_interno_bien || 'QR-CODE'}</p>
+                        </div>
+
+                        <p className="text-xs text-slate-500 mb-4">{selectedBien.descripcion}</p>
+
                         <button
                             type="button"
                             onClick={() => setQrModalOpen(false)}
-                            className="mt-5 w-full py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl text-xs transition-all shadow-sm"
+                            className="w-full py-2 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl"
                         >
                             Cerrar
                         </button>

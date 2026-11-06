@@ -1,6 +1,6 @@
 {
   "resources/css/app.css": {
-    "file": "assets/app-BF2FgUwW.css",
+    "file": "assets/app-CDk_2qqk.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -9,18 +9,9 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-CBG1sfcx.js",
+    "file": "assets/app-lxDyeBj0.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true,
-    "imports": [
-      "resources/js/app.jsx"
-    ]
-  },
-  "resources/js/app.jsx": {
-    "file": "assets/app-Cl_OhT6I.js",
-    "name": "app",
-    "src": "resources/js/app.jsx",
     "isEntry": true
   },
   "vendor/power-components/livewire-powergrid/dist/powergrid.css": {
