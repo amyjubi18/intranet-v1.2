@@ -437,9 +437,8 @@ class BieneController extends Controller
             $biene->comentario = $request->input('comentario') ?? '';
             $biene->fecha_comentario = $request->input('fecha_comentario');
 
-            $qrCodeFromForm = $request->has('qr_code') ? $request->input('qr_code') : null;
-            if (!empty($qrCodeFromForm)) {
-                $biene->qr_code = $qrCodeFromForm;
+            if ($request->has('qr_code')) {
+                $biene->qr_code = $request->input('qr_code') ?: null;
             } elseif (!empty($request->input('n_interno_bien'))) {
                 $biene->qr_code = $this->generateQrCodeUrl($request->input('n_interno_bien'));
             }
@@ -550,11 +549,10 @@ class BieneController extends Controller
         $biene->comentario = $request->input('comentario') ?? '';
         $biene->fecha_comentario = $request->input('fecha_comentario');
 
-        // Save QR code - use uploaded/generated or generate automatically
-        $qrCodeFromForm = $request->has('qr_code') ? $request->input('qr_code') : null;
-        if (!empty($qrCodeFromForm)) {
-            $biene->qr_code = $qrCodeFromForm;
-        } elseif (!empty($request->input('n_interno_bien'))) {
+        // Save QR / Barcode - use uploaded/generated or generate automatically
+        if ($request->has('qr_code')) {
+            $biene->qr_code = $request->input('qr_code') ?: null;
+        } elseif (!empty($request->input('n_interno_bien')) && empty($biene->qr_code)) {
             // Generate QR code automatically based on n_interno_bien
             $biene->qr_code = $this->generateQrCodeUrl($request->input('n_interno_bien'));
         }

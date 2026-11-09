@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
+import JsBarcode from 'jsbarcode';
 
 export default function BienesPublicos() {
     const [bienes, setBienes] = useState([]);
@@ -45,13 +46,14 @@ export default function BienesPublicos() {
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
 
-    // Modal de Código QR
+    // Modal de Código QR / Barras
     const [selectedQrBien, setSelectedQrBien] = useState(null);
     const [qrModalOpen, setQrModalOpen] = useState(false);
 
     // Modal de Crear y Editar Bien Público
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
+    const [modalCodeType, setModalCodeType] = useState('qr'); // 'qr' | 'barcode'
     const [selectedBien, setSelectedBien] = useState(null);
     const [submitting, setSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState({});
@@ -212,20 +214,65 @@ export default function BienesPublicos() {
         return '📦';
     };
 
-    // Obtener URL de imagen de Código QR
-    const getQrImageUrl = (item, size = 150) => {
-        const qrCode = item.qr_code || '';
-        const isBase64 = qrCode.startsWith('data:image') || qrCode.startsWith('/9j/');
-        if (isBase64) return qrCode;
+    // Generar imagen de Código de Barras (CODE128) usando JsBarcode
+    const getBarcodeDataUrl = (text, width = 2, height = 50) => {
+        if (!text || !String(text).trim()) return '';
+        try {
+            const canvas = document.createElement('canvas');
+            JsBarcode(canvas, String(text).trim(), {
+                format: 'CODE128',
+                lineColor: '#0f172a',
+                width: width,
+                height: height,
+                displayValue: true,
+                fontSize: 13,
+                textMargin: 4,
+                margin: 8,
+                background: '#ffffff'
+            });
+            return canvas.toDataURL('image/png');
+        } catch (err) {
+            console.warn('Error al generar código de barras:', err);
+            return '';
+        }
+    };
 
-        const target = item.n_interno_bien
+    // Identificar si el bien tiene asociado un Código de Barras
+    const isBarcodeItem = (item) => {
+        const code = item?.qr_code || '';
+        return code.startsWith('barcode:') || code.startsWith('barcode_img:');
+    };
+
+    // Obtener URL de imagen de Código (QR o Barras)
+    const getCodeImageUrl = (item, size = 150) => {
+        const code = item?.qr_code || '';
+
+        // Si es una imagen subida de código de barras
+        if (code.startsWith('barcode_img:')) {
+            return code.replace('barcode_img:', '');
+        }
+
+        // Si es un código de barras generado por valor
+        if (code.startsWith('barcode:')) {
+            const val = code.replace('barcode:', '');
+            return getBarcodeDataUrl(val, size > 250 ? 3 : 2, size > 250 ? 75 : 45) || '';
+        }
+
+        // Si es una imagen en base64 de QR
+        const isBase64 = code.startsWith('data:image') || code.startsWith('/9j/');
+        if (isBase64) return code;
+
+        // Código QR tradicional
+        const target = item?.n_interno_bien
             ? `${window.location.origin}/bienes/qr/${encodeURIComponent(item.n_interno_bien)}`
-            : `${window.location.origin}/bienes/qr/bien-${item.id}`;
+            : `${window.location.origin}/bienes/qr/bien-${item?.id || '0'}`;
 
         return `https://quickchart.io/chart?cht=qr&chs=${size}x${size}&chl=${encodeURIComponent(target)}`;
     };
 
-    // Modal para visualizar QR ampliado
+    const getQrImageUrl = (item, size = 150) => getCodeImageUrl(item, size);
+
+    // Modal para visualizar QR o Código de Barras ampliado
     const handleOpenQrModal = (item) => {
         setSelectedQrBien(item);
         setQrModalOpen(true);
@@ -286,6 +333,7 @@ export default function BienesPublicos() {
     // Abrir Modal de Creación
     const handleOpenCreate = () => {
         setModalMode('create');
+        setModalCodeType('qr');
         setSelectedBien(null);
         setFormData({
             ...initialFormData,
@@ -299,6 +347,8 @@ export default function BienesPublicos() {
     // Abrir Modal de Edición
     const handleOpenEdit = (item) => {
         setModalMode('edit');
+        const isBarcode = (item.qr_code || '').startsWith('barcode:') || (item.qr_code || '').startsWith('barcode_img:');
+        setModalCodeType(isBarcode ? 'barcode' : 'qr');
         setSelectedBien(item);
         setFormData({
             sede: item.sede || 'Sede Central',
@@ -334,9 +384,44 @@ export default function BienesPublicos() {
         setFormErrors({});
     };
 
+    // Alternar entre QR y Código de Barras en el modal
+    const handleChangeCodeType = (newType) => {
+        setModalCodeType(newType);
+        const val = formData.n_interno_bien.trim();
+
+        if (newType === 'barcode') {
+            if (!formData.qr_code || !formData.qr_code.startsWith('data:image')) {
+                setFormData(prev => ({
+                    ...prev,
+                    qr_code: val ? `barcode:${val}` : ''
+                }));
+            }
+        } else {
+            if (!formData.qr_code || !formData.qr_code.startsWith('data:image')) {
+                setFormData(prev => ({
+                    ...prev,
+                    qr_code: val ? `${window.location.origin}/bienes/qr/${encodeURIComponent(val)}` : ''
+                }));
+            }
+        }
+    };
+
     // Cambios en los campos del formulario
     const handleFormChange = (field, value) => {
-        setFormData(prev => ({ ...prev, [field]: value }));
+        setFormData(prev => {
+            const next = { ...prev, [field]: value };
+            // Si cambia el N° Interno y el código actual es automático de barras o QR, actualizarlo
+            if (field === 'n_interno_bien') {
+                const trimmed = value.trim();
+                if (modalCodeType === 'barcode' && prev.qr_code && prev.qr_code.startsWith('barcode:')) {
+                    next.qr_code = trimmed ? `barcode:${trimmed}` : '';
+                } else if (modalCodeType === 'qr' && prev.qr_code && prev.qr_code.includes('/bienes/qr/')) {
+                    next.qr_code = trimmed ? `${window.location.origin}/bienes/qr/${encodeURIComponent(trimmed)}` : '';
+                }
+            }
+            return next;
+        });
+
         if (formErrors[field]) {
             setFormErrors(prev => {
                 const next = { ...prev };
@@ -380,6 +465,49 @@ export default function BienesPublicos() {
                     icon: 'success',
                     title: 'QR Cargado',
                     text: 'Imagen del código QR cargada correctamente',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    customClass: { popup: 'rounded-2xl' }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Generar Código de Barras para el modal
+    const handleGenerateModalBarcode = () => {
+        if (!formData.n_interno_bien || !formData.n_interno_bien.trim()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atención',
+                text: 'Ingresa primero el N° Interno del bien para generar el código de barras.',
+                confirmButtonColor: '#14368b'
+            });
+            return;
+        }
+        const val = formData.n_interno_bien.trim();
+        setFormData(prev => ({ ...prev, qr_code: `barcode:${val}` }));
+        Swal.fire({
+            icon: 'success',
+            title: 'Código de Barras Generado',
+            text: `Código de barras generado correctamente para ${val}`,
+            timer: 1500,
+            showConfirmButton: false,
+            customClass: { popup: 'rounded-2xl' }
+        });
+    };
+
+    // Cargar archivo de imagen de Código de Barras
+    const handleLoadModalBarcodeFile = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setFormData(prev => ({ ...prev, qr_code: `barcode_img:${event.target.result}` }));
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Código Cargado',
+                    text: 'Imagen del código de barras cargada correctamente',
                     timer: 1500,
                     showConfirmButton: false,
                     customClass: { popup: 'rounded-2xl' }
@@ -556,15 +684,15 @@ export default function BienesPublicos() {
                                 type="button"
                                 onClick={() => {
                                     Swal.fire({
-                                        title: 'Escanear QR',
-                                        text: 'Apunta la cámara al código QR del bien público para buscarlo directamente.',
+                                        title: 'Escanear QR o Código de Barras',
+                                        text: 'Apunta la cámara o pistola lectora al código QR o código de barras del bien para buscarlo directamente.',
                                         icon: 'info',
                                         confirmButtonColor: '#1e3a8a'
                                     });
                                 }}
                                 className="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
                             >
-                                📷 Escanear QR
+                                📷 Escanear QR / Barras
                             </button>
 
                             <button
@@ -600,7 +728,7 @@ export default function BienesPublicos() {
                                     <option value="condicion_id">Condición</option>
                                     <option value="color_id">Color</option>
                                     <option value="serial">Serial</option>
-                                    <option value="codigo_qr">Código QR</option>
+                                    <option value="codigo_qr">Código QR / Barras</option>
                                     <option value="fecha">Fecha de Adquisición</option>
                                     <option value="busqueda">Búsqueda General</option>
                                 </select>
@@ -789,13 +917,17 @@ export default function BienesPublicos() {
                                                 <p className="text-sm text-slate-800">{item.condicions ? (item.condicions.condicion || item.condicions.nombre) : 'N/A'}</p>
 
                                                 <div>
-                                                    <p className="text-xs text-blue-900 font-semibold mb-1 mt-2">Código QR</p>
+                                                    <p className="text-xs text-blue-900 font-semibold mb-1 mt-2">
+                                                        {isBarcodeItem(item) ? 'Código de Barras' : 'Código QR'}
+                                                    </p>
                                                     <img
-                                                        src={qrImageUrl}
-                                                        alt="QR"
-                                                        className="w-16 h-16 border border-gray-300 rounded-lg cursor-pointer hover:scale-110 transition-transform bg-white p-1"
+                                                        src={getCodeImageUrl(item, 150)}
+                                                        alt={isBarcodeItem(item) ? 'Código de Barras' : 'Código QR'}
+                                                        className={`${
+                                                            isBarcodeItem(item) ? 'w-28 h-12 object-contain' : 'w-16 h-16 object-contain'
+                                                        } border border-gray-300 rounded-lg cursor-pointer hover:scale-105 transition-transform bg-white p-1 shadow-xs`}
                                                         onClick={() => handleOpenQrModal(item)}
-                                                        title="Ver Código QR Ampliado"
+                                                        title={isBarcodeItem(item) ? 'Ver Código de Barras Ampliado' : 'Ver Código QR Ampliado'}
                                                     />
                                                     <p className="text-xs text-blue-900 font-semibold mt-2 mb-1">Fecha Adq.</p>
                                                     <p className="text-sm text-slate-800">{formatDate(item.fecha_adquisicion)}</p>
@@ -885,13 +1017,16 @@ export default function BienesPublicos() {
                 )}
             </div>
 
-            {/* Modal de Código QR Ampliado (Replicando openQrModal original) */}
+            {/* Modal de Código QR / Barras Ampliado */}
             {qrModalOpen && selectedQrBien && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6 text-center border border-slate-200 animate-in fade-in zoom-in-95 duration-200">
+                    <div className={`bg-white rounded-2xl shadow-2xl ${isBarcodeItem(selectedQrBien) ? 'max-w-lg' : 'max-w-sm'} w-full p-6 text-center border border-slate-200 animate-in fade-in zoom-in-95 duration-200`}>
                         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
-                            <h3 className="text-sm font-bold text-blue-950">
-                                Código QR - Bien: {selectedQrBien.n_interno_bien || selectedQrBien.id}
+                            <h3 className="text-sm font-bold text-blue-950 flex items-center gap-1.5">
+                                <span>{isBarcodeItem(selectedQrBien) ? '🏷️' : '📱'}</span>
+                                <span>
+                                    {isBarcodeItem(selectedQrBien) ? 'Código de Barras' : 'Código QR'} - Bien: {selectedQrBien.n_interno_bien || selectedQrBien.id}
+                                </span>
                             </h3>
                             <button
                                 type="button"
@@ -902,11 +1037,11 @@ export default function BienesPublicos() {
                             </button>
                         </div>
 
-                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 inline-block mb-3">
+                        <div className="p-4 bg-slate-50 rounded-xl border border-slate-100 inline-block mb-3 max-w-full overflow-x-auto">
                             <img
-                                src={getQrImageUrl(selectedQrBien, 300)}
-                                alt="QR Code"
-                                className="w-56 h-56 mx-auto rounded-lg shadow-xs"
+                                src={getCodeImageUrl(selectedQrBien, 350)}
+                                alt={isBarcodeItem(selectedQrBien) ? 'Código de Barras' : 'Código QR'}
+                                className={`${isBarcodeItem(selectedQrBien) ? 'max-h-36 max-w-full' : 'w-56 h-56'} mx-auto rounded-lg shadow-xs bg-white p-2 object-contain`}
                             />
                         </div>
 
@@ -914,13 +1049,22 @@ export default function BienesPublicos() {
                             {selectedQrBien.descripcion}
                         </p>
 
-                        <button
-                            type="button"
-                            onClick={() => setQrModalOpen(false)}
-                            className="w-full py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl transition-colors shadow-sm"
-                        >
-                            Cerrar
-                        </button>
+                        <div className="flex items-center gap-2">
+                            <a
+                                href={getCodeImageUrl(selectedQrBien, 450)}
+                                download={`codigo-${selectedQrBien.n_interno_bien || selectedQrBien.id}.png`}
+                                className="flex-1 py-2.5 text-xs font-bold text-blue-900 bg-blue-100 hover:bg-blue-200 rounded-xl transition-colors shadow-xs inline-flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                                <span>⬇️</span> Descargar
+                            </a>
+                            <button
+                                type="button"
+                                onClick={() => setQrModalOpen(false)}
+                                className="flex-1 py-2.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-xl transition-colors shadow-xs cursor-pointer"
+                            >
+                                Cerrar
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -1282,59 +1426,161 @@ export default function BienesPublicos() {
                                 </div>
                             </div>
 
-                            {/* Sección de Código QR Original */}
-                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                            {/* Sección de Código Identificador: QR o Código de Barras */}
+                            <div className="p-4 bg-blue-50/80 border border-blue-200 rounded-xl">
+                                {/* Cabecera de la sección con selector de tipo */}
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-blue-200/60">
+                                    <div>
+                                        <h4 className="text-sm font-bold text-blue-950 flex items-center gap-1.5">
+                                            <span>{modalCodeType === 'barcode' ? '🏷️' : '📱'}</span>
+                                            <span>Código Identificador del Bien</span>
+                                        </h4>
+                                        <p className="text-xs text-blue-700 mt-0.5">
+                                            Selecciona si deseas asociar un <strong>Código QR</strong> o un <strong>Código de Barras</strong>.
+                                        </p>
+                                    </div>
+
+                                    {/* Selector de Tipo (Pills) */}
+                                    <div className="inline-flex p-1 bg-white border border-blue-200 rounded-xl shadow-xs">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleChangeCodeType('qr')}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                modalCodeType === 'qr'
+                                                    ? 'bg-blue-900 text-white shadow-xs'
+                                                    : 'text-slate-600 hover:text-blue-900 hover:bg-blue-50'
+                                            }`}
+                                        >
+                                            <span>📱</span>
+                                            <span>Código QR</span>
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleChangeCodeType('barcode')}
+                                            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                                                modalCodeType === 'barcode'
+                                                    ? 'bg-blue-900 text-white shadow-xs'
+                                                    : 'text-slate-600 hover:text-blue-900 hover:bg-blue-50'
+                                            }`}
+                                        >
+                                            <span className="font-mono">|||||||</span>
+                                            <span>Código de Barras</span>
+                                        </button>
+                                    </div>
+                                </div>
+
                                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    {/* Contenedor de Vista Previa */}
                                     <div className="flex-shrink-0 mx-auto sm:mx-0">
-                                        {formData.qr_code ? (
-                                            <img
-                                                src={formData.qr_code.startsWith('data:image') || formData.qr_code.startsWith('/9j/')
-                                                    ? formData.qr_code
-                                                    : `https://quickchart.io/chart?cht=qr&chs=150x150&chl=${encodeURIComponent(formData.qr_code)}`}
-                                                alt="QR Code"
-                                                className="w-24 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain"
-                                            />
-                                        ) : formData.n_interno_bien.trim() ? (
-                                            <img
-                                                src={`https://quickchart.io/chart?cht=qr&chs=150x150&chl=${encodeURIComponent(`${window.location.origin}/bienes/qr/${formData.n_interno_bien.trim()}`)}`}
-                                                alt="QR Code Sugerido"
-                                                className="w-24 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain opacity-75"
-                                            />
+                                        {modalCodeType === 'barcode' ? (
+                                            formData.qr_code && formData.qr_code.startsWith('barcode_img:') ? (
+                                                <img
+                                                    src={formData.qr_code.replace('barcode_img:', '')}
+                                                    alt="Código de Barras Subido"
+                                                    className="w-44 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain"
+                                                />
+                                            ) : formData.qr_code && formData.qr_code.startsWith('barcode:') ? (
+                                                <img
+                                                    src={getBarcodeDataUrl(formData.qr_code.replace('barcode:', ''), 2, 50)}
+                                                    alt="Código de Barras"
+                                                    className="w-44 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain"
+                                                />
+                                            ) : formData.n_interno_bien.trim() ? (
+                                                <img
+                                                    src={getBarcodeDataUrl(formData.n_interno_bien.trim(), 2, 50)}
+                                                    alt="Código de Barras Sugerido"
+                                                    className="w-44 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain opacity-75"
+                                                    title="Vista previa automática basada en N° Interno"
+                                                />
+                                            ) : (
+                                                <div className="w-44 h-24 bg-white border-2 border-dashed border-blue-300 rounded-xl flex flex-col items-center justify-center text-slate-400 p-2">
+                                                    <span className="text-xl font-mono">|||||||||||||</span>
+                                                    <span className="text-[10px] mt-1 text-center font-medium">Ingresa N° Interno</span>
+                                                </div>
+                                            )
                                         ) : (
-                                            <div className="w-24 h-24 bg-white border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-3xl">
-                                                📱
-                                            </div>
+                                            formData.qr_code && !formData.qr_code.startsWith('barcode') ? (
+                                                <img
+                                                    src={formData.qr_code.startsWith('data:image') || formData.qr_code.startsWith('/9j/')
+                                                        ? formData.qr_code
+                                                        : `https://quickchart.io/chart?cht=qr&chs=150x150&chl=${encodeURIComponent(formData.qr_code)}`}
+                                                    alt="QR Code"
+                                                    className="w-24 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain"
+                                                />
+                                            ) : formData.n_interno_bien.trim() ? (
+                                                <img
+                                                    src={`https://quickchart.io/chart?cht=qr&chs=150x150&chl=${encodeURIComponent(`${window.location.origin}/bienes/qr/${formData.n_interno_bien.trim()}`)}`}
+                                                    alt="QR Code Sugerido"
+                                                    className="w-24 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain opacity-75"
+                                                    title="Vista previa automática basada en N° Interno"
+                                                />
+                                            ) : (
+                                                <div className="w-24 h-24 bg-white border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-3xl">
+                                                    📱
+                                                </div>
+                                            )
                                         )}
                                     </div>
+
+                                    {/* Controles de Acción según el Tipo */}
                                     <div className="flex-1">
-                                        <h4 className="text-sm font-bold text-blue-900">Código QR del Bien</h4>
+                                        <h4 className="text-sm font-bold text-blue-900">
+                                            {modalCodeType === 'barcode' ? 'Código de Barras (CODE 128)' : 'Código QR del Bien'}
+                                        </h4>
                                         <p className="text-xs text-blue-700 mt-0.5">
-                                            Genera el QR automáticamente basado en el N° Interno o carga una imagen existente.
+                                            {modalCodeType === 'barcode'
+                                                ? 'Genera un código de barras estándar basado en el N° Interno o carga una imagen existente.'
+                                                : 'Genera el QR automáticamente basado en el N° Interno o carga una imagen existente.'}
                                         </p>
+
                                         <div className="flex flex-wrap gap-2 mt-3">
-                                            <button
-                                                type="button"
-                                                onClick={handleGenerateModalQR}
-                                                className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors shadow-xs"
-                                            >
-                                                🔄 Generar QR Automático
-                                            </button>
-                                            <label className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors shadow-xs inline-flex items-center">
-                                                📤 Cargar QR Existente
-                                                <input
-                                                    type="file"
-                                                    accept="image/*"
-                                                    className="hidden"
-                                                    onChange={handleLoadModalQRFile}
-                                                />
-                                            </label>
+                                            {modalCodeType === 'barcode' ? (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleGenerateModalBarcode}
+                                                        className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1"
+                                                    >
+                                                        <span>🔄</span> Generar Barras Automático
+                                                    </button>
+                                                    <label className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors shadow-xs inline-flex items-center gap-1">
+                                                        <span>📤</span> Cargar Imagen de Barras
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={handleLoadModalBarcodeFile}
+                                                        />
+                                                    </label>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleGenerateModalQR}
+                                                        className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1"
+                                                    >
+                                                        <span>🔄</span> Generar QR Automático
+                                                    </button>
+                                                    <label className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors shadow-xs inline-flex items-center gap-1">
+                                                        <span>📤</span> Cargar QR Existente
+                                                        <input
+                                                            type="file"
+                                                            accept="image/*"
+                                                            className="hidden"
+                                                            onChange={handleLoadModalQRFile}
+                                                        />
+                                                    </label>
+                                                </>
+                                            )}
+
                                             {formData.qr_code && (
                                                 <button
                                                     type="button"
                                                     onClick={() => setFormData(prev => ({ ...prev, qr_code: '' }))}
-                                                    className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-800 transition-colors"
+                                                    className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-800 transition-colors cursor-pointer"
                                                 >
-                                                    Quitar QR
+                                                    Quitar Código
                                                 </button>
                                             )}
                                         </div>
