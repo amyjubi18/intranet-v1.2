@@ -90,7 +90,7 @@ export default function BienesPublicos() {
     const [quickColorError, setQuickColorError] = useState(null);
 
     const initialFormData = {
-        sede: 'Sede Central',
+        sede: 'CODECYT S.A',
         unidad_administrativa_id: '',
         usuario_administrativo_id: '',
         usuario_de_uso_id: '',
@@ -1175,7 +1175,7 @@ export default function BienesPublicos() {
                                                 <p className="flex items-center gap-2 text-sm text-slate-800">
                                                     <span
                                                         className="w-4 h-4 border border-gray-300 rounded-full inline-block"
-                                                        style={{ backgroundColor: item.color_css || item.colors?.color_css || '#cccccc' }}
+                                                        style={{ backgroundColor: item.colors?.codigo_hex || item.color_css || item.colors?.color_css || '#cccccc' }}
                                                     ></span>
                                                     {item.colors ? (item.colors.color || item.colors.nombre) : 'N/A'}
                                                 </p>
@@ -1642,7 +1642,7 @@ export default function BienesPublicos() {
                             {/* Fila 8: Color y Serial */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center justify-between mb-1.5">
                                         <label className="text-sm font-semibold text-slate-800">
                                             Color: <span className="text-red-500">*</span>
                                         </label>
@@ -1656,6 +1656,42 @@ export default function BienesPublicos() {
                                             <span>Nuevo Color</span>
                                         </button>
                                     </div>
+
+                                    {/* Selector visual de colores: círculos interactivos */}
+                                    <div className="mb-2 p-2 bg-blue-50/70 border border-blue-200/80 rounded-xl">
+                                        <span className="text-[11px] font-semibold text-blue-950 block mb-1.5">
+                                            Paleta de colores registrados (haz clic para seleccionar):
+                                        </span>
+                                        <div className="flex flex-wrap gap-1.5 max-h-24 overflow-y-auto">
+                                            {(catalogs.colors || []).map((col) => {
+                                                const isSelected = String(formData.color_id) === String(col.id);
+                                                const bg = col.codigo_hex || '#cccccc';
+                                                const isLight = bg === '#FFFFFF' || (bg || '').toUpperCase() === '#F5F5DC';
+                                                return (
+                                                    <button
+                                                        key={col.id}
+                                                        type="button"
+                                                        onClick={() => handleFormChange('color_id', col.id)}
+                                                        className={`w-7 h-7 rounded-xl border-2 transition-all flex items-center justify-center cursor-pointer shadow-2xs hover:scale-110 ${
+                                                            isSelected
+                                                                ? 'border-blue-600 scale-110 ring-2 ring-blue-500 shadow-sm'
+                                                                : 'border-slate-300 hover:border-slate-400'
+                                                        }`}
+                                                        style={{ backgroundColor: bg }}
+                                                        title={`${col.color || col.nombre} (${bg})`}
+                                                    >
+                                                        {isSelected && (
+                                                            <span className={`text-[10px] font-bold ${isLight ? 'text-black' : 'text-white'}`}>
+                                                                ✓
+                                                            </span>
+                                                        )}
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+
+                                    {/* Select desplegable sincronizado */}
                                     <select
                                         value={formData.color_id}
                                         onChange={(e) => {
@@ -1669,7 +1705,7 @@ export default function BienesPublicos() {
                                         required
                                         disabled={submitting}
                                     >
-                                        <option value="">Seleccione Color</option>
+                                        <option value="">Seleccione Color...</option>
                                         {(catalogs.colors || []).map((col) => (
                                             <option key={col.id} value={col.id}>
                                                 {col.color || col.nombre} {col.codigo_hex ? `(${col.codigo_hex})` : ''}
@@ -1677,18 +1713,21 @@ export default function BienesPublicos() {
                                         ))}
                                         <option value="__NEW__">➕ Añadir nuevo color...</option>
                                     </select>
+
                                     {/* Muestra visual del color seleccionado */}
                                     {(() => {
                                         const selectedCol = (catalogs.colors || []).find(c => String(c.id) === String(formData.color_id));
-                                        if (selectedCol && selectedCol.codigo_hex) {
+                                        if (selectedCol) {
                                             return (
                                                 <div className="flex items-center gap-2 mt-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs">
                                                     <span
                                                         className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs flex-shrink-0"
-                                                        style={{ backgroundColor: selectedCol.codigo_hex }}
+                                                        style={{ backgroundColor: selectedCol.codigo_hex || '#cccccc' }}
                                                     />
                                                     <span className="font-semibold text-slate-700">{selectedCol.color}</span>
-                                                    <span className="font-mono text-[11px] text-slate-500">({selectedCol.codigo_hex})</span>
+                                                    {selectedCol.codigo_hex && (
+                                                        <span className="font-mono text-[11px] text-slate-500">({selectedCol.codigo_hex})</span>
+                                                    )}
                                                 </div>
                                             );
                                         }
