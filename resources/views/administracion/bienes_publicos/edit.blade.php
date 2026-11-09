@@ -140,12 +140,26 @@
                     <div class="grid grid-cols-1 gap-2 lg:grid-cols-2">
                         <div>
                             <label class="block mb-1 text-sm font-medium text-black">Color:</label>
-                            <select name="color_id" class="w-full px-3 py-2 bg-blue-100 border-none rounded-lg campo-select" required>
-                                <option value="">Seleccione</option>
-                                @foreach ($colors as $color)
-                                <option value="{{ $color->id }}" {{ $color->id == $biene->color_id ? 'selected' : '' }}>{{ $color->color }}</option>
-                                @endforeach
-                            </select>
+                            <div class="flex items-center gap-2">
+                                <span id="editColorPreview"
+                                      class="w-10 h-10 rounded-xl border-2 border-white ring-2 ring-gray-300 shadow-sm flex-shrink-0 transition-colors"
+                                      style="background-color: {{ $biene->color_css ?? '#cccccc' }};"
+                                      title="Color seleccionado"></span>
+                                <select name="color_id"
+                                        id="editColorSelect"
+                                        class="w-full px-3 py-2 bg-blue-100 border-none rounded-lg campo-select font-medium"
+                                        onchange="updateEditBienColorPreview(this)"
+                                        required>
+                                    <option value="" data-color="#cccccc">Seleccione</option>
+                                    @foreach ($colors as $color)
+                                    <option value="{{ $color->id }}"
+                                            data-color="{{ $color->color_css }}"
+                                            {{ $color->id == $biene->color_id ? 'selected' : '' }}>
+                                        {{ $color->color }}
+                                    </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
                         <div>
                             <label class="block mb-1 text-sm font-medium text-black">Serial:</label>
@@ -450,7 +464,21 @@
     </div>
 
     <script>
+        function updateEditBienColorPreview(selectEl) {
+            const preview = document.getElementById('editColorPreview');
+            if (!preview || !selectEl) return;
+            const selectedOpt = selectEl.options[selectEl.selectedIndex];
+            const hex = selectedOpt ? selectedOpt.getAttribute('data-color') : '#cccccc';
+            preview.style.backgroundColor = hex || '#cccccc';
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
+            // Inicializar preview de color
+            const colorSelect = document.getElementById('editColorSelect');
+            if (colorSelect) {
+                updateEditBienColorPreview(colorSelect);
+            }
+
             // Inicializar Tom Select para descripción
             const descSelect = document.getElementById('descripcion');
             if (descSelect && !descSelect.tomselect) {

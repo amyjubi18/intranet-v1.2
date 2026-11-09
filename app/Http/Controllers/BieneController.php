@@ -190,7 +190,7 @@ class BieneController extends Controller
         $condiciones = \App\Models\Condicion::all();
         $unidad_administrativas = \App\Models\UnidadAdministrativa::all();
         $forma_adquisiciones = \App\Models\FormaAdquisicion::all();
-        $colors = \App\Models\Color::all();
+        $colors = \App\Models\Color::orderBy('color', 'asc')->get();
         $descripciones = Biene::distinct()->pluck('descripcion')->filter()->sort()->values();
         $marcas = Biene::distinct()->pluck('marca')->filter()->sort()->values();
         $modelos = Biene::distinct()->pluck('modelo')->filter()->sort()->values();
@@ -218,7 +218,7 @@ class BieneController extends Controller
             "usuario_de_usos" => UsuarioDeUso::all(),
             "forma_adquisiciones" => \App\Models\FormaAdquisicion::all(),
             "estado_del_usos" => \App\Models\EstadoDelUso::all(),
-            "colors" => \App\Models\Color::all(),
+            "colors" => \App\Models\Color::orderBy('color', 'asc')->get(),
             "condiciones" => \App\Models\Condicion::all(),
             "descripciones" => $descripciones,
         ]);
@@ -334,7 +334,7 @@ class BieneController extends Controller
             'usuario_de_usos' => UsuarioDeUso::all(),
             'forma_adquisiciones' => \App\Models\FormaAdquisicion::all(),
             'estado_del_usos' => \App\Models\EstadoDelUso::all(),
-            'colors' => \App\Models\Color::all(),
+            'colors' => \App\Models\Color::orderBy('color', 'asc')->get(),
             'condiciones' => \App\Models\Condicion::all(),
             'unidad_administrativas' => UnidadAdministrativa::all(),
             'descripciones' => $descripciones,

@@ -179,12 +179,20 @@
                                 <div class="grid grid-cols-1 gap-2 lg:grid-cols-2">
                                     <div>
                                         <label class="block mb-1 text-sm font-medium text-black">Color:</label>
-                                        <select name="color_id[]" class="w-full px-3 py-2 bg-blue-100 border-none rounded-lg campo-select" required>
-                                            <option value="">Seleccione</option>
-                                            @foreach ($colors as $color)
-                                            <option value="{{ $color->id }}">{{ $color->color }}</option>
-                                            @endforeach
-                                        </select>
+                                        <div class="flex items-center gap-2">
+                                            <span class="color-badge-preview w-9 h-9 rounded-xl border-2 border-white ring-2 ring-gray-300 shadow-sm flex-shrink-0 transition-colors"
+                                                  style="background-color: #cccccc;"
+                                                  title="Muestra del color"></span>
+                                            <select name="color_id[]"
+                                                    class="color-select-input w-full px-3 py-2 bg-blue-100 border-none rounded-lg campo-select font-medium"
+                                                    onchange="updateRowColorPreview(this)"
+                                                    required>
+                                                <option value="" data-color="#cccccc">Seleccione</option>
+                                                @foreach ($colors as $color)
+                                                <option value="{{ $color->id }}" data-color="{{ $color->color_css }}">{{ $color->color }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
                                     </div>
                                     <div>
                                         <label class="block mb-1 text-sm font-medium text-black">Serial:</label>
@@ -353,6 +361,18 @@
             }
         }
 
+        function updateRowColorPreview(selectEl) {
+            if (!selectEl) return;
+            const container = selectEl.closest('.flex');
+            const preview = container ? container.querySelector('.color-badge-preview') : null;
+            if (preview) {
+                const opt = selectEl.options[selectEl.selectedIndex];
+                const hex = opt ? opt.getAttribute('data-color') : '#cccccc';
+                preview.style.backgroundColor = hex || '#cccccc';
+            }
+            updatePendingRecords();
+        }
+
         function setupDependentSelects(row) {
             const unidadSelect = row.querySelector('.unidad-administrativa');
             const usuarioAdminSelect = row.querySelector('.usuario-administrativo');
@@ -423,6 +443,9 @@
                 const marca = row.querySelector('input[name="marca[]"]').value || 'No ingresada';
                 const modelo = row.querySelector('input[name="modelo[]"]').value || 'No ingresada';
                 const color = row.querySelector('select[name="color_id[]"]');
+                const colorOpt = color && color.selectedIndex >= 0 ? color.options[color.selectedIndex] : null;
+                const colorHex = colorOpt ? (colorOpt.getAttribute('data-color') || '#cccccc') : '#cccccc';
+                const colorText = getSelectText(color);
                 const serial = row.querySelector('input[name="serial[]"]').value || 'No ingresado';
                 const comentario = row.querySelector('input[name="comentario[]"]').value || 'Sin comentario';
                 const fechaComentario = row.querySelector('input[name="fecha_comentario[]"]').value || 'No ingresada';
@@ -446,7 +469,7 @@
                     '<p><span class="font-bold text-gray-800">Condición:</span> ' + getSelectText(condicion) + '</p>' +
                     '<p><span class="font-bold text-gray-800">Marca:</span> ' + marca + '</p>' +
                     '<p><span class="font-bold text-gray-800">Modelo:</span> ' + modelo + '</p>' +
-                    '<p><span class="font-bold text-gray-800">Color:</span> ' + getSelectText(color) + '</p>' +
+                    '<p class="flex items-center gap-1.5"><span class="font-bold text-gray-800">Color:</span> <span class="inline-block w-3.5 h-3.5 rounded-full border border-gray-300" style="background-color: ' + colorHex + ';"></span> ' + colorText + '</p>' +
                     '<p><span class="font-bold text-gray-800">Serial:</span> ' + serial + '</p>' +
                     '<p><span class="font-bold text-gray-800">Comentario:</span> ' + comentario + '</p>' +
                     '<p><span class="font-bold text-gray-800">Fecha Comentario:</span> ' + fechaComentario + '</p>' +
@@ -460,6 +483,12 @@
             const firstRow = formRows.querySelector('.form-row');
             const newRow = firstRow.cloneNode(true);
             const newIndex = rowCount;
+
+            // Resetear el badge del preview de color en la nueva fila
+            const newColorPreview = newRow.querySelector('.color-badge-preview');
+            if (newColorPreview) {
+                newColorPreview.style.backgroundColor = '#cccccc';
+            }
             const ids = ['unidad_administrativa', 'usuario_administrativo', 'usuario_de_uso', 'descripcion'];
             ids.forEach(function(baseId) {
                 const el = newRow.querySelector('#' + baseId + '_0');

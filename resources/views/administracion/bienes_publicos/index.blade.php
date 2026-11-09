@@ -200,10 +200,17 @@
                                 <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Serial</p>
                                 <p class="font-mono text-sm">{{ $item->serial }}</p>
                                 <p class="text-xs text-blue-900 font-semibold mt-2 mb-1">Color</p>
-                                <p class="flex items-center gap-2 text-sm">
-                                    <span class="w-4 h-4 border border-gray-300 rounded-full" style="background-color: {{ $item->color_css ?? '#cccccc' }}"></span>
-                                    {{ $item->colors ? $item->colors->color : 'N/A' }}
-                                </p>
+                                <div class="flex items-center gap-2 text-sm font-medium">
+                                    <span class="inline-block w-5 h-5 rounded-full border-2 border-white ring-2 ring-gray-300 shadow-sm flex-shrink-0"
+                                          style="background-color: {{ $item->color_css ?? '#cccccc' }};"
+                                          title="Color: {{ $item->colors ? $item->colors->color : 'N/A' }} ({{ $item->color_css ?? '#cccccc' }})"></span>
+                                    <span class="text-gray-900 font-medium">{{ $item->colors ? $item->colors->color : 'N/A' }}</span>
+                                    @if(!empty($item->color_css) && $item->color_css !== '#cccccc')
+                                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-gray-100 text-gray-600 border border-gray-200">
+                                            {{ $item->color_css }}
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
                             <div>
 

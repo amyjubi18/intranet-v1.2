@@ -93,7 +93,7 @@ class Crear extends Component
         $this->usuario_de_usos = UsuarioDeUso::all();
         $this->forma_adquisicions = FormaAdquisicion::all();
         $this->estado_del_usos = EstadoDelUso::all();
-        $this->colors = Color::all();
+        $this->colors = Color::orderBy('color', 'asc')->get();
         $this->condicions = Condicion::all();
         $this->bienes = Biene::all();
     }

@@ -164,19 +164,28 @@
 
 
     <div>
-        <label for="" class="block mt-1 text-black">Color</label>
-        <div class="flex">
-        <select  class="block w-full px-4 py-3 pr-8 mt-2 leading-tight bg-white border border-blue-900 rounded-lg shadow hover:border-blie-500 " name="color_id" id="color" wire:model="color_id">
-            <option value="">Seleccione</option>
-            @foreach ($colors as $color)
-            <option class="px-4 py-3 pr-8 hover:bg-gray-200 hover:px-2" value="{{$color->id}}">{{$color->color}}</option>
-
-            @endforeach
-        </select>
-
-        <x-input-error :messages="$errors->get('color_id')" class="mt-2" />
-
+        <label for="" class="block mt-1 text-black font-semibold">Color:</label>
+        <div class="flex items-center gap-2 mt-2">
+            <span id="livewireColorPreview"
+                  class="w-10 h-10 rounded-xl border-2 border-white ring-2 ring-gray-300 shadow-sm flex-shrink-0 transition-colors"
+                  style="background-color: #cccccc;"
+                  title="Muestra del color"></span>
+            <select class="block w-full px-4 py-3 pr-8 leading-tight bg-white border border-blue-900 rounded-lg shadow hover:border-blue-500 font-medium"
+                    name="color_id"
+                    id="color"
+                    wire:model="color_id"
+                    onchange="const opt = this.options[this.selectedIndex]; document.getElementById('livewireColorPreview').style.backgroundColor = (opt ? opt.getAttribute('data-color') : '#cccccc') || '#cccccc';">
+                <option value="" data-color="#cccccc">Seleccione</option>
+                @foreach ($colors as $color)
+                <option class="px-4 py-3 pr-8 hover:bg-gray-200 hover:px-2"
+                        value="{{$color->id}}"
+                        data-color="{{ $color->color_css }}">
+                    {{$color->color}}
+                </option>
+                @endforeach
+            </select>
         </div>
+        <x-input-error :messages="$errors->get('color_id')" class="mt-2" />
     </div>
 
 
