@@ -498,6 +498,97 @@ export default function BienesPublicos() {
         }
     };
 
+    // Casar Marca con Modelo: sugerencias dinámicas de modelos según la marca ingresada o seleccionada
+    const availableModelos = useMemo(() => {
+        const rawMarca = (formData.marca || '').trim().toUpperCase();
+        if (!rawMarca) {
+            return catalogs.modelos || [];
+        }
+        const map = catalogs.marcas_modelos || {};
+        if (map[rawMarca] && Array.isArray(map[rawMarca]) && map[rawMarca].length > 0) {
+            return map[rawMarca];
+        }
+        return catalogs.modelos || [];
+    }, [formData.marca, catalogs.marcas_modelos, catalogs.modelos]);
+
+    // Abrir sub-modal para crear un nuevo color rápido
+    const handleOpenQuickColorModal = () => {
+        setQuickColorName('');
+        setQuickColorHex('#14368b');
+        setQuickColorError(null);
+        setQuickColorModalOpen(true);
+    };
+
+    // Guardar nuevo color desde el sub-modal
+    const handleQuickColorSubmit = async (e) => {
+        e.preventDefault();
+        if (!quickColorName.trim()) {
+            setQuickColorError('El nombre del color es obligatorio');
+            return;
+        }
+        setQuickColorSubmitting(true);
+        setQuickColorError(null);
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const res = await fetch('/administracion/colors', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    color: quickColorName.trim().toUpperCase(),
+                    codigo_hex: quickColorHex || '#14368b'
+                })
+            });
+
+            const json = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                if (json.errors && json.errors.color) {
+                    setQuickColorError(json.errors.color[0]);
+                } else {
+                    setQuickColorError(json.message || 'Error al guardar el color');
+                }
+                return;
+            }
+
+            const newColor = json.data;
+
+            // Actualizar catálogo de colores en el estado
+            setCatalogs(prev => ({
+                ...prev,
+                colors: [...(prev.colors || []), newColor]
+            }));
+
+            // Seleccionar automáticamente el nuevo color en formData
+            setFormData(prev => ({
+                ...prev,
+                color_id: newColor.id
+            }));
+
+            Swal.fire({
+                icon: 'success',
+                title: '¡Color Agregado!',
+                text: `El color "${newColor.color}" se ha registrado y seleccionado exitosamente.`,
+                timer: 1600,
+                showConfirmButton: false,
+                customClass: { popup: 'rounded-2xl shadow-2xl z-[80]' }
+            });
+
+            setQuickColorModalOpen(false);
+            setQuickColorName('');
+            setQuickColorHex('#14368b');
+        } catch (err) {
+            console.error('Error al crear color rápido:', err);
+            setQuickColorError('Error de conexión al guardar color');
+        } finally {
+            setQuickColorSubmitting(false);
+        }
+    };
+
     // Cerrar Modal
     const handleCloseModal = () => {
         if (submitting) return;
@@ -1230,7 +1321,7 @@ export default function BienesPublicos() {
                                 ))}
                             </datalist>
                             <datalist id="modelos-list">
-                                {(catalogs.modelos || []).map((m, i) => (
+                                {availableModelos.map((m, i) => (
                                     <option key={i} value={m} />
                                 ))}
                             </datalist>
@@ -1519,6 +1610,14 @@ export default function BienesPublicos() {
                                         required
                                         disabled={submitting}
                                     />
+                                    {formData.marca && catalogs.marcas_modelos && catalogs.marcas_modelos[(formData.marca || '').trim().toUpperCase()] ? (
+                                        <p className="mt-1 text-[11px] text-blue-900 font-semibold flex items-center gap-1">
+                                            <span>🎯</span>
+                                            <span>Modelos registrados para {formData.marca.toUpperCase()} ({catalogs.marcas_modelos[(formData.marca || '').trim().toUpperCase()].length})</span>
+                                        </p>
+                                    ) : (
+                                        <p className="mt-1 text-[11px] text-slate-400">Puedes seleccionar uno sugerido o escribir uno nuevo</p>
+                                    )}
                                     {formErrors.modelo && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.modelo[0]}</p>}
                                 </div>
                             </div>
@@ -1526,21 +1625,58 @@ export default function BienesPublicos() {
                             {/* Fila 8: Color y Serial */}
                             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        Color: <span className="text-red-500">*</span>
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-sm font-semibold text-slate-800">
+                                            Color: <span className="text-red-500">*</span>
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={handleOpenQuickColorModal}
+                                            className="text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 px-2.5 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Crear un nuevo color sin salir del formulario"
+                                        >
+                                            <span>➕</span>
+                                            <span>Nuevo Color</span>
+                                        </button>
+                                    </div>
                                     <select
                                         value={formData.color_id}
-                                        onChange={(e) => handleFormChange('color_id', e.target.value)}
+                                        onChange={(e) => {
+                                            if (e.target.value === '__NEW__') {
+                                                handleOpenQuickColorModal();
+                                            } else {
+                                                handleFormChange('color_id', e.target.value);
+                                            }
+                                        }}
                                         className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                                         required
                                         disabled={submitting}
                                     >
                                         <option value="">Seleccione Color</option>
                                         {(catalogs.colors || []).map((col) => (
-                                            <option key={col.id} value={col.id}>{col.color || col.nombre}</option>
+                                            <option key={col.id} value={col.id}>
+                                                {col.color || col.nombre} {col.codigo_hex ? `(${col.codigo_hex})` : ''}
+                                            </option>
                                         ))}
+                                        <option value="__NEW__">➕ Añadir nuevo color...</option>
                                     </select>
+                                    {/* Muestra visual del color seleccionado */}
+                                    {(() => {
+                                        const selectedCol = (catalogs.colors || []).find(c => String(c.id) === String(formData.color_id));
+                                        if (selectedCol && selectedCol.codigo_hex) {
+                                            return (
+                                                <div className="flex items-center gap-2 mt-1.5 px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs">
+                                                    <span
+                                                        className="w-4 h-4 rounded-full border border-slate-300 shadow-2xs flex-shrink-0"
+                                                        style={{ backgroundColor: selectedCol.codigo_hex }}
+                                                    />
+                                                    <span className="font-semibold text-slate-700">{selectedCol.color}</span>
+                                                    <span className="font-mono text-[11px] text-slate-500">({selectedCol.codigo_hex})</span>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
                                     {formErrors.color_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.color_id[0]}</p>}
                                 </div>
                                 <div>
@@ -1792,6 +1928,131 @@ export default function BienesPublicos() {
                                                 <path d="M5 21h14a2 2 0 0 0 2-2V8a1 1 0 0 0-.29-.71l-4-4A1 1 0 0 0 16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2zm10-2H9v-5h6zM13 7h-2V5h2zM5 5h2v4h8V5h.59L19 8.41V19h-2v-5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5H5z"></path>
                                             </svg>
                                             <span>{modalMode === 'create' ? 'Guardar Bien' : 'Actualizar Bien'}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* SUB-MODAL RÁPIDO PARA CREAR NUEVO COLOR (Z-INDEX SUPERIOR Z-[70]) */}
+            {quickColorModalOpen && (
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 transition-all animate-in fade-in zoom-in-95 duration-200">
+                        {/* Cabecera del sub-modal */}
+                        <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
+                            <div>
+                                <h4 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                                    <span>🎨</span>
+                                    <span>Nuevo Color</span>
+                                </h4>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Crea un color y se seleccionará automáticamente en el bien
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setQuickColorModalOpen(false)}
+                                disabled={quickColorSubmitting}
+                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 text-xl font-bold cursor-pointer"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Formulario de nuevo color */}
+                        <form onSubmit={handleQuickColorSubmit} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                                    Nombre del Color: <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    value={quickColorName}
+                                    onChange={(e) => setQuickColorName(e.target.value.toUpperCase())}
+                                    placeholder="Ej: AZUL REY, VERDE OLIVA, DORADO..."
+                                    className="w-full bg-blue-100 border-none rounded-xl px-4 py-2 text-sm font-medium text-slate-900 focus:ring-2 focus:ring-blue-600 uppercase"
+                                    autoFocus
+                                    required
+                                    disabled={quickColorSubmitting}
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700 mb-1.5">
+                                    Selector de Tono: <span className="text-red-500">*</span>
+                                </label>
+                                <div className="grid grid-cols-2 gap-2 items-center">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={quickColorHex}
+                                            onChange={(e) => setQuickColorHex(e.target.value.toUpperCase())}
+                                            className="w-12 h-10 p-1 bg-blue-100 rounded-xl cursor-pointer border-none shadow-xs"
+                                            disabled={quickColorSubmitting}
+                                            title="Click para abrir el selector de color"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={quickColorHex}
+                                            onChange={(e) => setQuickColorHex(e.target.value.toUpperCase())}
+                                            className="w-full bg-blue-100 border-none rounded-xl px-2.5 py-2 text-xs font-mono font-bold text-slate-800 uppercase focus:ring-2 focus:ring-blue-600"
+                                            maxLength={7}
+                                            disabled={quickColorSubmitting}
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl">
+                                        <span
+                                            className="w-6 h-6 rounded-lg shadow-inner border border-slate-300 flex-shrink-0"
+                                            style={{ backgroundColor: quickColorHex }}
+                                        />
+                                        <span className="text-xs font-bold text-slate-800 truncate">
+                                            {quickColorName ? quickColorName.toUpperCase() : 'Muestra'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {quickColorError && (
+                                <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 font-semibold">
+                                    {quickColorError}
+                                </div>
+                            )}
+
+                            {/* Botones de Acción */}
+                            <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                                <button
+                                    type="button"
+                                    onClick={() => setQuickColorModalOpen(false)}
+                                    disabled={quickColorSubmitting}
+                                    className="btn-save inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
+                                >
+                                    <span>Cancelar</span>
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={quickColorSubmitting}
+                                    className="btn-save inline-flex items-center justify-center gap-1.5 px-5 py-2 text-xs font-bold text-white rounded-xl shadow-xs transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
+                                >
+                                    {quickColorSubmitting ? (
+                                        <>
+                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Guardando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>💾</span>
+                                            <span>Guardar Color</span>
                                         </>
                                     )}
                                 </button>
