@@ -14,20 +14,29 @@ class ColorController extends Controller
         abort_if(Gate::denies('color_index'), 403);
 
         $search = trim($request->get('search', ''));
+        $selectedColor = trim($request->get('selected_color', ''));
         $sort = $request->get('sort', 'color');
         $direction = $request->get('direction', 'asc');
 
-        // Validar dirección
+        // Validar campos de ordenamiento y dirección
+        $sort = in_array($sort, ['color', 'id', 'created_at']) ? $sort : 'color';
         $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'asc';
 
-        $colors = DB::table('colors')
-            ->select('id', 'color')
-            ->where('color', 'LIKE', '%'.$search.'%')
-            ->orderBy($sort, $direction)
-            ->paginate(15);
+        $query = Color::query();
 
-        $todosLosColors = Color::all();
-        return view('administracion.colors.index', compact('colors', 'search', 'sort', 'direction', 'todosLosColors'));
+        if (!empty($selectedColor)) {
+            $query->where('color', $selectedColor);
+        } elseif (!empty($search)) {
+            $query->where('color', 'LIKE', '%'.$search.'%');
+        }
+
+        $colors = $query->orderBy($sort, $direction)
+            ->paginate(15)
+            ->withQueryString();
+
+        $todosLosColors = Color::orderBy('color', 'asc')->get();
+
+        return view('administracion.colors.index', compact('colors', 'search', 'selectedColor', 'sort', 'direction', 'todosLosColors'));
     }
      public function show(){
         return view('administracion.colors.show', ['colors' => Color::get()]);

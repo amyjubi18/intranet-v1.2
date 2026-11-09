@@ -82,21 +82,43 @@
         <div class="p-6 glass rounded-2xl fade-in">
             <div class="flex flex-wrap items-center justify-between gap-4">
                 <div class="flex flex-wrap items-center gap-4">
-                    <!-- Buscador directo con debounce -->
-                    <form method="GET" action="{{ route('administracion.colors.index') }}" id="searchForm" class="flex items-center gap-2">
-                        <input
-                            type="text"
-                            name="search"
-                            id="colorsSearchInput"
-                            value="{{ $search ?? '' }}"
-                            placeholder="Buscar color..."
-                            class="w-64 px-4 py-2 text-sm glass rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                        >
-                        @if($search)
+                    <!-- Formulario de filtro y búsqueda con debounce -->
+                    <form method="GET" action="{{ route('administracion.colors.index') }}" id="searchForm" class="flex flex-wrap items-center gap-3">
+                        <!-- Selector de colores registrados -->
+                        <div class="relative flex items-center">
+                            <select
+                                name="selected_color"
+                                id="selectedColorSelect"
+                                onchange="this.form.submit()"
+                                class="px-4 py-2 text-sm font-medium glass rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 bg-white"
+                            >
+                                <option value="">🎨 Todos los colores</option>
+                                @foreach($todosLosColors as $c)
+                                    <option value="{{ $c->color }}" {{ ($selectedColor ?? '') === $c->color ? 'selected' : '' }}>
+                                        {{ $c->color }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+
+                        <!-- Buscador de texto directo con debounce -->
+                        <div class="relative">
+                            <input
+                                type="text"
+                                name="search"
+                                id="colorsSearchInput"
+                                value="{{ $search ?? '' }}"
+                                placeholder="Buscar por texto..."
+                                class="w-56 px-4 py-2 text-sm glass rounded-xl border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                            >
+                        </div>
+
+                        @if(!empty($search) || !empty($selectedColor))
                         <a href="{{ route('administracion.colors.index') }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                            🗑️ Limpiar
                         </a>
                         @endif
+
                         <!-- Selector de ordenamiento -->
                         <div class="flex items-center gap-1 ml-2">
                             <span class="text-xs text-gray-500">Ordenar por:</span>
@@ -117,7 +139,7 @@
                     @can('color_create')
                     <a href="{{ route('administracion.colors.create') }}" class="btn inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 text-sm">
                         <span>➕</span>
-                        Nuevo
+                        Nuevo Color
                     </a>
                     @endcan
                 </div>
@@ -129,26 +151,42 @@
     <div class="px-6 mb-8">
         <div class="space-y-4 fade-in">
             @forelse ($colors as $color)
-            <!-- Registro -->
-            <div class="glass justify-between rounded-2xl p-6 hover:scale-[1.01] transition-transform">
+            @php
+                $cssVal = $color->color_css ?? \App\Models\Color::mapColorToCss($color->color);
+            @endphp
+            <!-- Registro con muestra visual de color -->
+            <div class="glass justify-between rounded-2xl p-6 hover:scale-[1.01] transition-transform shadow-sm">
                 <div class="grid items-center justify-between grid-cols-1 gap-6 lg:grid-cols-2">
-                    <!-- Color -->
-                    <div class="text-center lg:text-left">
-                        <p class="mb-1 text-xs font-semibold text-blue-900">🎨 Color</p>
-                        <p class="p-2 text-lg font-semibold text-black rounded-lg w-fit" >{{ $color->color }}</p>
+                    <!-- Color con muestra visual respectiva -->
+                    <div class="flex items-center gap-4 text-center lg:text-left justify-center lg:justify-start">
+                        <!-- Muestra visual del color -->
+                        <div class="relative flex-shrink-0">
+                            <span class="inline-block w-12 h-12 rounded-2xl shadow-md border-2 border-white ring-2 ring-gray-300/80 transition-transform hover:scale-110"
+                                  style="background-color: {{ $cssVal }};"
+                                  title="Color: {{ $color->color }} ({{ $cssVal }})"></span>
+                        </div>
+                        <div>
+                            <p class="mb-1 text-xs font-semibold text-blue-900">🎨 Color Registrado</p>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="p-2 text-lg font-bold text-black rounded-lg">{{ $color->color }}</span>
+                                <span class="px-2.5 py-1 text-xs font-mono font-medium rounded-lg bg-gray-100 text-gray-700 border border-gray-200">
+                                    {{ $cssVal }}
+                                </span>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Acciones -->
                     <div class="text-center lg:text-left">
-                        <div class="flex justify-center gap-2 lg:justify-start">
+                        <div class="flex justify-center gap-2 lg:justify-end">
                             @can('color_edit')
-                            <a href="{{ route('administracion.colors.edit', $color->id) }}" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs">
+                            <a href="{{ route('administracion.colors.edit', $color->id) }}" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs">
                                 <span>✏️</span>
                                 Editar
                             </a>
                             @endcan
                             @can('color_destroy')
-                            <button onclick="confirmDelete({{ $color->id }}, '{{ $color->color }}')" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-red-500 text-white active:translate-y-0.5 text-xs">
+                            <button onclick="confirmDelete({{ $color->id }}, '{{ $color->color }}')" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl font-semibold transition-all bg-red-500 text-white active:translate-y-0.5 text-xs">
                                 <span>🗑️</span>
                                 Eliminar
                             </button>

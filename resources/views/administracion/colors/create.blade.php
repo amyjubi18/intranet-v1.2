@@ -77,18 +77,84 @@
             <form id="crearColorForm" action="{{ route('administracion.colors.store') }}" method="POST">
                 @csrf
 
-                <!-- Campo de color -->
+                <!-- Campo de color y Selector -->
                 <div class="mb-6">
                     <label class="form-label">Color:</label>
-                    <input
-                        type="text"
-                        name="color"
-                        class="bg-blue-100 border-none form-input "
-                        placeholder="Ingrese el nombre del color..."
-                        value="{{ old('color') }}"
-                        required
-                        autofocus
-                    >
+
+                    <div class="p-5 glass rounded-2xl border border-gray-200/80 mb-4 bg-white/70">
+                        <!-- Muestra visual y campo de entrada -->
+                        <div class="flex flex-col sm:flex-row items-center gap-4 mb-4">
+                            <!-- Visualizador del color en tiempo real -->
+                            <div class="flex items-center gap-3">
+                                <div id="colorPreview"
+                                     class="w-14 h-14 rounded-2xl shadow-md border-2 border-white ring-2 ring-gray-300 transition-all flex items-center justify-center"
+                                     style="background-color: #3b82f6;">
+                                </div>
+                                <!-- Selector nativo tipo color picker -->
+                                <label for="nativeColorPicker" class="cursor-pointer group flex flex-col items-center">
+                                    <input type="color" id="nativeColorPicker" value="#3b82f6" class="sr-only">
+                                    <span class="px-3 py-2 text-xs font-semibold rounded-xl bg-blue-50 text-blue-700 border border-blue-200 group-hover:bg-blue-100 transition-colors">
+                                        🎨 Paleta
+                                    </span>
+                                </label>
+                            </div>
+
+                            <!-- Input de texto -->
+                            <div class="flex-1 w-full">
+                                <input
+                                    type="text"
+                                    name="color"
+                                    id="colorInput"
+                                    class="bg-blue-50 border border-blue-200 form-input font-medium text-base"
+                                    placeholder="Nombre del color (ej. Azul, Rojo, Negro)..."
+                                    value="{{ old('color') }}"
+                                    required
+                                    autofocus
+                                >
+                            </div>
+                        </div>
+
+                        <!-- Selector rápido de colores predefinidos -->
+                        <div>
+                            <p class="text-xs font-semibold text-gray-500 mb-2">Colores sugeridos rápidos:</p>
+                            <div class="flex flex-wrap gap-2" id="presetColors">
+                                @php
+                                    $presets = [
+                                        ['nombre' => 'Negro', 'hex' => '#1f2937'],
+                                        ['nombre' => 'Blanco', 'hex' => '#ffffff'],
+                                        ['nombre' => 'Gris', 'hex' => '#6b7280'],
+                                        ['nombre' => 'Gris Claro', 'hex' => '#9ca3af'],
+                                        ['nombre' => 'Gris Oscuro', 'hex' => '#374151'],
+                                        ['nombre' => 'Azul', 'hex' => '#3b82f6'],
+                                        ['nombre' => 'Azul Marino', 'hex' => '#1e3a8a'],
+                                        ['nombre' => 'Celeste', 'hex' => '#7dd3fc'],
+                                        ['nombre' => 'Rojo', 'hex' => '#ef4444'],
+                                        ['nombre' => 'Rojo Vino', 'hex' => '#722f37'],
+                                        ['nombre' => 'Verde', 'hex' => '#22c55e'],
+                                        ['nombre' => 'Verde Oscuro', 'hex' => '#15803d'],
+                                        ['nombre' => 'Amarillo', 'hex' => '#eab308'],
+                                        ['nombre' => 'Naranja', 'hex' => '#f97316'],
+                                        ['nombre' => 'Morado', 'hex' => '#a855f7'],
+                                        ['nombre' => 'Rosa', 'hex' => '#ec4899'],
+                                        ['nombre' => 'Café', 'hex' => '#78350f'],
+                                        ['nombre' => 'Beige', 'hex' => '#f5f5dc'],
+                                        ['nombre' => 'Plateado', 'hex' => '#e5e7eb'],
+                                        ['nombre' => 'Dorado', 'hex' => '#fbbf24'],
+                                    ];
+                                @endphp
+                                @foreach($presets as $p)
+                                    <button type="button"
+                                            onclick="selectPresetColor('{{ $p['nombre'] }}', '{{ $p['hex'] }}')"
+                                            class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs rounded-lg border border-gray-200 bg-white hover:bg-gray-50 shadow-sm transition-all hover:scale-105 active:scale-95"
+                                            title="{{ $p['nombre'] }} ({{ $p['hex'] }})">
+                                        <span class="w-3.5 h-3.5 rounded-full border border-black/20" style="background-color: {{ $p['hex'] }};"></span>
+                                        <span class="font-medium text-gray-700">{{ $p['nombre'] }}</span>
+                                    </button>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
                     @error('color')
                         <p class="mt-1 text-sm text-red-500">{{ $message }}</p>
                     @enderror
@@ -122,6 +188,69 @@
     </div>
 
     <script>
+    <script>
+        // Mapeo JS para vista previa inmediata
+        const colorNameMap = {
+            'negro': '#1f2937', 'blanco': '#ffffff', 'gris': '#6b7280', 'gris claro': '#9ca3af',
+            'gris oscuro': '#374151', 'plata': '#cbd5e1', 'plateado': '#e5e7eb', 'azul': '#3b82f6',
+            'azul oscuro': '#1e40af', 'azul claro': '#60a5fa', 'azul marino': '#1e3a8a',
+            'azul rey': '#2563eb', 'celeste': '#7dd3fc', 'turquesa': '#14b8a6', 'rojo': '#ef4444',
+            'rojo oscuro': '#b91c1c', 'rojo vino': '#722f37', 'vino': '#722f37', 'verde': '#22c55e',
+            'verde oscuro': '#15803d', 'verde claro': '#4ade80', 'amarillo': '#eab308',
+            'naranja': '#f97316', 'morado': '#a855f7', 'violeta': '#8b5cf6', 'lila': '#c084fc',
+            'fucsia': '#d946ef', 'rosa': '#ec4899', 'rosado': '#ffc0cb', 'cafe': '#78350f',
+            'café': '#78350f', 'marron': '#78350f', 'marrón': '#78350f', 'beige': '#f5f5dc',
+            'dorado': '#fbbf24', 'oro': '#ffd700'
+        };
+
+        function resolveColor(text) {
+            if (!text) return '#3b82f6';
+            const clean = text.trim().toLowerCase();
+            if (/^#([a-f0-9]{3}){1,2}$/i.test(clean)) return clean;
+            if (colorNameMap[clean]) return colorNameMap[clean];
+            for (const key in colorNameMap) {
+                if (clean.includes(key)) return colorNameMap[key];
+            }
+            return '#3b82f6';
+        }
+
+        function updatePreview(hex) {
+            const preview = document.getElementById('colorPreview');
+            const nativePicker = document.getElementById('nativeColorPicker');
+            if (preview) preview.style.backgroundColor = hex;
+            if (nativePicker && /^#[0-9a-f]{6}$/i.test(hex)) nativePicker.value = hex;
+        }
+
+        function selectPresetColor(nombre, hex) {
+            const input = document.getElementById('colorInput');
+            if (input) {
+                input.value = nombre;
+                updatePreview(hex);
+            }
+        }
+
+        // Sincronizar inputs
+        document.addEventListener('DOMContentLoaded', () => {
+            const colorInput = document.getElementById('colorInput');
+            const nativePicker = document.getElementById('nativeColorPicker');
+
+            if (colorInput) {
+                colorInput.addEventListener('input', (e) => {
+                    const resolved = resolveColor(e.target.value);
+                    updatePreview(resolved);
+                });
+                if (colorInput.value) {
+                    updatePreview(resolveColor(colorInput.value));
+                }
+            }
+
+            if (nativePicker) {
+                nativePicker.addEventListener('input', (e) => {
+                    updatePreview(e.target.value);
+                });
+            }
+        });
+
         // Toast
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
