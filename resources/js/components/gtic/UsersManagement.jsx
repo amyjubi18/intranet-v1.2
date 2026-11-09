@@ -1152,11 +1152,15 @@ export default function UsersManagement() {
 
                             {/* Botones de Acción Inferiores Originales */}
                             <div className="flex justify-end items-center gap-4 mt-8 pt-6 border-t border-gray-200">
-                                {/* Botón Regresar */}
+                                {/* Botón Regresar (Diseño exacto de create de bienes_publicos) */}
                                 <button
                                     type="button"
                                     onClick={() => setShowCreateModal(false)}
-                                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white bg-blue-900 hover:bg-blue-800 transition-all shadow-md active:translate-y-0.5 text-sm"
+                                    className="btn-save inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white transition-all duration-300 disabled:opacity-60 text-sm hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer shadow-md"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1 fill-white" viewBox="0 0 24 24">
                                         <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path>
@@ -1532,7 +1536,11 @@ export default function UsersManagement() {
                                 <button
                                     type="button"
                                     onClick={() => setShowEditModal(false)}
-                                    className="inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white bg-blue-900 hover:bg-blue-800 transition-all shadow-md active:translate-y-0.5 text-sm"
+                                    className="btn-save inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl font-bold text-white transition-all duration-300 disabled:opacity-60 text-sm hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer shadow-md"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
                                 >
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1 fill-white" viewBox="0 0 24 24">
                                         <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path>
