@@ -14,6 +14,12 @@ import PermisosManagement from './components/gtic/PermisosManagement';
 import DocumentosManagement from './components/administracion/DocumentosManagement';
 import EstanteriasManagement from './components/administracion/EstanteriasManagement';
 import CategoriasManagement from './components/administracion/CategoriasManagement';
+import UnidadesAdministrativasManagement from './components/administracion/UnidadesAdministrativasManagement';
+import UsuariosDeUsoManagement from './components/administracion/UsuariosDeUsoManagement';
+import FormasAdquisicionManagement from './components/administracion/FormasAdquisicionManagement';
+import EstadosUsoManagement from './components/administracion/EstadosUsoManagement';
+import ColorsManagement from './components/administracion/ColorsManagement';
+import CondicionesManagement from './components/administracion/CondicionesManagement';
 
 // Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
@@ -67,6 +73,20 @@ function initReactRoots() {
     mountById('estanterias-management-root', EstanteriasManagement);
     mountComponent('CategoriasManagement', CategoriasManagement);
     mountById('categorias-management-root', CategoriasManagement);
+
+    // OGA: Carga Previa Bienes Públicos
+    mountComponent('UnidadesAdministrativasManagement', UnidadesAdministrativasManagement);
+    mountById('unidades-administrativas-root', UnidadesAdministrativasManagement);
+    mountComponent('UsuariosDeUsoManagement', UsuariosDeUsoManagement);
+    mountById('usuarios-de-uso-root', UsuariosDeUsoManagement);
+    mountComponent('FormasAdquisicionManagement', FormasAdquisicionManagement);
+    mountById('formas-adquisicion-root', FormasAdquisicionManagement);
+    mountComponent('EstadosUsoManagement', EstadosUsoManagement);
+    mountById('estados-uso-root', EstadosUsoManagement);
+    mountComponent('ColorsManagement', ColorsManagement);
+    mountById('colors-root', ColorsManagement);
+    mountComponent('CondicionesManagement', CondicionesManagement);
+    mountById('condiciones-root', CondicionesManagement);
 
     // OGH: Digitalización de Documentos
     mountComponent('DigitalizacionDocumentos', DigitalizacionDocumentos);
