@@ -25,6 +25,22 @@ class InventarioOficController extends Controller
         // Filtros
         $query = InventarioOficina::with(['proveedores', 'articulos', 'unidad_medidas'])->orderBy('id', 'desc');
 
+        if ($request->filled('busqueda')) {
+            $search = $request->busqueda;
+            $query->where(function($q) use ($search) {
+                $q->where('n_factura', 'like', '%' . $search . '%')
+                  ->orWhereHas('proveedores', function($subQ) use ($search) {
+                      $subQ->where('proveedor', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('articulos', function($subQ) use ($search) {
+                      $subQ->where('articulo', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('unidad_medidas', function($subQ) use ($search) {
+                      $subQ->where('unidad_medida', 'like', '%' . $search . '%');
+                  });
+            });
+        }
+
         // Aplicar filtros según el tipo seleccionado
         if ($request->filled('filterType')) {
             switch ($request->filterType) {
@@ -334,16 +350,22 @@ case 'busqueda':
         abort_if(Gate::denies('inventarioofic_destroy'), 403);
 
         $request->validate([
-            'ids' => 'required|string',
+            'ids' => 'required',
             'password' => 'required|string',
         ]);
 
         if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
             return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
         }
 
-        $ids = json_decode($request->ids, true);
+        $ids = is_array($request->ids) ? $request->ids : json_decode($request->ids, true);
         if (!is_array($ids) || count($ids) === 0) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No se seleccionaron registros para eliminar.'], 422);
+            }
             return redirect()->back()->with('error', 'No se seleccionaron registros para eliminar.');
         }
 
@@ -353,8 +375,14 @@ case 'busqueda':
             DB::transaction(function () use ($ids) {
                 InventarioOficina::whereIn('id', $ids)->delete();
             });
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => "Se eliminaron {$count} registro(s) correctamente."]);
+            }
             return redirect()->route('administracion.inventario_oficinas.index')->with('datos', "Se eliminaron {$count} registro(s) correctamente.");
         } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Error al eliminar los registros: ' . $e->getMessage()], 500);
+            }
             return redirect()->route('administracion.inventario_oficinas.index')->with('error', 'Error al eliminar los registros: ' . $e->getMessage());
         }
     }
@@ -368,6 +396,9 @@ case 'busqueda':
         ]);
 
         if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
             return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
         }
 
@@ -377,8 +408,14 @@ case 'busqueda':
             DB::transaction(function () {
                 InventarioOficina::query()->delete();
             });
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => "Se eliminaron todos los registros ({$count}) correctamente."]);
+            }
             return redirect()->route('administracion.inventario_oficinas.index')->with('datos', "Se eliminaron todos los registros ({$count}) correctamente.");
         } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Error al eliminar los registros: ' . $e->getMessage()], 500);
+            }
             return redirect()->route('administracion.inventario_oficinas.index')->with('error', 'Error al eliminar los registros: ' . $e->getMessage());
         }
     }
@@ -398,6 +435,22 @@ case 'busqueda':
         ini_set('max_execution_time', 300);
 
         $query = InventarioOficina::with(['proveedores', 'articulos', 'unidad_medidas'])->orderBy('id', 'desc');
+
+        if ($request->filled('busqueda')) {
+            $search = $request->busqueda;
+            $query->where(function($q) use ($search) {
+                $q->where('n_factura', 'like', '%' . $search . '%')
+                  ->orWhereHas('proveedores', function($subQ) use ($search) {
+                      $subQ->where('proveedor', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('articulos', function($subQ) use ($search) {
+                      $subQ->where('articulo', 'like', '%' . $search . '%');
+                  })
+                  ->orWhereHas('unidad_medidas', function($subQ) use ($search) {
+                      $subQ->where('unidad_medida', 'like', '%' . $search . '%');
+                  });
+            });
+        }
 
         if ($request->filled('filterType')) {
             switch ($request->filterType) {
