@@ -275,97 +275,198 @@ class BieneController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'sede' => 'required|array',
-            'sede.*' => 'required|string',
-            'unidad_administrativa_id' => 'required|array',
-            'unidad_administrativa_id.*' => 'required|integer',
-            'usuario_administrativo_id' => 'required|array',
-            'usuario_administrativo_id.*' => 'required|integer',
-            'usuario_de_uso_id' => 'required|array',
-            'usuario_de_uso_id.*' => 'required|integer',
-            'n_interno_bien' => 'required|array',
-            'n_interno_bien.*' => 'required|string',
-            'descripcion' => 'required|array',
-            'descripcion.*' => 'required|string',
-            'forma_adquisicion_id' => 'required|array',
-            'forma_adquisicion_id.*' => 'required|integer',
-            'fecha_adquisicion' => 'required|array',
-            'fecha_adquisicion.*' => 'required|date',
-            'n_factura' => 'required|array',
-            'n_factura.*' => 'required|string',
-            'valor_factura' => 'required|array',
-            'valor_factura.*' => 'required|numeric',
-            'moneda' => 'required|array',
-            'moneda.*' => 'required|string',
-            'estado_del_uso_id' => 'required|array',
-            'estado_del_uso_id.*' => 'required|integer',
-            'condicion_id' => 'required|array',
-            'condicion_id.*' => 'required|integer',
-            'marca' => 'required|array',
-            'marca.*' => 'required|string',
-            'modelo' => 'required|array',
-            'modelo.*' => 'required|string',
-            'color_id' => 'required|array',
-            'color_id.*' => 'required|integer',
-            'serial' => 'required|array',
-            'serial.*' => 'required|string',
-            'comentario' => 'nullable|array',
-            'comentario.*' => 'nullable|string',
-            'fecha_comentario' => 'required|array',
-            'fecha_comentario.*' => 'required|date',
-            'qr_code' => 'nullable|array',
-            'qr_code.*' => 'nullable|string',
-        ]);
+        abort_if(Gate::denies('bienes_create'), 403);
 
-        $guardados = 0;
+        $isBatch = is_array($request->sede);
+
+        if ($isBatch) {
+            $validated = $request->validate([
+                'sede' => 'required|array',
+                'sede.*' => 'required|string',
+                'unidad_administrativa_id' => 'required|array',
+                'unidad_administrativa_id.*' => 'required|integer',
+                'usuario_administrativo_id' => 'required|array',
+                'usuario_administrativo_id.*' => 'required|integer',
+                'usuario_de_uso_id' => 'required|array',
+                'usuario_de_uso_id.*' => 'required|integer',
+                'n_interno_bien' => 'required|array',
+                'n_interno_bien.*' => 'required|string',
+                'descripcion' => 'required|array',
+                'descripcion.*' => 'required|string',
+                'forma_adquisicion_id' => 'required|array',
+                'forma_adquisicion_id.*' => 'required|integer',
+                'fecha_adquisicion' => 'required|array',
+                'fecha_adquisicion.*' => 'required|date',
+                'n_factura' => 'required|array',
+                'n_factura.*' => 'required|string',
+                'valor_factura' => 'required|array',
+                'valor_factura.*' => 'required|numeric',
+                'moneda' => 'required|array',
+                'moneda.*' => 'required|string',
+                'estado_del_uso_id' => 'required|array',
+                'estado_del_uso_id.*' => 'required|integer',
+                'condicion_id' => 'required|array',
+                'condicion_id.*' => 'required|integer',
+                'marca' => 'required|array',
+                'marca.*' => 'required|string',
+                'modelo' => 'required|array',
+                'modelo.*' => 'required|string',
+                'color_id' => 'required|array',
+                'color_id.*' => 'required|integer',
+                'serial' => 'required|array',
+                'serial.*' => 'required|string',
+                'comentario' => 'nullable|array',
+                'comentario.*' => 'nullable|string',
+                'fecha_comentario' => 'required|array',
+                'fecha_comentario.*' => 'required|date',
+                'qr_code' => 'nullable|array',
+                'qr_code.*' => 'nullable|string',
+            ]);
+
+            $guardados = 0;
+
+            DB::beginTransaction();
+            try {
+                $count = count($request->sede);
+
+                for ($i = 0; $i < $count; $i++) {
+                    $biene = new Biene;
+                    $biene->sede = $request->sede[$i];
+                    $biene->unidad_administrativa_id = $request->unidad_administrativa_id[$i];
+                    $biene->usuario_administrativo_id = $request->usuario_administrativo_id[$i];
+                    $biene->usuario_de_uso_id = $request->usuario_de_uso_id[$i];
+                    $biene->n_interno_bien = $request->n_interno_bien[$i];
+                    $biene->descripcion = $request->descripcion[$i];
+                    $biene->forma_adquisicion_id = $request->forma_adquisicion_id[$i];
+                    $biene->fecha_adquisicion = $request->fecha_adquisicion[$i];
+                    $biene->n_factura = $request->n_factura[$i];
+                    $biene->valor_factura = $request->valor_factura[$i];
+                    $biene->moneda = $request->moneda[$i];
+                    $biene->estado_del_uso_id = $request->estado_del_uso_id[$i];
+                    $biene->condicion_id = $request->condicion_id[$i];
+                    $biene->marca = $request->marca[$i];
+                    $biene->modelo = $request->modelo[$i];
+                    $biene->color_id = $request->color_id[$i];
+                    $biene->serial = $request->serial[$i];
+                    $biene->comentario = $request->comentario[$i] ?? '';
+                    $biene->fecha_comentario = $request->fecha_comentario[$i];
+
+                    $qrCodeFromForm = !empty($request->qr_code[$i]) ? $request->qr_code[$i] : null;
+                    if (!empty($qrCodeFromForm)) {
+                        $biene->qr_code = $qrCodeFromForm;
+                    } elseif (!empty($request->n_interno_bien[$i])) {
+                        $biene->qr_code = $this->generateQrCodeUrl($request->n_interno_bien[$i]);
+                    }
+
+                    $biene->save();
+                    $guardados++;
+                }
+
+                DB::commit();
+
+                if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+                    return response()->json([
+                        'status' => 200,
+                        'success' => true,
+                        'message' => "Se guardaron {$guardados} registro(s) exitosamente"
+                    ]);
+                }
+
+                return redirect()->route('administracion.bienes_publicos.index')
+                    ->with('datos', "Se guardaron {$guardados} registro(s) exitosamente");
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+                    return response()->json([
+                        'status' => 500,
+                        'success' => false,
+                        'message' => 'Error al guardar: ' . $e->getMessage()
+                    ], 500);
+                }
+                return redirect()->back()
+                    ->with('error', 'Error al guardar: ' . $e->getMessage())
+                    ->withInput();
+            }
+        }
+
+        // Caso individual (Modal React)
+        $validated = $request->validate([
+            'sede' => 'required|string',
+            'unidad_administrativa_id' => 'required',
+            'usuario_administrativo_id' => 'required',
+            'usuario_de_uso_id' => 'required',
+            'n_interno_bien' => 'required|string',
+            'descripcion' => 'required|string',
+            'forma_adquisicion_id' => 'required',
+            'fecha_adquisicion' => 'required|date',
+            'n_factura' => 'required|string',
+            'valor_factura' => 'required|numeric',
+            'moneda' => 'required|string',
+            'estado_del_uso_id' => 'required',
+            'condicion_id' => 'required',
+            'marca' => 'required|string',
+            'modelo' => 'required|string',
+            'color_id' => 'required',
+            'serial' => 'required|string',
+            'comentario' => 'nullable|string',
+            'fecha_comentario' => 'required|date',
+            'qr_code' => 'nullable|string',
+        ]);
 
         DB::beginTransaction();
         try {
-            $count = count($request->sede);
+            $biene = new Biene;
+            $biene->sede = $request->input('sede');
+            $biene->unidad_administrativa_id = $request->input('unidad_administrativa_id');
+            $biene->usuario_administrativo_id = $request->input('usuario_administrativo_id');
+            $biene->usuario_de_uso_id = $request->input('usuario_de_uso_id');
+            $biene->n_interno_bien = $request->input('n_interno_bien');
+            $biene->descripcion = $request->input('descripcion');
+            $biene->forma_adquisicion_id = $request->input('forma_adquisicion_id');
+            $biene->fecha_adquisicion = $request->input('fecha_adquisicion');
+            $biene->n_factura = $request->input('n_factura');
+            $biene->valor_factura = $request->input('valor_factura');
+            $biene->moneda = $request->input('moneda', 'Bs.');
+            $biene->estado_del_uso_id = $request->input('estado_del_uso_id');
+            $biene->condicion_id = $request->input('condicion_id');
+            $biene->marca = $request->input('marca');
+            $biene->modelo = $request->input('modelo');
+            $biene->color_id = $request->input('color_id');
+            $biene->serial = $request->input('serial');
+            $biene->comentario = $request->input('comentario') ?? '';
+            $biene->fecha_comentario = $request->input('fecha_comentario');
 
-            for ($i = 0; $i < $count; $i++) {
-                $biene = new Biene;
-                $biene->sede = $request->sede[$i];
-                $biene->unidad_administrativa_id = $request->unidad_administrativa_id[$i];
-                $biene->usuario_administrativo_id = $request->usuario_administrativo_id[$i];
-                $biene->usuario_de_uso_id = $request->usuario_de_uso_id[$i];
-                $biene->n_interno_bien = $request->n_interno_bien[$i];
-                $biene->descripcion = $request->descripcion[$i];
-                $biene->forma_adquisicion_id = $request->forma_adquisicion_id[$i];
-                $biene->fecha_adquisicion = $request->fecha_adquisicion[$i];
-                $biene->n_factura = $request->n_factura[$i];
-                $biene->valor_factura = $request->valor_factura[$i];
-                $biene->moneda = $request->moneda[$i];
-                $biene->estado_del_uso_id = $request->estado_del_uso_id[$i];
-                $biene->condicion_id = $request->condicion_id[$i];
-                $biene->marca = $request->marca[$i];
-                $biene->modelo = $request->modelo[$i];
-                $biene->color_id = $request->color_id[$i];
-                $biene->serial = $request->serial[$i];
-                $biene->comentario = $request->comentario[$i] ?? '';
-                $biene->fecha_comentario = $request->fecha_comentario[$i];
-
-                // Save QR code - use uploaded/generated or generate automatically
-                $qrCodeFromForm = !empty($request->qr_code[$i]) ? $request->qr_code[$i] : null;
-                if (!empty($qrCodeFromForm)) {
-                    $biene->qr_code = $qrCodeFromForm;
-                } elseif (!empty($request->n_interno_bien[$i])) {
-                    // Generate QR code automatically based on n_interno_bien
-                    $biene->qr_code = $this->generateQrCodeUrl($request->n_interno_bien[$i]);
-                }
-
-                $biene->save();
-                $guardados++;
+            $qrCodeFromForm = $request->has('qr_code') ? $request->input('qr_code') : null;
+            if (!empty($qrCodeFromForm)) {
+                $biene->qr_code = $qrCodeFromForm;
+            } elseif (!empty($request->input('n_interno_bien'))) {
+                $biene->qr_code = $this->generateQrCodeUrl($request->input('n_interno_bien'));
             }
 
+            $biene->save();
             DB::commit();
 
-            return redirect()->route('administracion.bienes_publicos.index')
-                ->with('datos', "Se guardaron {$guardados} registro(s) exitosamente");
+            if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+                return response()->json([
+                    'status' => 200,
+                    'success' => true,
+                    'message' => 'Bien público registrado exitosamente',
+                    'data' => $biene
+                ], 200);
+            }
 
+            return redirect()->route('administracion.bienes_publicos.index')
+                ->with('datos', "Se guardó el bien exitosamente");
         } catch (\Exception $e) {
             DB::rollBack();
+            if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+                return response()->json([
+                    'status' => 500,
+                    'success' => false,
+                    'message' => 'Error al guardar: ' . $e->getMessage()
+                ], 500);
+            }
             return redirect()->back()
                 ->with('error', 'Error al guardar: ' . $e->getMessage())
                 ->withInput();
@@ -392,7 +493,43 @@ class BieneController extends Controller
 
     public function update(Request $request, $id)
     {
+        abort_if(Gate::denies('bienes_edit'), 403);
+
         $biene = Biene::find($id);
+        if (!$biene) {
+            if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+                return response()->json([
+                    'status' => 404,
+                    'success' => false,
+                    'message' => 'Bien público no encontrado'
+                ], 404);
+            }
+            abort(404);
+        }
+
+        $request->validate([
+            'sede' => 'required|string',
+            'unidad_administrativa_id' => 'required',
+            'usuario_administrativo_id' => 'required',
+            'usuario_de_uso_id' => 'required',
+            'n_interno_bien' => 'required|string',
+            'descripcion' => 'required|string',
+            'forma_adquisicion_id' => 'required',
+            'fecha_adquisicion' => 'required|date',
+            'n_factura' => 'required|string',
+            'valor_factura' => 'required|numeric',
+            'moneda' => 'required|string',
+            'estado_del_uso_id' => 'required',
+            'condicion_id' => 'required',
+            'marca' => 'required|string',
+            'modelo' => 'required|string',
+            'color_id' => 'required',
+            'serial' => 'required|string',
+            'comentario' => 'nullable|string',
+            'fecha_comentario' => 'required|date',
+            'qr_code' => 'nullable|string',
+        ]);
+
         $biene->sede = $request->input('sede');
         $biene->unidad_administrativa_id = $request->input('unidad_administrativa_id');
         $biene->usuario_administrativo_id = $request->input('usuario_administrativo_id');
@@ -403,14 +540,14 @@ class BieneController extends Controller
         $biene->fecha_adquisicion = $request->input('fecha_adquisicion');
         $biene->n_factura = $request->input('n_factura');
         $biene->valor_factura = $request->input('valor_factura');
-        $biene->moneda = $request->input('moneda');
+        $biene->moneda = $request->input('moneda', 'Bs.');
         $biene->estado_del_uso_id = $request->input('estado_del_uso_id');
         $biene->condicion_id = $request->input('condicion_id');
         $biene->marca = $request->input('marca');
         $biene->modelo = $request->input('modelo');
         $biene->color_id = $request->input('color_id');
         $biene->serial = $request->input('serial');
-        $biene->comentario = $request->input('comentario');
+        $biene->comentario = $request->input('comentario') ?? '';
         $biene->fecha_comentario = $request->input('fecha_comentario');
 
         // Save QR code - use uploaded/generated or generate automatically
@@ -423,6 +560,16 @@ class BieneController extends Controller
         }
 
         $biene->save();
+
+        if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'message' => 'Bien público actualizado correctamente',
+                'data' => $biene
+            ], 200);
+        }
+
         return redirect()->route("administracion.bienes_publicos.index", $biene->id)->with('success', 'Bien actualizado correctamente');
     }
 
@@ -430,7 +577,18 @@ class BieneController extends Controller
     {
         abort_if(Gate::denies('bienes_destroy'), 403);
         $biene = Biene::find($id);
-        $biene->delete();
+        if ($biene) {
+            $biene->delete();
+        }
+
+        if (request()->wantsJson() || request()->is('api/*') || request()->ajax()) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'message' => 'Bien público eliminado con éxito'
+            ], 200);
+        }
+
         return redirect()->route('administracion.bienes_publicos.index')->with('datos', 'Registro eliminado');
     }
 

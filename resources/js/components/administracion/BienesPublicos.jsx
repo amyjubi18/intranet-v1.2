@@ -49,6 +49,38 @@ export default function BienesPublicos() {
     const [selectedQrBien, setSelectedQrBien] = useState(null);
     const [qrModalOpen, setQrModalOpen] = useState(false);
 
+    // Modal de Crear y Editar Bien Público
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
+    const [selectedBien, setSelectedBien] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [formErrors, setFormErrors] = useState({});
+
+    const initialFormData = {
+        sede: 'Sede Central',
+        unidad_administrativa_id: '',
+        usuario_administrativo_id: '',
+        usuario_de_uso_id: '',
+        n_interno_bien: '',
+        descripcion: '',
+        forma_adquisicion_id: '',
+        fecha_adquisicion: new Date().toISOString().split('T')[0],
+        n_factura: '',
+        valor_factura: '0.00',
+        moneda: 'Bs.',
+        estado_del_uso_id: '',
+        condicion_id: '',
+        marca: '',
+        modelo: '',
+        color_id: '',
+        serial: '',
+        comentario: '',
+        fecha_comentario: new Date().toISOString().split('T')[0],
+        qr_code: ''
+    };
+
+    const [formData, setFormData] = useState(initialFormData);
+
     // Cargar datos
     const fetchBienes = useCallback(async (page = 1) => {
         setLoading(true);
@@ -251,6 +283,171 @@ export default function BienesPublicos() {
         }
     };
 
+    // Abrir Modal de Creación
+    const handleOpenCreate = () => {
+        setModalMode('create');
+        setSelectedBien(null);
+        setFormData({
+            ...initialFormData,
+            fecha_adquisicion: new Date().toISOString().split('T')[0],
+            fecha_comentario: new Date().toISOString().split('T')[0]
+        });
+        setFormErrors({});
+        setModalOpen(true);
+    };
+
+    // Abrir Modal de Edición
+    const handleOpenEdit = (item) => {
+        setModalMode('edit');
+        setSelectedBien(item);
+        setFormData({
+            sede: item.sede || 'Sede Central',
+            unidad_administrativa_id: item.unidad_administrativa_id || '',
+            usuario_administrativo_id: item.usuario_administrativo_id || '',
+            usuario_de_uso_id: item.usuario_de_uso_id || '',
+            n_interno_bien: item.n_interno_bien || '',
+            descripcion: item.descripcion || '',
+            forma_adquisicion_id: item.forma_adquisicion_id || '',
+            fecha_adquisicion: item.fecha_adquisicion ? item.fecha_adquisicion.split('T')[0] : '',
+            n_factura: item.n_factura || '',
+            valor_factura: item.valor_factura !== undefined && item.valor_factura !== null ? item.valor_factura : '0.00',
+            moneda: item.moneda || 'Bs.',
+            estado_del_uso_id: item.estado_del_uso_id || '',
+            condicion_id: item.condicion_id || '',
+            marca: item.marca || '',
+            modelo: item.modelo || '',
+            color_id: item.color_id || '',
+            serial: item.serial || '',
+            comentario: item.comentario || '',
+            fecha_comentario: item.fecha_comentario ? item.fecha_comentario.split('T')[0] : new Date().toISOString().split('T')[0],
+            qr_code: item.qr_code || ''
+        });
+        setFormErrors({});
+        setModalOpen(true);
+    };
+
+    // Cerrar Modal
+    const handleCloseModal = () => {
+        if (submitting) return;
+        setModalOpen(false);
+        setSelectedBien(null);
+        setFormErrors({});
+    };
+
+    // Cambios en los campos del formulario
+    const handleFormChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (formErrors[field]) {
+            setFormErrors(prev => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+        }
+    };
+
+    // Generar QR para el modal
+    const handleGenerateModalQR = () => {
+        if (!formData.n_interno_bien || !formData.n_interno_bien.trim()) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Atención',
+                text: 'Ingresa primero el N° Interno del bien para generar el código QR.',
+                confirmButtonColor: '#14368b'
+            });
+            return;
+        }
+        const qrUrl = `${window.location.origin}/bienes/qr/${encodeURIComponent(formData.n_interno_bien.trim())}`;
+        setFormData(prev => ({ ...prev, qr_code: qrUrl }));
+        Swal.fire({
+            icon: 'success',
+            title: 'QR Generado',
+            text: 'Código QR generado correctamente con base al N° Interno',
+            timer: 1500,
+            showConfirmButton: false,
+            customClass: { popup: 'rounded-2xl' }
+        });
+    };
+
+    // Cargar archivo de imagen QR
+    const handleLoadModalQRFile = (e) => {
+        const file = e.target.files?.[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                setFormData(prev => ({ ...prev, qr_code: event.target.result }));
+                Swal.fire({
+                    icon: 'success',
+                    title: 'QR Cargado',
+                    text: 'Imagen del código QR cargada correctamente',
+                    timer: 1500,
+                    showConfirmButton: false,
+                    customClass: { popup: 'rounded-2xl' }
+                });
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    // Guardar (Crear o Editar)
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setFormErrors({});
+        setSubmitting(true);
+
+        try {
+            const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const url = modalMode === 'create'
+                ? '/administracion/bienes_publicos'
+                : `/administracion/bienes_publicos/${selectedBien.id}`;
+
+            const method = modalMode === 'create' ? 'POST' : 'PUT';
+
+            const res = await fetch(url, {
+                method: method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(formData)
+            });
+
+            const json = await res.json().catch(() => ({}));
+
+            if (!res.ok) {
+                if (res.status === 422 && json.errors) {
+                    setFormErrors(json.errors);
+                    return;
+                }
+                throw new Error(json.message || `Error del servidor (${res.status})`);
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: modalMode === 'create' ? '¡Registrado!' : '¡Actualizado!',
+                text: modalMode === 'create' ? 'Bien público registrado exitosamente' : 'Bien público actualizado correctamente',
+                timer: 1800,
+                showConfirmButton: false,
+                customClass: { popup: 'rounded-2xl shadow-xl' }
+            });
+
+            setModalOpen(false);
+            fetchBienes(pagination.current_page);
+        } catch (err) {
+            console.error('Error saving bien:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.message || 'No se pudo guardar el bien público',
+                confirmButtonColor: '#14368b'
+            });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
     return (
         <div className="w-full">
             {/* Tarjetas superiores de estadísticas (Diseño Original Exacto) */}
@@ -299,28 +496,58 @@ export default function BienesPublicos() {
             <div className="px-6 mb-6">
                 <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
                     <div className="flex flex-col gap-4">
-                        {/* Fila de acciones (Exportar, Nuevo) */}
-                        <div className="flex flex-wrap items-center justify-end gap-3 pb-4 border-b border-gray-100">
-                            <select
-                                onChange={(e) => {
-                                    if (e.target.value) window.location.href = e.target.value;
-                                }}
-                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm"
-                            >
-                                <option value="">📤 Exportar</option>
-                                <option value="/administracion/bienes_publicos/export/excel">Excel</option>
-                                <option value="/administracion/bienes_publicos/export/pdf">PDF</option>
-                            </select>
+                        {/* Fila superior: Buscar, Exportar, Nuevo */}
+                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                            {/* Campo Buscar */}
+                            <div className="relative flex-1 min-w-[240px] max-w-md">
+                                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    🔍
+                                </span>
+                                <input
+                                    type="text"
+                                    value={busqueda}
+                                    onChange={(e) => setBusqueda(e.target.value)}
+                                    placeholder="Buscar por bien, N° interno, serial..."
+                                    className={`w-full pl-10 pr-9 py-2.5 bg-blue-100/80 hover:bg-blue-100 focus:bg-white border border-blue-200 focus:border-blue-500 rounded-xl text-sm text-slate-800 outline-none transition-all shadow-xs ${
+                                        busqueda ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-500/20' : ''
+                                    }`}
+                                />
+                                {busqueda && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setBusqueda('')}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 font-bold"
+                                        title="Limpiar búsqueda"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
 
-                            {permissions.can_create && (
-                                <a
-                                    href="/administracion/bienes_publicos/create"
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"
+                            {/* Exportar y Nuevo */}
+                            <div className="flex items-center gap-3">
+                                <select
+                                    onChange={(e) => {
+                                        if (e.target.value) window.location.href = e.target.value;
+                                    }}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer"
                                 >
-                                    <span>➕</span>
-                                    Nuevo
-                                </a>
-                            )}
+                                    <option value="">📤 Exportar</option>
+                                    <option value="/administracion/bienes_publicos/export/excel">Excel</option>
+                                    <option value="/administracion/bienes_publicos/export/pdf">PDF</option>
+                                </select>
+
+                                {permissions.can_create && (
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenCreate}
+                                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm cursor-pointer shadow-sm"
+                                    >
+                                        <span>➕</span>
+                                        Nuevo
+                                    </button>
+                                )}
+                            </div>
                         </div>
 
                         {/* Fila de filtros */}
@@ -452,17 +679,6 @@ export default function BienesPublicos() {
                                 />
                             )}
 
-                            {/* Búsqueda General */}
-                            <input
-                                type="text"
-                                value={busqueda}
-                                onChange={(e) => setBusqueda(e.target.value)}
-                                placeholder="Buscar..."
-                                className={`bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm w-48 sm:w-64 text-slate-800 ${
-                                    busqueda ? 'bg-blue-200 border-blue-500' : ''
-                                }`}
-                            />
-
                             {/* Botón para limpiar filtros */}
                             {(filterType || secondFilter || busqueda || textFilter || fechaDesde || fechaHasta) && (
                                 <button
@@ -501,12 +717,13 @@ export default function BienesPublicos() {
                         <h3 className="mb-2 text-xl font-bold text-gray-700">No hay bienes registrados</h3>
                         <p className="mb-6 text-gray-500">Comienza agregando un nuevo bien público</p>
                         {permissions.can_create && (
-                            <a
-                                href="/administracion/bienes_publicos/create"
-                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-blue-900 text-white hover:bg-blue-800 transition-colors"
+                            <button
+                                type="button"
+                                onClick={handleOpenCreate}
+                                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-semibold bg-blue-900 text-white hover:bg-blue-800 transition-colors cursor-pointer shadow-md"
                             >
                                 ➕ Registrar Nuevo Bien
-                            </a>
+                            </button>
                         )}
                     </div>
                 ) : (
@@ -609,13 +826,14 @@ export default function BienesPublicos() {
                                         <div className="flex flex-col items-center md:items-end gap-2 w-full md:w-auto">
                                             <div className="flex flex-wrap justify-center gap-2 md:justify-end">
                                                 {permissions.can_edit && (
-                                                    <a
-                                                        href={`/administracion/bienes_publicos/${item.id}/edit`}
-                                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 text-white hover:bg-green-700 active:translate-y-0.5 text-xs shadow-xs"
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleOpenEdit(item)}
+                                                        className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 text-white hover:bg-green-700 active:translate-y-0.5 text-xs shadow-xs cursor-pointer"
                                                     >
                                                         <span>✏️</span>
                                                         Editar
-                                                    </a>
+                                                    </button>
                                                 )}
                                                 {permissions.can_destroy && (
                                                     <button
@@ -703,6 +921,502 @@ export default function BienesPublicos() {
                         >
                             Cerrar
                         </button>
+                    </div>
+                </div>
+            )}
+            {/* Modal de Crear / Editar Bien Público */}
+            {modalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full my-8 p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                        {/* Cabecera del modal */}
+                        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
+                            <div>
+                                <h3 className="text-2xl font-bold text-slate-800">
+                                    {modalMode === 'create' ? 'Registrar Bien Público' : 'Editar Bien Público'}
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    {modalMode === 'create'
+                                        ? 'Completa los datos para registrar un nuevo bien en el sistema'
+                                        : `Actualizar información del bien (N° Interno: ${formData.n_interno_bien || selectedBien?.id})`}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleCloseModal}
+                                disabled={submitting}
+                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1.5 transition-colors text-2xl font-bold leading-none"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Formulario */}
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Datalists auxiliares para autocompletado */}
+                            <datalist id="descripciones-list">
+                                {(catalogs.descripciones || []).map((d, i) => (
+                                    <option key={i} value={d} />
+                                ))}
+                            </datalist>
+                            <datalist id="marcas-list">
+                                {(catalogs.marcas || []).map((m, i) => (
+                                    <option key={i} value={m} />
+                                ))}
+                            </datalist>
+                            <datalist id="modelos-list">
+                                {(catalogs.modelos || []).map((m, i) => (
+                                    <option key={i} value={m} />
+                                ))}
+                            </datalist>
+
+                            {/* Fila 1: Sede y Fecha de Adquisición */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Sede: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.sede}
+                                        onChange={(e) => handleFormChange('sede', e.target.value)}
+                                        placeholder="Ej: Sede Central"
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.sede && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.sede[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Fecha de Adquisición: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={formData.fecha_adquisicion}
+                                        onChange={(e) => handleFormChange('fecha_adquisicion', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.fecha_adquisicion && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.fecha_adquisicion[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 2: Unidad Administrativa y Usuario Administrativo */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Unidad Administrativa: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.unidad_administrativa_id}
+                                        onChange={(e) => handleFormChange('unidad_administrativa_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Unidad Administrativa</option>
+                                        {(catalogs.unidad_administrativas || []).map((u) => (
+                                            <option key={u.id} value={u.id}>{u.name || u.unidad_administrativa}</option>
+                                        ))}
+                                    </select>
+                                    {formErrors.unidad_administrativa_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.unidad_administrativa_id[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Usuario Administrativo: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.usuario_administrativo_id}
+                                        onChange={(e) => handleFormChange('usuario_administrativo_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Usuario Administrativo</option>
+                                        {(catalogs.usuarios_administrativos || []).map((ua) => (
+                                            <option key={ua.id} value={ua.id}>{ua.usuario_administrativo || ua.name}</option>
+                                        ))}
+                                    </select>
+                                    {formErrors.usuario_administrativo_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.usuario_administrativo_id[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 3: Usuario de Uso y N° Interno del Bien */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Usuario de Uso: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.usuario_de_uso_id}
+                                        onChange={(e) => handleFormChange('usuario_de_uso_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Usuario de Uso</option>
+                                        {(catalogs.usuarios_de_uso || []).map((uu) => (
+                                            <option key={uu.id} value={uu.id}>{uu.usuario_de_uso || uu.name}</option>
+                                        ))}
+                                    </select>
+                                    {formErrors.usuario_de_uso_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.usuario_de_uso_id[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        N° Interno del Bien: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.n_interno_bien}
+                                        onChange={(e) => handleFormChange('n_interno_bien', e.target.value)}
+                                        placeholder="Ej: BP-2024-001"
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.n_interno_bien && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.n_interno_bien[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 4: Descripción y Forma de Adquisición */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Descripción: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        list="descripciones-list"
+                                        value={formData.descripcion}
+                                        onChange={(e) => handleFormChange('descripcion', e.target.value)}
+                                        placeholder="Seleccione o escriba la descripción..."
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    <p className="mt-1 text-[11px] text-slate-400">Puedes seleccionar una existente o escribir una nueva</p>
+                                    {formErrors.descripcion && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.descripcion[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Forma de Adquisición: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.forma_adquisicion_id}
+                                        onChange={(e) => handleFormChange('forma_adquisicion_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Forma de Adquisición</option>
+                                        {(catalogs.forma_adquisiciones || []).map((fa) => (
+                                            <option key={fa.id} value={fa.id}>{fa.forma_adquisicion || fa.nombre}</option>
+                                        ))}
+                                    </select>
+                                    {formErrors.forma_adquisicion_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.forma_adquisicion_id[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 5: N° Factura, Valor Factura y Moneda */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        N° Factura: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.n_factura}
+                                        onChange={(e) => handleFormChange('n_factura', e.target.value)}
+                                        placeholder="Ej: F-123456"
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.n_factura && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.n_factura[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Valor Factura: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        value={formData.valor_factura}
+                                        onChange={(e) => handleFormChange('valor_factura', e.target.value)}
+                                        placeholder="0.00"
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.valor_factura && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.valor_factura[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Moneda: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.moneda}
+                                        onChange={(e) => handleFormChange('moneda', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="Bs.">Bolívar (Bs.)</option>
+                                        <option value="USD">Dólar (USD)</option>
+                                    </select>
+                                    {formErrors.moneda && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.moneda[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 6: Estado del Uso y Condición Física */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Estado del Uso: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.estado_del_uso_id}
+                                        onChange={(e) => handleFormChange('estado_del_uso_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Estado</option>
+                                        {(catalogs.estado_del_usos || []).map((eu) => (
+                                            <option key={eu.id} value={eu.id}>{eu.estado_del_uso || eu.nombre}</option>
+                                        ))}
+                                    </select>
+                                    {formErrors.estado_del_uso_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.estado_del_uso_id[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Condición Física: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.condicion_id}
+                                        onChange={(e) => handleFormChange('condicion_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Condición</option>
+                                        {(catalogs.condiciones || []).map((c) => (
+                                            <option key={c.id} value={c.id}>{c.condicion || c.nombre}</option>
+                                        ))}
+                                    </select>
+                                    {formErrors.condicion_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.condicion_id[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 7: Marca y Modelo */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Marca: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        list="marcas-list"
+                                        value={formData.marca}
+                                        onChange={(e) => handleFormChange('marca', e.target.value)}
+                                        placeholder="Ej: HP, Dell, Lenovo..."
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.marca && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.marca[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Modelo: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        list="modelos-list"
+                                        value={formData.modelo}
+                                        onChange={(e) => handleFormChange('modelo', e.target.value)}
+                                        placeholder="Ej: ProDesk 400 G6"
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.modelo && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.modelo[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 8: Color y Serial */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Color: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.color_id}
+                                        onChange={(e) => handleFormChange('color_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Color</option>
+                                        {(catalogs.colors || []).map((col) => (
+                                            <option key={col.id} value={col.id}>{col.color || col.nombre}</option>
+                                        ))}
+                                    </select>
+                                    {formErrors.color_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.color_id[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Serial: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.serial}
+                                        onChange={(e) => handleFormChange('serial', e.target.value)}
+                                        placeholder="Ej: S/N o código de fabricante"
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.serial && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.serial[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Sección de Código QR Original */}
+                            <div className="p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+                                    <div className="flex-shrink-0 mx-auto sm:mx-0">
+                                        {formData.qr_code ? (
+                                            <img
+                                                src={formData.qr_code.startsWith('data:image') || formData.qr_code.startsWith('/9j/')
+                                                    ? formData.qr_code
+                                                    : `https://quickchart.io/chart?cht=qr&chs=150x150&chl=${encodeURIComponent(formData.qr_code)}`}
+                                                alt="QR Code"
+                                                className="w-24 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain"
+                                            />
+                                        ) : formData.n_interno_bien.trim() ? (
+                                            <img
+                                                src={`https://quickchart.io/chart?cht=qr&chs=150x150&chl=${encodeURIComponent(`${window.location.origin}/bienes/qr/${formData.n_interno_bien.trim()}`)}`}
+                                                alt="QR Code Sugerido"
+                                                className="w-24 h-24 border-2 border-blue-300 rounded-xl p-1 bg-white shadow-xs object-contain opacity-75"
+                                            />
+                                        ) : (
+                                            <div className="w-24 h-24 bg-white border-2 border-dashed border-blue-300 rounded-xl flex items-center justify-center text-3xl">
+                                                📱
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className="flex-1">
+                                        <h4 className="text-sm font-bold text-blue-900">Código QR del Bien</h4>
+                                        <p className="text-xs text-blue-700 mt-0.5">
+                                            Genera el QR automáticamente basado en el N° Interno o carga una imagen existente.
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 mt-3">
+                                            <button
+                                                type="button"
+                                                onClick={handleGenerateModalQR}
+                                                className="px-3 py-1.5 text-xs font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition-colors shadow-xs"
+                                            >
+                                                🔄 Generar QR Automático
+                                            </button>
+                                            <label className="px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 rounded-lg cursor-pointer hover:bg-blue-700 transition-colors shadow-xs inline-flex items-center">
+                                                📤 Cargar QR Existente
+                                                <input
+                                                    type="file"
+                                                    accept="image/*"
+                                                    className="hidden"
+                                                    onChange={handleLoadModalQRFile}
+                                                />
+                                            </label>
+                                            {formData.qr_code && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setFormData(prev => ({ ...prev, qr_code: '' }))}
+                                                    className="px-3 py-1.5 text-xs font-semibold text-red-600 hover:text-red-800 transition-colors"
+                                                >
+                                                    Quitar QR
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Fila 9: Comentario y Fecha Comentario */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Comentario (Opcional):
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.comentario}
+                                        onChange={(e) => handleFormChange('comentario', e.target.value)}
+                                        placeholder="Detalles u observaciones..."
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.comentario && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.comentario[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Fecha Comentario: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={formData.fecha_comentario}
+                                        onChange={(e) => handleFormChange('fecha_comentario', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.fecha_comentario && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.fecha_comentario[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Botones de acción inferiores (Diseño exacto de create de bienes_publicos) */}
+                            <div className="flex items-center justify-between gap-4 pt-6 mt-6 border-t border-slate-200">
+                                <button
+                                    type="button"
+                                    onClick={handleCloseModal}
+                                    disabled={submitting}
+                                    className="btn-save inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all duration-300 disabled:opacity-60 text-sm hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer shadow-md"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1 fill-white" viewBox="0 0 24 24">
+                                        <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path>
+                                    </svg>
+                                    <span>Regresar</span>
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="btn-save inline-flex items-center justify-center gap-2 px-8 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Guardando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1" viewBox="0 0 24 24" style={{ fill: 'rgba(255, 255, 255, 1)' }}>
+                                                <path d="M5 21h14a2 2 0 0 0 2-2V8a1 1 0 0 0-.29-.71l-4-4A1 1 0 0 0 16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2zm10-2H9v-5h6zM13 7h-2V5h2zM5 5h2v4h8V5h.59L19 8.41V19h-2v-5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5H5z"></path>
+                                            </svg>
+                                            <span>{modalMode === 'create' ? 'Guardar Bien' : 'Actualizar Bien'}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             )}
