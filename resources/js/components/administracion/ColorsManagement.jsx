@@ -23,7 +23,7 @@ export default function ColorsManagement() {
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
     const [selectedColor, setSelectedColor] = useState(null);
-    const [formData, setFormData] = useState({ color: '' });
+    const [formData, setFormData] = useState({ color: '', codigo_hex: '#14368b' });
     const [formErrors, setFormErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
 
@@ -87,7 +87,7 @@ export default function ColorsManagement() {
     const handleOpenCreate = () => {
         setModalMode('create');
         setSelectedColor(null);
-        setFormData({ color: '' });
+        setFormData({ color: '', codigo_hex: '#14368b' });
         setFormErrors({});
         setModalOpen(true);
     };
@@ -96,7 +96,7 @@ export default function ColorsManagement() {
     const handleOpenEdit = (col) => {
         setModalMode('edit');
         setSelectedColor(col);
-        setFormData({ color: col.color });
+        setFormData({ color: col.color || '', codigo_hex: col.codigo_hex || '#14368b' });
         setFormErrors({});
         setModalOpen(true);
     };
@@ -106,7 +106,7 @@ export default function ColorsManagement() {
         if (submitting) return;
         setModalOpen(false);
         setSelectedColor(null);
-        setFormData({ color: '' });
+        setFormData({ color: '', codigo_hex: '#14368b' });
         setFormErrors({});
     };
 
@@ -322,13 +322,25 @@ export default function ColorsManagement() {
                                 className="bg-white border border-white/20 backdrop-blur-md justify-between rounded-2xl p-6 hover:scale-[1.01] transition-transform shadow-xs"
                             >
                                 <div className="grid items-center justify-between grid-cols-1 gap-6 lg:grid-cols-2">
-                                    {/* Color */}
-                                    <div className="text-center lg:text-left flex items-center gap-3">
+                                    {/* Color con muestra visual y código HEX */}
+                                    <div className="text-center lg:text-left flex items-center justify-center lg:justify-start gap-4">
+                                        <div
+                                            className="w-12 h-12 rounded-2xl shadow-inner border border-slate-300 flex-shrink-0 transition-transform hover:scale-110"
+                                            style={{ backgroundColor: col.codigo_hex || '#e2e8f0' }}
+                                            title={col.codigo_hex ? `Código: ${col.codigo_hex}` : 'Sin código asignado'}
+                                        />
                                         <div>
-                                            <p className="mb-1 text-xs font-semibold text-blue-900">🎨 Color</p>
-                                            <p className="p-2 text-lg font-semibold text-black rounded-lg w-fit">
-                                                {col.color}
-                                            </p>
+                                            <p className="mb-0.5 text-xs font-semibold text-blue-900">🎨 Color de Bien</p>
+                                            <div className="flex items-center gap-2 flex-wrap justify-center lg:justify-start">
+                                                <span className="text-lg font-bold text-slate-900 tracking-wide">
+                                                    {col.color}
+                                                </span>
+                                                {col.codigo_hex && (
+                                                    <span className="font-mono text-xs px-2.5 py-0.5 rounded-lg bg-blue-50 text-blue-900 font-bold border border-blue-200 shadow-2xs">
+                                                        {col.codigo_hex}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
 
@@ -418,23 +430,66 @@ export default function ColorsManagement() {
                         </div>
 
                         {/* Formulario */}
-                        <form onSubmit={handleSubmit} className="space-y-6">
+                        <form onSubmit={handleSubmit} className="space-y-5">
                             <div>
                                 <label className="block text-sm font-semibold text-slate-700 mb-2">
-                                    Color: <span className="text-red-500">*</span>
+                                    Nombre del Color: <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="text"
                                     value={formData.color}
-                                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                                    placeholder="Ingrese el nombre del color..."
-                                    className="w-full bg-blue-100 border-none rounded-xl px-4 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                    onChange={(e) => setFormData({ ...formData, color: e.target.value.toUpperCase() })}
+                                    placeholder="Ej: AZUL REY, VERDE OLIVA, DORADO..."
+                                    className="w-full bg-blue-100 border-none rounded-xl px-4 py-2.5 text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 uppercase"
                                     required
                                     autoFocus
                                     disabled={submitting}
                                 />
                                 {formErrors.color && (
                                     <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.color[0]}</p>
+                                )}
+                            </div>
+
+                            {/* Selector de Color y Código Hex */}
+                            <div>
+                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                                    Tono / Selector de Color: <span className="text-red-500">*</span>
+                                </label>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="color"
+                                            value={formData.codigo_hex || '#14368b'}
+                                            onChange={(e) => setFormData({ ...formData, codigo_hex: e.target.value.toUpperCase() })}
+                                            className="w-14 h-11 p-1 bg-blue-100 rounded-xl cursor-pointer border-none shadow-xs"
+                                            disabled={submitting}
+                                            title="Click para abrir el selector visual de color"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={formData.codigo_hex || '#14368b'}
+                                            onChange={(e) => setFormData({ ...formData, codigo_hex: e.target.value.toUpperCase() })}
+                                            placeholder="#000000"
+                                            className="w-full bg-blue-100 border-none rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                            maxLength={7}
+                                            disabled={submitting}
+                                        />
+                                    </div>
+                                    <div className="flex items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                                        <div
+                                            className="w-7 h-7 rounded-lg shadow-inner border border-slate-300 flex-shrink-0"
+                                            style={{ backgroundColor: formData.codigo_hex || '#14368b' }}
+                                        />
+                                        <div className="overflow-hidden">
+                                            <p className="text-[11px] text-slate-400 font-medium leading-none">Muestra:</p>
+                                            <p className="text-xs font-bold text-slate-800 truncate">
+                                                {formData.color ? formData.color.toUpperCase() : 'Sin nombre'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                {formErrors.codigo_hex && (
+                                    <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.codigo_hex[0]}</p>
                                 )}
                             </div>
 

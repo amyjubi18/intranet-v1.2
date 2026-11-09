@@ -23,7 +23,7 @@ class ColorController extends Controller
         $sort = in_array($sort, $allowedSorts) ? $sort : 'color';
 
         $query = DB::table('colors')
-            ->select('id', 'color');
+            ->select('id', 'color', 'codigo_hex');
 
         if (!empty($search)) {
             $query->where('color', 'LIKE', '%' . $search . '%');
@@ -67,13 +67,15 @@ class ColorController extends Controller
 
         $request->validate([
             'color' => 'required|unique:colors,color',
+            'codigo_hex' => 'nullable|string|max:25',
         ], [
             'color.required' => 'El nombre del color es obligatorio.',
             'color.unique' => 'Este color ya se encuentra registrado.',
         ]);
 
         $color = new Color;
-        $color->color = $request->color;
+        $color->color = trim(mb_strtoupper($request->color));
+        $color->codigo_hex = $request->input('codigo_hex') ?: '#14368b';
         $color->save();
 
         if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
@@ -100,12 +102,17 @@ class ColorController extends Controller
 
         $request->validate([
             'color' => 'required|unique:colors,color,' . $color->id,
+            'codigo_hex' => 'nullable|string|max:25',
         ], [
             'color.required' => 'El nombre del color es obligatorio.',
             'color.unique' => 'Este color ya se encuentra registrado.',
         ]);
 
-        $color->update($request->only('color'));
+        $color->color = trim(mb_strtoupper($request->color));
+        if ($request->has('codigo_hex')) {
+            $color->codigo_hex = $request->input('codigo_hex');
+        }
+        $color->save();
 
         if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
             return response()->json([

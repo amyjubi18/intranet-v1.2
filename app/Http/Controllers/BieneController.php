@@ -207,6 +207,19 @@ class BieneController extends Controller
         $descripciones = Biene::distinct()->pluck('descripcion')->filter()->sort()->values();
         $marcas = Biene::distinct()->pluck('marca')->filter()->sort()->values();
         $modelos = Biene::distinct()->pluck('modelo')->filter()->sort()->values();
+        $marcas_modelos = Biene::whereNotNull('marca')
+            ->where('marca', '!=', '')
+            ->whereNotNull('modelo')
+            ->where('modelo', '!=', '')
+            ->select('marca', 'modelo')
+            ->distinct()
+            ->get()
+            ->groupBy(function ($item) {
+                return trim(mb_strtoupper($item->marca));
+            })
+            ->map(function ($group) {
+                return $group->pluck('modelo')->map(function ($m) { return trim($m); })->filter()->unique()->values();
+            });
         $n_internos = Biene::distinct()->pluck('n_interno_bien')->filter()->sort()->values();
         $usuarios_de_uso = \App\Models\UsuarioDeUso::all();
         $usuarios_administrativos = \App\Models\UsuarioAdministrativo::all();
@@ -232,6 +245,7 @@ class BieneController extends Controller
                         'descripciones' => $descripciones,
                         'marcas' => $marcas,
                         'modelos' => $modelos,
+                        'marcas_modelos' => $marcas_modelos,
                         'n_internos' => $n_internos,
                         'usuarios_de_uso' => $usuarios_de_uso,
                         'usuarios_administrativos' => $usuarios_administrativos,

@@ -11,7 +11,7 @@ class Color extends Model
 {
     use HasFactory;
     use LogsActivity;
-    protected $fillable =['color'];
+    protected $fillable = ['color', 'codigo_hex'];
     public function bienes()
     {
         return $this->hasMany(Biene::class, 'color_id');
@@ -20,7 +20,7 @@ class Color extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['color'])
+            ->logOnly(['color', 'codigo_hex'])
             ->logOnlyDirty()
             ->dontSubmitEmptyLogs();
     }

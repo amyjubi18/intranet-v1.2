@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Swal from 'sweetalert2';
 import JsBarcode from 'jsbarcode';
 
@@ -19,6 +19,7 @@ export default function BienesPublicos() {
         forma_adquisiciones: [],
         marcas: [],
         modelos: [],
+        marcas_modelos: {},
         condiciones: [],
         colors: []
     });
@@ -63,6 +64,13 @@ export default function BienesPublicos() {
     const [modalUsuariosDeUso, setModalUsuariosDeUso] = useState([]);
     const [loadingUsuariosAdmin, setLoadingUsuariosAdmin] = useState(false);
     const [loadingUsuariosUso, setLoadingUsuariosUso] = useState(false);
+
+    // Sub-Modal Rápido para Crear Nuevo Color desde el formulario de Bienes (exacto a Documentos)
+    const [quickColorModalOpen, setQuickColorModalOpen] = useState(false);
+    const [quickColorName, setQuickColorName] = useState('');
+    const [quickColorHex, setQuickColorHex] = useState('#14368b');
+    const [quickColorSubmitting, setQuickColorSubmitting] = useState(false);
+    const [quickColorError, setQuickColorError] = useState(null);
 
     const initialFormData = {
         sede: 'Sede Central',
