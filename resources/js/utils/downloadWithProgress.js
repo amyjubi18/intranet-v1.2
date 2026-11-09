@@ -14,7 +14,6 @@ let isCurrentlyDownloading = false;
  * @param {string} [options.title] - Título personalizado para el modal
  * @param {Function} [options.onSuccess] - Callback ejecutado tras descarga exitosa
  * @param {Function} [options.onError] - Callback ejecutado en caso de error
- * @param {Object} [options.fetchOptions] - Opciones adicionales para fetch
  * @returns {Promise<void>}
  */
 export function downloadWithProgress(urlOrData, options = {}) {
@@ -32,8 +31,7 @@ export function downloadWithProgress(urlOrData, options = {}) {
         type: explicitType,
         title: customTitle,
         onSuccess,
-        onError,
-        fetchOptions = {}
+        onError
     } = options;
 
     const isDataUri = typeof urlOrData === 'string' && (urlOrData.startsWith('data:') || urlOrData.startsWith('blob:'));
@@ -74,7 +72,7 @@ export function downloadWithProgress(urlOrData, options = {}) {
         defaultFilename = 'documento.pdf';
         initialStep = 'Preparando registros y filtros...';
         middleStep1 = 'Consultando base de datos y estadísticas...';
-        middleStep2 = 'Renderizando páginas con DomPDF...';
+        middleStep2 = 'Renderizando páginas y estilos...';
     } else if (detectedType === 'image') {
         formatTitle = 'Imagen';
         icon = '🖼️';
@@ -88,7 +86,17 @@ export function downloadWithProgress(urlOrData, options = {}) {
     const resolvedFilename = customFilename || (cleanUrl ? cleanUrl.split('/').pop() : defaultFilename) || defaultFilename;
 
     return new Promise((resolve, reject) => {
-        let progress = 15;
+        let t1 = null;
+        let t2 = null;
+        let tTrigger = null;
+        let tFinish = null;
+
+        const clearAllTimers = () => {
+            if (t1) clearTimeout(t1);
+            if (t2) clearTimeout(t2);
+            if (tTrigger) clearTimeout(tTrigger);
+            if (tFinish) clearTimeout(tFinish);
+        };
 
         Swal.fire({
             title: `<div class="flex items-center justify-center gap-2 text-xl font-bold text-slate-800">
@@ -117,6 +125,7 @@ export function downloadWithProgress(urlOrData, options = {}) {
             customClass: { popup: 'rounded-2xl p-6 shadow-2xl' },
             didClose: () => {
                 isCurrentlyDownloading = false;
+                clearAllTimers();
             },
             didOpen: () => {
                 const bar = document.getElementById('global-export-progress-bar');
@@ -130,13 +139,13 @@ export function downloadWithProgress(urlOrData, options = {}) {
                     if (percent) percent.innerText = '35%';
                     if (status) status.innerText = 'Generando archivo de imagen...';
 
-                    setTimeout(() => {
+                    t1 = setTimeout(() => {
                         if (bar) bar.style.width = '80%';
                         if (percent) percent.innerText = '80%';
                         if (status) status.innerText = 'Preparando descarga...';
                     }, 180);
 
-                    setTimeout(() => {
+                    tFinish = setTimeout(() => {
                         if (bar) bar.style.width = '100%';
                         if (percent) percent.innerText = '100%';
                         if (status) status.innerText = '¡Descarga completada!';
@@ -150,6 +159,7 @@ export function downloadWithProgress(urlOrData, options = {}) {
                         a.remove();
 
                         setTimeout(() => {
+                            isCurrentlyDownloading = false;
                             Swal.fire({
                                 icon: 'success',
                                 title: '¡Descarga Exitosa!',
@@ -165,94 +175,57 @@ export function downloadWithProgress(urlOrData, options = {}) {
                     return;
                 }
 
-                // Si es una petición al servidor
-                const interval = setInterval(() => {
-                    if (progress < 85) {
-                        progress += Math.floor(Math.random() * 8) + 4;
-                        if (progress > 85) progress = 85;
-                        if (bar) bar.style.width = `${progress}%`;
-                        if (percent) percent.innerText = `${progress}%`;
-                        if (status) {
-                            if (progress > 25 && progress <= 55) {
-                                status.innerText = middleStep1;
-                                if (step) step.innerText = 'Consultando datos...';
-                            } else if (progress > 55) {
-                                status.innerText = middleStep2;
-                                if (step) step.innerText = 'Comprimiendo y empaquetando...';
-                            }
-                        }
-                    }
+                // Si es una petición a ruta del servidor (Excel, PDF, CSV, reportes)
+                t1 = setTimeout(() => {
+                    if (bar) bar.style.width = '45%';
+                    if (percent) percent.innerText = '45%';
+                    if (status) status.innerText = middleStep1;
+                    if (step) step.innerText = 'Consultando base de datos...';
                 }, 350);
 
-                fetch(urlOrData, {
-                    headers: {
-                        'Accept': '*/*',
-                        'X-Requested-With': 'XMLHttpRequest',
-                        ...fetchOptions.headers
-                    },
-                    ...fetchOptions
-                })
-                    .then(response => {
-                        if (!response.ok) {
-                            throw new Error(`Error en el servidor (${response.status})`);
-                        }
+                t2 = setTimeout(() => {
+                    if (bar) bar.style.width = '75%';
+                    if (percent) percent.innerText = '75%';
+                    if (status) status.innerText = middleStep2;
+                    if (step) step.innerText = 'Compilando archivo...';
+                }, 750);
 
-                        // Intentar obtener filename de Content-Disposition si existe
-                        let serverFilename = resolvedFilename;
-                        const disposition = response.headers.get('Content-Disposition');
-                        if (disposition && disposition.indexOf('attachment') !== -1) {
-                            const filenameRegex = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/;
-                            const matches = filenameRegex.exec(disposition);
-                            if (matches != null && matches[1]) {
-                                serverFilename = matches[1].replace(/['"]/g, '');
-                            }
-                        }
+                // Disparar la descarga nativa del navegador mediante navegación directa
+                // Dado que el servidor responde con Content-Disposition: attachment,
+                // el navegador descarga el archivo de forma nativa sin perder la página ni el estado
+                tTrigger = setTimeout(() => {
+                    if (bar) bar.style.width = '95%';
+                    if (percent) percent.innerText = '95%';
+                    if (status) status.innerText = 'Iniciando descarga en su equipo...';
+                    if (step) step.innerText = 'Empaquetando...';
 
-                        return response.blob().then(blob => ({ blob, serverFilename }));
-                    })
-                    .then(({ blob, serverFilename }) => {
-                        clearInterval(interval);
-                        if (bar) bar.style.width = '100%';
-                        if (percent) percent.innerText = '100%';
-                        if (status) status.innerText = '¡Archivo generado exitosamente! Descargando...';
-                        if (step) step.innerText = 'Descarga completada';
+                    try {
+                        window.location.assign(urlOrData);
+                    } catch (e) {
+                        window.location.href = urlOrData;
+                    }
+                }, 1100);
 
-                        const blobUrl = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = blobUrl;
-                        a.download = serverFilename || resolvedFilename;
-                        document.body.appendChild(a);
-                        a.click();
-                        window.URL.revokeObjectURL(blobUrl);
-                        a.remove();
+                tFinish = setTimeout(() => {
+                    if (bar) bar.style.width = '100%';
+                    if (percent) percent.innerText = '100%';
+                    if (status) status.innerText = '¡Descarga iniciada exitosamente!';
+                    if (step) step.innerText = 'Descarga completada';
 
-                        setTimeout(() => {
-                            isCurrentlyDownloading = false;
-                            Swal.fire({
-                                icon: 'success',
-                                title: '¡Descarga Finalizada!',
-                                text: `El archivo ${serverFilename || resolvedFilename} se ha descargado correctamente.`,
-                                timer: 1800,
-                                showConfirmButton: false,
-                                customClass: { popup: 'rounded-2xl shadow-xl' }
-                            });
-                            if (onSuccess) onSuccess();
-                            resolve();
-                        }, 500);
-                    })
-                    .catch(err => {
-                        clearInterval(interval);
+                    setTimeout(() => {
                         isCurrentlyDownloading = false;
-                        console.error('Error al descargar/exportar:', err);
                         Swal.fire({
-                            icon: 'error',
-                            title: 'Error de Descarga',
-                            text: 'No se pudo generar o descargar el archivo. Por favor intente nuevamente.',
-                            confirmButtonColor: '#14368b'
+                            icon: 'success',
+                            title: '¡Descarga Iniciada!',
+                            text: `El archivo ${resolvedFilename} se está descargando en tu equipo.`,
+                            timer: 1800,
+                            showConfirmButton: false,
+                            customClass: { popup: 'rounded-2xl shadow-xl' }
                         });
-                        if (onError) onError(err);
-                        reject(err);
-                    });
+                        if (onSuccess) onSuccess();
+                        resolve();
+                    }, 400);
+                }, 1600);
             }
         });
     });
