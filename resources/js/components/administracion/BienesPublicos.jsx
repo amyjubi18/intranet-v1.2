@@ -1109,9 +1109,23 @@ export default function BienesPublicos() {
                                                 <p className="text-xs text-blue-900 font-semibold mb-1">Sede</p>
                                                 <p className="font-semibold text-slate-800 text-sm">{item.sede || 'N/A'}</p>
                                                 <p className="text-xs text-blue-900 font-semibold mt-2 mb-1">Descripción</p>
-                                                <p className="font-bold truncate text-md text-slate-900" title={item.descripcion}>
-                                                    {item.descripcion || 'Sin descripción'}
-                                                </p>
+                                                <div className="flex items-center gap-2 flex-wrap">
+                                                    <p className="font-bold text-md text-slate-900" title={item.descripcion}>
+                                                        {item.descripcion || 'Sin descripción'}
+                                                    </p>
+                                                    {item.colors && (
+                                                        <span
+                                                            className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-slate-50 border border-slate-300 shadow-2xs"
+                                                            title={`Color: ${item.colors.color || item.colors.nombre}${item.colors.codigo_hex ? ` (${item.colors.codigo_hex})` : ''}`}
+                                                        >
+                                                            <span
+                                                                className="w-3.5 h-3.5 rounded-full border border-black/20 shadow-inner flex-shrink-0"
+                                                                style={{ backgroundColor: item.colors.codigo_hex || '#CCCCCC' }}
+                                                            />
+                                                            <span className="text-slate-800">{item.colors.color || item.colors.nombre}</span>
+                                                        </span>
+                                                    )}
+                                                </div>
                                             </div>
 
                                             <div></div>
