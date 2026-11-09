@@ -20,6 +20,7 @@ import FormasAdquisicionManagement from './components/administracion/FormasAdqui
 import EstadosUsoManagement from './components/administracion/EstadosUsoManagement';
 import ColorsManagement from './components/administracion/ColorsManagement';
 import CondicionesManagement from './components/administracion/CondicionesManagement';
+import UsuariosAdministrativosManagement from './components/administracion/UsuariosAdministrativosManagement';
 
 // Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
@@ -79,6 +80,8 @@ function initReactRoots() {
     mountById('unidades-administrativas-root', UnidadesAdministrativasManagement);
     mountComponent('UsuariosDeUsoManagement', UsuariosDeUsoManagement);
     mountById('usuarios-de-uso-root', UsuariosDeUsoManagement);
+    mountComponent('UsuariosAdministrativosManagement', UsuariosAdministrativosManagement);
+    mountById('usuarios-administrativos-root', UsuariosAdministrativosManagement);
     mountComponent('FormasAdquisicionManagement', FormasAdquisicionManagement);
     mountById('formas-adquisicion-root', FormasAdquisicionManagement);
     mountComponent('EstadosUsoManagement', EstadosUsoManagement);

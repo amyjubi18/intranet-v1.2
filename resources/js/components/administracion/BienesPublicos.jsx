@@ -58,6 +58,12 @@ export default function BienesPublicos() {
     const [submitting, setSubmitting] = useState(false);
     const [formErrors, setFormErrors] = useState({});
 
+    // Cascada de selects para el modal (Unidad -> Usuario Administrativo -> Usuario de Uso)
+    const [modalUsuariosAdministrativos, setModalUsuariosAdministrativos] = useState([]);
+    const [modalUsuariosDeUso, setModalUsuariosDeUso] = useState([]);
+    const [loadingUsuariosAdmin, setLoadingUsuariosAdmin] = useState(false);
+    const [loadingUsuariosUso, setLoadingUsuariosUso] = useState(false);
+
     const initialFormData = {
         sede: 'Sede Central',
         unidad_administrativa_id: '',
@@ -330,6 +336,99 @@ export default function BienesPublicos() {
         }
     };
 
+    // Cargar Usuarios Administrativos según Unidad Administrativa
+    const fetchModalUsuariosAdministrativos = async (unidadId) => {
+        if (!unidadId) {
+            setModalUsuariosAdministrativos([]);
+            return [];
+        }
+        setLoadingUsuariosAdmin(true);
+        try {
+            const res = await fetch(`/api/bienes_publicos/usuarios-administrativos/${unidadId}`);
+            if (!res.ok) throw new Error('Error al cargar usuarios administrativos');
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : [];
+            setModalUsuariosAdministrativos(list);
+            return list;
+        } catch (err) {
+            console.error('Error fetching modal usuarios administrativos:', err);
+            setModalUsuariosAdministrativos([]);
+            return [];
+        } finally {
+            setLoadingUsuariosAdmin(false);
+        }
+    };
+
+    // Cargar Usuarios de Uso según Usuario Administrativo
+    const fetchModalUsuariosDeUso = async (usuarioAdminId) => {
+        if (!usuarioAdminId) {
+            setModalUsuariosDeUso([]);
+            return [];
+        }
+        setLoadingUsuariosUso(true);
+        try {
+            const res = await fetch(`/api/bienes_publicos/usuarios-de-uso/${usuarioAdminId}`);
+            if (!res.ok) throw new Error('Error al cargar usuarios de uso');
+            const data = await res.json();
+            const list = Array.isArray(data) ? data : [];
+            setModalUsuariosDeUso(list);
+            return list;
+        } catch (err) {
+            console.error('Error fetching modal usuarios de uso:', err);
+            setModalUsuariosDeUso([]);
+            return [];
+        } finally {
+            setLoadingUsuariosUso(false);
+        }
+    };
+
+    // Handler al cambiar Unidad Administrativa
+    const handleUnidadChange = async (unidadId) => {
+        setFormData(prev => ({
+            ...prev,
+            unidad_administrativa_id: unidadId,
+            usuario_administrativo_id: '',
+            usuario_de_uso_id: ''
+        }));
+        if (formErrors.unidad_administrativa_id || formErrors.usuario_administrativo_id || formErrors.usuario_de_uso_id) {
+            setFormErrors(prev => {
+                const next = { ...prev };
+                delete next.unidad_administrativa_id;
+                delete next.usuario_administrativo_id;
+                delete next.usuario_de_uso_id;
+                return next;
+            });
+        }
+        setModalUsuariosDeUso([]);
+        if (unidadId) {
+            await fetchModalUsuariosAdministrativos(unidadId);
+        } else {
+            setModalUsuariosAdministrativos([]);
+        }
+    };
+
+    // Handler al cambiar Usuario Administrativo
+    const handleUsuarioAdminChange = async (usuarioAdminId) => {
+        setFormData(prev => ({
+            ...prev,
+            usuario_administrativo_id: usuarioAdminId,
+            usuario_de_uso_id: ''
+        }));
+        if (formErrors.usuario_administrativo_id || formErrors.usuario_de_uso_id) {
+            setFormErrors(prev => {
+                const next = { ...prev };
+                delete next.usuario_administrativo_id;
+                delete next.usuario_de_uso_id;
+                return next;
+            });
+        }
+        if (usuarioAdminId) {
+            await fetchModalUsuariosDeUso(usuarioAdminId);
+        } else {
+            setModalUsuariosDeUso([]);
+        }
+    };
+
     // Abrir Modal de Creación
     const handleOpenCreate = () => {
         setModalMode('create');
@@ -340,18 +439,20 @@ export default function BienesPublicos() {
             fecha_adquisicion: new Date().toISOString().split('T')[0],
             fecha_comentario: new Date().toISOString().split('T')[0]
         });
+        setModalUsuariosAdministrativos([]);
+        setModalUsuariosDeUso([]);
         setFormErrors({});
         setModalOpen(true);
     };
 
     // Abrir Modal de Edición
-    const handleOpenEdit = (item) => {
+    const handleOpenEdit = async (item) => {
         setModalMode('edit');
         const isBarcode = (item.qr_code || '').startsWith('barcode:') || (item.qr_code || '').startsWith('barcode_img:');
         setModalCodeType(isBarcode ? 'barcode' : 'qr');
         setSelectedBien(item);
         setFormData({
-            sede: item.sede || 'Sede Central',
+            sede: item.sede || 'CODECYT S.A',
             unidad_administrativa_id: item.unidad_administrativa_id || '',
             usuario_administrativo_id: item.usuario_administrativo_id || '',
             usuario_de_uso_id: item.usuario_de_uso_id || '',
@@ -374,6 +475,19 @@ export default function BienesPublicos() {
         });
         setFormErrors({});
         setModalOpen(true);
+
+        // Pre-cargar listas dependientes si existen asignaciones
+        if (item.unidad_administrativa_id) {
+            await fetchModalUsuariosAdministrativos(item.unidad_administrativa_id);
+        } else {
+            setModalUsuariosAdministrativos([]);
+        }
+
+        if (item.usuario_administrativo_id) {
+            await fetchModalUsuariosDeUso(item.usuario_administrativo_id);
+        } else {
+            setModalUsuariosDeUso([]);
+        }
     };
 
     // Cerrar Modal
@@ -1154,7 +1268,7 @@ export default function BienesPublicos() {
                                     </label>
                                     <select
                                         value={formData.unidad_administrativa_id}
-                                        onChange={(e) => handleFormChange('unidad_administrativa_id', e.target.value)}
+                                        onChange={(e) => handleUnidadChange(e.target.value)}
                                         className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
                                         required
                                         disabled={submitting}
@@ -1172,13 +1286,19 @@ export default function BienesPublicos() {
                                     </label>
                                     <select
                                         value={formData.usuario_administrativo_id}
-                                        onChange={(e) => handleFormChange('usuario_administrativo_id', e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        onChange={(e) => handleUsuarioAdminChange(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-60"
                                         required
-                                        disabled={submitting}
+                                        disabled={submitting || loadingUsuariosAdmin || !formData.unidad_administrativa_id}
                                     >
-                                        <option value="">Seleccione Usuario Administrativo</option>
-                                        {(catalogs.usuarios_administrativos || []).map((ua) => (
+                                        <option value="">
+                                            {loadingUsuariosAdmin
+                                                ? 'Cargando usuarios administrativos...'
+                                                : !formData.unidad_administrativa_id
+                                                    ? 'Seleccione primero una Unidad Administrativa'
+                                                    : 'Seleccione Usuario Administrativo'}
+                                        </option>
+                                        {modalUsuariosAdministrativos.map((ua) => (
                                             <option key={ua.id} value={ua.id}>{ua.usuario_administrativo || ua.name}</option>
                                         ))}
                                     </select>
@@ -1195,12 +1315,18 @@ export default function BienesPublicos() {
                                     <select
                                         value={formData.usuario_de_uso_id}
                                         onChange={(e) => handleFormChange('usuario_de_uso_id', e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 disabled:opacity-60"
                                         required
-                                        disabled={submitting}
+                                        disabled={submitting || loadingUsuariosUso || !formData.usuario_administrativo_id}
                                     >
-                                        <option value="">Seleccione Usuario de Uso</option>
-                                        {(catalogs.usuarios_de_uso || []).map((uu) => (
+                                        <option value="">
+                                            {loadingUsuariosUso
+                                                ? 'Cargando usuarios de uso...'
+                                                : !formData.usuario_administrativo_id
+                                                    ? 'Seleccione primero un Usuario Administrativo'
+                                                    : 'Seleccione Usuario de Uso'}
+                                        </option>
+                                        {modalUsuariosDeUso.map((uu) => (
                                             <option key={uu.id} value={uu.id}>{uu.usuario_de_uso || uu.name}</option>
                                         ))}
                                     </select>

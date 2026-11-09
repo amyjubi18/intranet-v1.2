@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
 use App\Exports\BienesExport;
 use Maatwebsite\Excel\Facades\Excel;
-use Barryvdh\DomPDF\Facade as PDF;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class BieneController extends Controller
 {
