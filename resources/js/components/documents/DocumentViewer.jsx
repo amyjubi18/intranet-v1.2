@@ -138,10 +138,14 @@ export default function DocumentViewer({
     };
 
     const handleDownload = () => {
-        const link = document.createElement('a');
-        link.href = pdfUrl;
-        link.download = documentName;
-        link.click();
+        if (typeof window !== 'undefined' && window.downloadWithProgress) {
+            window.downloadWithProgress(pdfUrl, { filename: documentName, type: 'pdf' });
+        } else {
+            const link = document.createElement('a');
+            link.href = pdfUrl;
+            link.download = documentName;
+            link.click();
+        }
     };
 
     const handlePrint = () => {

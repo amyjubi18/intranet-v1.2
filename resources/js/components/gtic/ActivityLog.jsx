@@ -290,7 +290,9 @@ export default function ActivityLog() {
                 <div className="flex space-x-2">
                     <a
                         href="/gtic/activity-log/export/pdf"
-                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors inline-flex items-center gap-1.5 text-sm"
+                        data-download-progress
+                        data-filename="registro_actividades.pdf"
+                        className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600 transition-colors inline-flex items-center gap-1.5 text-sm cursor-pointer"
                     >
                         📄 Exportar PDF
                     </a>

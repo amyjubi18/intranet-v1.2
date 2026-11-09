@@ -21,6 +21,61 @@ import EstadosUsoManagement from './components/administracion/EstadosUsoManageme
 import ColorsManagement from './components/administracion/ColorsManagement';
 import CondicionesManagement from './components/administracion/CondicionesManagement';
 import UsuariosAdministrativosManagement from './components/administracion/UsuariosAdministrativosManagement';
+import { downloadWithProgress } from './utils/downloadWithProgress';
+
+// Interceptor global para cualquier enlace o select de descarga/exportación (PDF, Excel, Imagen)
+function initGlobalDownloadInterceptor() {
+    if (typeof document === 'undefined') return;
+
+    // 1. Delegar clics en enlaces y botones de descarga
+    document.addEventListener('click', (e) => {
+        const target = e.target.closest('a, button[data-download-url]');
+        if (!target) return;
+
+        // Si se pide ignorar explícitamente o es nueva pestaña
+        if (target.hasAttribute('data-no-progress') || target.getAttribute('target') === '_blank') {
+            return;
+        }
+
+        const href = target.getAttribute('href') || target.getAttribute('data-download-url');
+        if (!href || href === '#' || href.startsWith('javascript:')) return;
+
+        const downloadAttr = target.getAttribute('download');
+        const hasDataProgress = target.hasAttribute('data-download-progress');
+        const isExportRoute = href.includes('/export/pdf') || href.includes('/export/excel') || href.includes('/export/csv');
+        const isDownloadFile = downloadAttr !== null || /\.(pdf|xlsx?|csv|png|jpe?g|webp|svg)(\?.*)?$/i.test(href);
+
+        // Si es Data URI o Blob (como código QR o código de barras)
+        if (downloadAttr !== null && (href.startsWith('data:') || href.startsWith('blob:'))) {
+            e.preventDefault();
+            downloadWithProgress(href, { filename: downloadAttr, type: 'image' });
+            return;
+        }
+
+        // Si es ruta de exportación o archivo descargable
+        if (hasDataProgress || isExportRoute || (isDownloadFile && !href.startsWith('blob:') && !href.startsWith('data:'))) {
+            e.preventDefault();
+            const filename = downloadAttr || target.getAttribute('data-filename') || undefined;
+            downloadWithProgress(href, { filename });
+        }
+    });
+
+    // 2. Delegar cambios en <select> que contengan URLs de exportación
+    document.addEventListener('change', (e) => {
+        const select = e.target.closest('select');
+        if (!select) return;
+
+        const val = select.value;
+        if (!val) return;
+
+        if (val.includes('/export/pdf') || val.includes('/export/excel') || val.includes('/export/csv') || /\.(pdf|xlsx?|csv)(\?.*)?$/i.test(val)) {
+            e.preventDefault();
+            e.stopPropagation();
+            downloadWithProgress(val);
+            select.value = '';
+        }
+    });
+}
 
 // Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
@@ -105,11 +160,18 @@ function initReactRoots() {
 
 if (typeof document !== 'undefined') {
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initReactRoots);
+        document.addEventListener('DOMContentLoaded', () => {
+            initReactRoots();
+            initGlobalDownloadInterceptor();
+        });
     } else {
         initReactRoots();
+        initGlobalDownloadInterceptor();
     }
-    window.addEventListener('load', initReactRoots);
+    window.addEventListener('load', () => {
+        initReactRoots();
+        initGlobalDownloadInterceptor();
+    });
 }
 
 // Exportar componentes para uso global

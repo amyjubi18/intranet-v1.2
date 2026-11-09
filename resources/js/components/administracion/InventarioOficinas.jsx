@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
+import { downloadWithProgress } from '../../utils/downloadWithProgress';
 
 export default function InventarioOficinas() {
     const [inventario, setInventario] = useState([]);
@@ -267,14 +268,15 @@ export default function InventarioOficinas() {
                         {/* Fila de acciones */}
                         <div className="flex flex-wrap items-center justify-end gap-3 pb-4 border-b border-gray-100">
                             <select
+                                value=""
                                 onChange={(e) => {
-                                    if (e.target.value) window.location.href = e.target.value;
+                                    if (e.target.value) downloadWithProgress(e.target.value);
                                 }}
-                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm"
+                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs"
                             >
-                                <option value="">📤 Exportar</option>
-                                <option value="/administracion/inventario_oficinas/export/excel">Exportar a Excel</option>
-                                <option value="/administracion/inventario_oficinas/export/pdf">Exportar a PDF</option>
+                                <option value="" disabled>📤 Exportar</option>
+                                <option value="/administracion/inventario_oficinas/export/excel">📊 Exportar a Excel</option>
+                                <option value="/administracion/inventario_oficinas/export/pdf">📄 Exportar a PDF</option>
                             </select>
 
                             {permissions.can_create && (

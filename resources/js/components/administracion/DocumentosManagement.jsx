@@ -1750,6 +1750,25 @@ export default function DocumentosManagement() {
 
                                 <button
                                     type="button"
+                                    onClick={() => {
+                                        if (window.downloadWithProgress) {
+                                            window.downloadWithProgress(`/archivos/${viewingPdf.ruta}`, {
+                                                filename: viewingPdf.nombre_archivo || 'documento.pdf',
+                                                type: 'pdf'
+                                            });
+                                        } else {
+                                            window.open(`/archivos/${viewingPdf.ruta}`, '_blank');
+                                        }
+                                    }}
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-lg text-xs font-semibold transition-all cursor-pointer"
+                                    title="Descargar documento PDF con barra de progreso"
+                                >
+                                    <span>⬇️</span>
+                                    <span>Descargar</span>
+                                </button>
+
+                                <button
+                                    type="button"
                                     onClick={() => setPdfViewerOpen(false)}
                                     className="text-white hover:text-gray-300 p-1"
                                     title="Cerrar"
