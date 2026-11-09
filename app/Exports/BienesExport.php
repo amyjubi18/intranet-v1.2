@@ -62,6 +62,45 @@ class BienesExport implements FromCollection, WithHeadings, WithMapping, ShouldA
                         $query->where('unidad_administrativa_id', $this->filters['secondFilter']);
                     }
                     break;
+                case 'usuario_de_uso_id':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('usuario_de_uso_id', $this->filters['secondFilter']);
+                    } elseif (!empty($this->filters['unidad_administrativa_id'])) {
+                        $query->where('unidad_administrativa_id', $this->filters['unidad_administrativa_id']);
+                    }
+                    break;
+                case 'usuario_administrativo_id':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('usuario_administrativo_id', $this->filters['secondFilter']);
+                    } elseif (!empty($this->filters['unidad_administrativa_id'])) {
+                        $query->where('unidad_administrativa_id', $this->filters['unidad_administrativa_id']);
+                    }
+                    break;
+                case 'n_interno_bien':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('n_interno_bien', $this->filters['secondFilter']);
+                    }
+                    break;
+                case 'marca':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('marca', $this->filters['secondFilter']);
+                    }
+                    break;
+                case 'modelo':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('modelo', $this->filters['secondFilter']);
+                    }
+                    break;
+                case 'color_id':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('color_id', $this->filters['secondFilter']);
+                    }
+                    break;
+                case 'serial':
+                    if (!empty($this->filters['secondFilter'])) {
+                        $query->where('serial', 'like', '%' . $this->filters['secondFilter'] . '%');
+                    }
+                    break;
                 case 'forma_adquisicion_id':
                     if (!empty($this->filters['secondFilter'])) {
                         $query->where('forma_adquisicion_id', $this->filters['secondFilter']);

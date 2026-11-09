@@ -128,11 +128,15 @@ class BieneController extends Controller
                 case 'usuario_de_uso_id':
                     if ($request->filled('secondFilter')) {
                         $query->where('usuario_de_uso_id', $request->secondFilter);
+                    } elseif ($request->filled('unidad_administrativa_id')) {
+                        $query->where('unidad_administrativa_id', $request->unidad_administrativa_id);
                     }
                     break;
                 case 'usuario_administrativo_id':
                     if ($request->filled('secondFilter')) {
                         $query->where('usuario_administrativo_id', $request->secondFilter);
+                    } elseif ($request->filled('unidad_administrativa_id')) {
+                        $query->where('unidad_administrativa_id', $request->unidad_administrativa_id);
                     }
                     break;
                 case 'estado_del_uso_id':
@@ -629,6 +633,84 @@ class BieneController extends Controller
                   ->orWhere('serial', 'like', '%' . $search . '%')
                   ->orWhere('sede', 'like', '%' . $search . '%');
             });
+        }
+
+        if ($request->filled('filterType')) {
+            switch ($request->filterType) {
+                case 'fecha':
+                    if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+                        $query->whereBetween('fecha_adquisicion', [$request->fecha_desde, $request->fecha_hasta]);
+                    } elseif ($request->filled('fecha_desde')) {
+                        $query->where('fecha_adquisicion', '>=', $request->fecha_desde);
+                    } elseif ($request->filled('fecha_hasta')) {
+                        $query->where('fecha_adquisicion', '<=', $request->fecha_hasta);
+                    }
+                    break;
+                case 'n_interno_bien':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('n_interno_bien', $request->secondFilter);
+                    }
+                    break;
+                case 'descripcion':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('descripcion', $request->secondFilter);
+                    }
+                    break;
+                case 'unidad_administrativa_id':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('unidad_administrativa_id', $request->secondFilter);
+                    }
+                    break;
+                case 'usuario_de_uso_id':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('usuario_de_uso_id', $request->secondFilter);
+                    } elseif ($request->filled('unidad_administrativa_id')) {
+                        $query->where('unidad_administrativa_id', $request->unidad_administrativa_id);
+                    }
+                    break;
+                case 'usuario_administrativo_id':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('usuario_administrativo_id', $request->secondFilter);
+                    } elseif ($request->filled('unidad_administrativa_id')) {
+                        $query->where('unidad_administrativa_id', $request->unidad_administrativa_id);
+                    }
+                    break;
+                case 'estado_del_uso_id':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('estado_del_uso_id', $request->secondFilter);
+                    }
+                    break;
+                case 'forma_adquisicion_id':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('forma_adquisicion_id', $request->secondFilter);
+                    }
+                    break;
+                case 'marca':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('marca', $request->secondFilter);
+                    }
+                    break;
+                case 'modelo':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('modelo', $request->secondFilter);
+                    }
+                    break;
+                case 'condicion_id':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('condicion_id', $request->secondFilter);
+                    }
+                    break;
+                case 'color_id':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('color_id', $request->secondFilter);
+                    }
+                    break;
+                case 'serial':
+                    if ($request->filled('secondFilter')) {
+                        $query->where('serial', 'like', '%' . $request->secondFilter . '%');
+                    }
+                    break;
+            }
         }
 
         $bienes = $query->get();

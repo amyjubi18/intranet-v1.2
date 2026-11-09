@@ -59,6 +59,7 @@ export default function BienesPublicos() {
     // Filtros originales
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
     const [filterType, setFilterType] = useState('');
+    const [filterUnidadId, setFilterUnidadId] = useState('');
     const [secondFilter, setSecondFilter] = useState('');
     const [busqueda, setBusqueda] = useState('');
     const [textFilter, setTextFilter] = useState('');
@@ -135,6 +136,8 @@ export default function BienesPublicos() {
                     if (textFilter.trim()) params.append('secondFilter', textFilter.trim());
                 } else if (secondFilter) {
                     params.append('secondFilter', secondFilter);
+                } else if ((filterType === 'usuario_de_uso_id' || filterType === 'usuario_administrativo_id') && filterUnidadId) {
+                    params.append('unidad_administrativa_id', filterUnidadId);
                 }
             }
 
@@ -180,18 +183,19 @@ export default function BienesPublicos() {
         } finally {
             setLoading(false);
         }
-    }, [filterType, secondFilter, busqueda, textFilter, fechaDesde, fechaHasta]);
+    }, [filterType, filterUnidadId, secondFilter, busqueda, textFilter, fechaDesde, fechaHasta]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchBienes(1);
         }, 350);
         return () => clearTimeout(timer);
-    }, [filterType, secondFilter, busqueda, textFilter, fechaDesde, fechaHasta, fetchBienes]);
+    }, [filterType, filterUnidadId, secondFilter, busqueda, textFilter, fechaDesde, fechaHasta, fetchBienes]);
 
     // Limpiar filtros
     const handleClearFilters = () => {
         setFilterType('');
+        setFilterUnidadId('');
         setSecondFilter('');
         setBusqueda('');
         setTextFilter('');
@@ -529,6 +533,20 @@ export default function BienesPublicos() {
         return catalogs.modelos || [];
     }, [formData.marca, catalogs.marcas_modelos, catalogs.modelos]);
 
+    // Filtrar Usuarios de Uso según la Unidad Administrativa seleccionada en filtros
+    const filteredUsuariosDeUso = useMemo(() => {
+        const list = catalogs.usuarios_de_uso || [];
+        if (!filterUnidadId) return list;
+        return list.filter(u => String(u.unidad_administrativa_id) === String(filterUnidadId));
+    }, [catalogs.usuarios_de_uso, filterUnidadId]);
+
+    // Filtrar Usuarios Administrativos según la Unidad Administrativa seleccionada en filtros
+    const filteredUsuariosAdministrativos = useMemo(() => {
+        const list = catalogs.usuarios_administrativos || [];
+        if (!filterUnidadId) return list;
+        return list.filter(u => String(u.unidad_administrativa_id) === String(filterUnidadId));
+    }, [catalogs.usuarios_administrativos, filterUnidadId]);
+
     // Abrir sub-modal para crear un nuevo color rápido
     const handleOpenQuickColorModal = () => {
         setQuickColorName('');
@@ -635,6 +653,8 @@ export default function BienesPublicos() {
                 if (fechaHasta) params.append('fecha_hasta', fechaHasta);
             } else if (secondFilter) {
                 params.append('secondFilter', secondFilter);
+            } else if ((filterType === 'usuario_de_uso_id' || filterType === 'usuario_administrativo_id') && filterUnidadId) {
+                params.append('unidad_administrativa_id', filterUnidadId);
             }
         }
         const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
@@ -966,6 +986,7 @@ export default function BienesPublicos() {
                                     value={filterType}
                                     onChange={(e) => {
                                         setFilterType(e.target.value);
+                                        setFilterUnidadId('');
                                         setSecondFilter('');
                                         setTextFilter('');
                                         setFechaDesde('');
@@ -992,14 +1013,38 @@ export default function BienesPublicos() {
                                 </select>
                             )}
 
+                            {/* Selector de Unidad Administrativa dependiente si se filtra por Usuario de Uso o Usuario Administrativo */}
+                            {showAdvancedFilters && (filterType === 'usuario_de_uso_id' || filterType === 'usuario_administrativo_id') && (
+                                <select
+                                    value={filterUnidadId}
+                                    onChange={(e) => {
+                                        setFilterUnidadId(e.target.value);
+                                        setSecondFilter('');
+                                    }}
+                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-800 font-medium"
+                                    title="Filtrar por Unidad Administrativa"
+                                >
+                                    <option value="">Todas las Unidades Administrativas</option>
+                                    {(catalogs.unidad_administrativas || []).map(u => (
+                                        <option key={u.id} value={u.id}>🏢 {u.name || u.unidad_administrativa}</option>
+                                    ))}
+                                </select>
+                            )}
+
                             {/* Segundo filtro dinámico según tipo */}
                             {showAdvancedFilters && filterType && filterType !== 'fecha' && filterType !== 'busqueda' && filterType !== 'serial' && filterType !== 'codigo_qr' && (
                                 <select
                                     value={secondFilter}
                                     onChange={(e) => setSecondFilter(e.target.value)}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-800"
+                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-800 font-medium"
                                 >
-                                    <option value="">-----</option>
+                                    <option value="">
+                                        {filterType === 'usuario_de_uso_id'
+                                            ? (filterUnidadId ? 'Seleccione Usuario de Uso de esta Unidad...' : 'Todos los Usuarios de Uso')
+                                            : filterType === 'usuario_administrativo_id'
+                                                ? (filterUnidadId ? 'Seleccione Usuario Administrativo de esta Unidad...' : 'Todos los Usuarios Administrativos')
+                                                : '-----'}
+                                    </option>
                                     {filterType === 'n_interno_bien' && (catalogs.n_internos || []).map((n, i) => (
                                         <option key={i} value={n}>{n}</option>
                                     ))}
@@ -1009,12 +1054,16 @@ export default function BienesPublicos() {
                                     {filterType === 'unidad_administrativa_id' && (catalogs.unidad_administrativas || []).map(u => (
                                         <option key={u.id} value={u.id}>{u.name || u.unidad_administrativa}</option>
                                     ))}
-                                    {filterType === 'usuario_de_uso_id' && (catalogs.usuarios_de_uso || []).map(u => (
-                                        <option key={u.id} value={u.id}>{u.usuario_de_uso || u.name}</option>
-                                    ))}
-                                    {filterType === 'usuario_administrativo_id' && (catalogs.usuarios_administrativos || []).map(u => (
-                                        <option key={u.id} value={u.id}>{u.usuario_administrativo || u.name}</option>
-                                    ))}
+                                    {filterType === 'usuario_de_uso_id' && (
+                                        (filterUnidadId ? filteredUsuariosDeUso : catalogs.usuarios_de_uso || []).map(u => (
+                                            <option key={u.id} value={u.id}>{u.usuario_de_uso || u.name}</option>
+                                        ))
+                                    )}
+                                    {filterType === 'usuario_administrativo_id' && (
+                                        (filterUnidadId ? filteredUsuariosAdministrativos : catalogs.usuarios_administrativos || []).map(u => (
+                                            <option key={u.id} value={u.id}>{u.usuario_administrativo || u.name}</option>
+                                        ))
+                                    )}
                                     {filterType === 'estado_del_uso_id' && (catalogs.estado_del_usos || []).map(e => (
                                         <option key={e.id} value={e.id}>{e.estado_del_uso || e.nombre}</option>
                                     ))}
@@ -1066,7 +1115,7 @@ export default function BienesPublicos() {
                             )}
 
                             {/* Botón para limpiar filtros */}
-                            {(filterType || secondFilter || busqueda || textFilter || fechaDesde || fechaHasta) && (
+                            {(filterType || filterUnidadId || secondFilter || busqueda || textFilter || fechaDesde || fechaHasta) && (
                                 <button
                                     type="button"
                                     onClick={handleClearFilters}
