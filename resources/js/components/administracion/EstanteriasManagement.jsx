@@ -17,6 +17,7 @@ export default function EstanteriasManagement() {
         can_edit: true,
         can_destroy: true
     });
+    const [imgErrors, setImgErrors] = useState({});
 
     // Modal state (Create & Edit)
     const [modalOpen, setModalOpen] = useState(false);
@@ -291,15 +292,13 @@ export default function EstanteriasManagement() {
                             </div>
 
                             {/* Botón para limpiar filtros */}
-                            {search && (
-                                <button
-                                    type="button"
-                                    onClick={() => setSearch('')}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"
-                                >
-                                    🗑️ Limpiar
-                                </button>
-                            )}
+                            <button
+                                type="button"
+                                onClick={() => setSearch('')}
+                                className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"
+                            >
+                                🗑️ Limpiar
+                            </button>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -370,11 +369,12 @@ export default function EstanteriasManagement() {
                                         className="flex items-center justify-center w-full h-48 mb-4 overflow-hidden bg-gray-100 rounded-xl group"
                                         title={`Ver documentos de ${estanteria.nombre}`}
                                     >
-                                        {estanteria.imagen ? (
+                                        {estanteria.imagen && !imgErrors[estanteria.id] ? (
                                             <img
                                                 src={`/storage/estanterias/${estanteria.imagen}`}
                                                 alt={estanteria.nombre}
                                                 className="object-cover w-full h-full group-hover:scale-105 transition-transform duration-200"
+                                                onError={() => setImgErrors(prev => ({ ...prev, [estanteria.id]: true }))}
                                             />
                                         ) : (
                                             <div className="text-center text-gray-400 group-hover:scale-110 transition-transform">

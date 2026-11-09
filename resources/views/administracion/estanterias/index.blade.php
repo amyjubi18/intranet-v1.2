@@ -13,6 +13,9 @@
         .btn-primary{ background:var(--color-primary); color:#fff }
         .fade-in{ animation:fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn{ from{ opacity:0; transform:translateY(10px); } to{ opacity:1; transform:translateY(0); } }
+        .swal2-popup .swal2-actions { display: flex !important; opacity: 1 !important; }
+        .swal2-popup .swal2-confirm { opacity: 1 !important; visibility: visible !important; background-color: #d33 !important; color: white !important; }
+        .swal2-popup .swal2-cancel { opacity: 1 !important; visibility: visible !important; background-color: #3085d6 !important; color: white !important; }
     </style>
 
     <div id="estanterias-management-root" data-react-component="EstanteriasManagement">

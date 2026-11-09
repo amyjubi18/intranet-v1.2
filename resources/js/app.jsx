@@ -63,7 +63,6 @@ function initReactRoots() {
     // OGA: Documentos, Estanterías y Categorías
     mountComponent('DocumentosManagement', DocumentosManagement);
     mountById('documentos-management-root', DocumentosManagement);
-    mountComponent('EstanteriasManagement', EstanteriaSelector);
     mountComponent('EstanteriasManagement', EstanteriasManagement);
     mountById('estanterias-management-root', EstanteriasManagement);
     mountComponent('CategoriasManagement', CategoriasManagement);
