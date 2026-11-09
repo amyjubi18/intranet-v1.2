@@ -1,6 +1,23 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import Swal from 'sweetalert2';
 
+const PRESET_COLORS = [
+    { name: 'NEGRO', hex: '#000000' },
+    { name: 'BLANCO', hex: '#FFFFFF' },
+    { name: 'GRIS', hex: '#6B7280' },
+    { name: 'PLATA', hex: '#C0C0C0' },
+    { name: 'AZUL', hex: '#1D4ED8' },
+    { name: 'AZUL MARINO', hex: '#1E3A8A' },
+    { name: 'ROJO', hex: '#DC2626' },
+    { name: 'VERDE', hex: '#16A34A' },
+    { name: 'AMARILLO', hex: '#EAB308' },
+    { name: 'NARANJA', hex: '#EA580C' },
+    { name: 'MARRON', hex: '#8B4513' },
+    { name: 'BEIGE', hex: '#F5F5DC' },
+    { name: 'DORADO', hex: '#D97706' },
+    { name: 'COBRE', hex: '#B87333' }
+];
+
 export default function ColorsManagement() {
     const [colors, setColors] = useState([]);
     const [pagination, setPagination] = useState({
@@ -451,39 +468,92 @@ export default function ColorsManagement() {
                             </div>
 
                             {/* Selector de Color y Código Hex */}
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                            <div className="space-y-3">
+                                <label className="block text-sm font-semibold text-slate-700">
                                     Tono / Selector de Color: <span className="text-red-500">*</span>
                                 </label>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center">
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="color"
-                                            value={formData.codigo_hex || '#14368b'}
-                                            onChange={(e) => setFormData({ ...formData, codigo_hex: e.target.value.toUpperCase() })}
-                                            className="w-14 h-11 p-1 bg-blue-100 rounded-xl cursor-pointer border-none shadow-xs"
-                                            disabled={submitting}
-                                            title="Click para abrir el selector visual de color"
-                                        />
-                                        <input
-                                            type="text"
-                                            value={formData.codigo_hex || '#14368b'}
-                                            onChange={(e) => setFormData({ ...formData, codigo_hex: e.target.value.toUpperCase() })}
-                                            placeholder="#000000"
-                                            className="w-full bg-blue-100 border-none rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600"
-                                            maxLength={7}
-                                            disabled={submitting}
-                                        />
+
+                                {/* Paleta rápida de sugerencias de colores */}
+                                <div>
+                                    <span className="text-xs text-slate-500 font-medium block mb-1.5">
+                                        Selección rápida de colores comunes:
+                                    </span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {PRESET_COLORS.map((pc) => (
+                                            <button
+                                                key={pc.hex}
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        codigo_hex: pc.hex,
+                                                        color: prev.color ? prev.color : pc.name
+                                                    }));
+                                                }}
+                                                className={`w-7 h-7 rounded-xl border-2 transition-transform hover:scale-110 flex items-center justify-center cursor-pointer shadow-xs ${
+                                                    (formData.codigo_hex || '').toUpperCase() === pc.hex
+                                                        ? 'border-blue-600 scale-110 ring-2 ring-blue-400'
+                                                        : 'border-slate-300'
+                                                }`}
+                                                style={{ backgroundColor: pc.hex }}
+                                                title={`${pc.name} (${pc.hex})`}
+                                            >
+                                                {(formData.codigo_hex || '').toUpperCase() === pc.hex && (
+                                                    <span className={`text-[10px] font-bold ${pc.hex === '#FFFFFF' || pc.hex === '#F5F5DC' ? 'text-black' : 'text-white'}`}>
+                                                        ✓
+                                                    </span>
+                                                )}
+                                            </button>
+                                        ))}
                                     </div>
+                                </div>
+
+                                {/* Control interactivo de selección personalizada */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 items-center pt-1">
+                                    <div className="flex items-center gap-2.5">
+                                        {/* Botón interactivo para abrir la rueda de color */}
+                                        <div
+                                            className="relative flex items-center justify-center w-12 h-11 rounded-xl border-2 border-slate-300 shadow-xs cursor-pointer hover:scale-105 transition-transform flex-shrink-0 overflow-hidden"
+                                            style={{ backgroundColor: formData.codigo_hex || '#14368b' }}
+                                            title="Haz clic aquí para abrir la paleta de color personalizada"
+                                        >
+                                            <input
+                                                type="color"
+                                                value={formData.codigo_hex || '#14368b'}
+                                                onChange={(e) => setFormData({ ...formData, codigo_hex: e.target.value.toUpperCase() })}
+                                                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                                                disabled={submitting}
+                                            />
+                                            <span className="text-xs drop-shadow-md select-none pointer-events-none">🎨</span>
+                                        </div>
+
+                                        {/* Entrada de texto HEX */}
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                value={formData.codigo_hex || '#14368b'}
+                                                onChange={(e) => setFormData({ ...formData, codigo_hex: e.target.value.toUpperCase() })}
+                                                placeholder="#000000"
+                                                className="w-full bg-blue-100 border-none rounded-xl px-3.5 py-2.5 text-sm font-mono font-bold text-slate-800 uppercase focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                                maxLength={7}
+                                                disabled={submitting}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Muestra en vivo */}
                                     <div className="flex items-center gap-3 p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
                                         <div
-                                            className="w-7 h-7 rounded-lg shadow-inner border border-slate-300 flex-shrink-0"
+                                            className="w-8 h-8 rounded-lg shadow-inner border border-slate-300 flex-shrink-0"
                                             style={{ backgroundColor: formData.codigo_hex || '#14368b' }}
                                         />
                                         <div className="overflow-hidden">
-                                            <p className="text-[11px] text-slate-400 font-medium leading-none">Muestra:</p>
-                                            <p className="text-xs font-bold text-slate-800 truncate">
+                                            <p className="text-[11px] text-slate-400 font-medium leading-none">Muestra en vivo:</p>
+                                            <p className="text-xs font-bold text-slate-800 truncate mt-0.5">
                                                 {formData.color ? formData.color.toUpperCase() : 'Sin nombre'}
+                                                <span className="ml-1 text-[11px] font-mono text-slate-500 font-normal">
+                                                    ({formData.codigo_hex || '#14368B'})
+                                                </span>
                                             </p>
                                         </div>
                                     </div>

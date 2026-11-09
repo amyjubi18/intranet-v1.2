@@ -2,6 +2,23 @@ import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import Swal from 'sweetalert2';
 import JsBarcode from 'jsbarcode';
 
+const PRESET_COLORS = [
+    { name: 'NEGRO', hex: '#000000' },
+    { name: 'BLANCO', hex: '#FFFFFF' },
+    { name: 'GRIS', hex: '#6B7280' },
+    { name: 'PLATA', hex: '#C0C0C0' },
+    { name: 'AZUL', hex: '#1D4ED8' },
+    { name: 'AZUL MARINO', hex: '#1E3A8A' },
+    { name: 'ROJO', hex: '#DC2626' },
+    { name: 'VERDE', hex: '#16A34A' },
+    { name: 'AMARILLO', hex: '#EAB308' },
+    { name: 'NARANJA', hex: '#EA580C' },
+    { name: 'MARRON', hex: '#8B4513' },
+    { name: 'BEIGE', hex: '#F5F5DC' },
+    { name: 'DORADO', hex: '#D97706' },
+    { name: 'COBRE', hex: '#B87333' }
+];
+
 export default function BienesPublicos() {
     const [bienes, setBienes] = useState([]);
     const [metrics, setMetrics] = useState({
@@ -1980,20 +1997,60 @@ export default function BienesPublicos() {
                                 />
                             </div>
 
+                            {/* Paleta rápida de colores */}
+                            <div>
+                                <span className="block text-xs font-semibold text-slate-700 mb-1.5">
+                                    Colores sugeridos:
+                                </span>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {PRESET_COLORS.map((pc) => (
+                                        <button
+                                            key={pc.hex}
+                                            type="button"
+                                            onClick={() => {
+                                                setQuickColorHex(pc.hex);
+                                                if (!quickColorName.trim()) {
+                                                    setQuickColorName(pc.name);
+                                                }
+                                            }}
+                                            className={`w-6 h-6 rounded-lg border-2 transition-transform hover:scale-110 flex items-center justify-center cursor-pointer shadow-2xs ${
+                                                quickColorHex === pc.hex
+                                                    ? 'border-blue-600 scale-110 ring-2 ring-blue-400'
+                                                    : 'border-slate-300'
+                                            }`}
+                                            style={{ backgroundColor: pc.hex }}
+                                            title={`${pc.name} (${pc.hex})`}
+                                        >
+                                            {quickColorHex === pc.hex && (
+                                                <span className={`text-[9px] font-bold ${pc.hex === '#FFFFFF' || pc.hex === '#F5F5DC' ? 'text-black' : 'text-white'}`}>
+                                                    ✓
+                                                </span>
+                                            )}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
                             <div>
                                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
-                                    Selector de Tono: <span className="text-red-500">*</span>
+                                    Selector de Tono Personalizado: <span className="text-red-500">*</span>
                                 </label>
                                 <div className="grid grid-cols-2 gap-2 items-center">
                                     <div className="flex items-center gap-2">
-                                        <input
-                                            type="color"
-                                            value={quickColorHex}
-                                            onChange={(e) => setQuickColorHex(e.target.value.toUpperCase())}
-                                            className="w-12 h-10 p-1 bg-blue-100 rounded-xl cursor-pointer border-none shadow-xs"
-                                            disabled={quickColorSubmitting}
-                                            title="Click para abrir el selector de color"
-                                        />
+                                        <div
+                                            className="relative flex items-center justify-center w-11 h-9 rounded-xl border-2 border-slate-300 shadow-2xs cursor-pointer hover:scale-105 transition-transform flex-shrink-0 overflow-hidden"
+                                            style={{ backgroundColor: quickColorHex }}
+                                            title="Haz clic para abrir el selector de color"
+                                        >
+                                            <input
+                                                type="color"
+                                                value={quickColorHex}
+                                                onChange={(e) => setQuickColorHex(e.target.value.toUpperCase())}
+                                                className="absolute inset-0 opacity-0 w-full h-full cursor-pointer"
+                                                disabled={quickColorSubmitting}
+                                            />
+                                            <span className="text-[11px] select-none pointer-events-none drop-shadow-sm">🎨</span>
+                                        </div>
                                         <input
                                             type="text"
                                             value={quickColorHex}
