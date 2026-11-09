@@ -23,19 +23,28 @@ class UserEditRequest extends FormRequest
      */
     public function rules()
     {
-        $user = $this->route('user');
+        $user = $this->route('user') ?? $this->route('id') ?? $this->user ?? $this->id;
+        if (is_object($user)) {
+            $userId = $user->id;
+        } elseif (is_numeric($user) && $user > 0) {
+            $userId = (int) $user;
+        } else {
+            $segments = $this->segments();
+            $userId = !empty($segments) ? (int) end($segments) : 0;
+        }
         return [
             'name' => 'required|string|min:2|max:50|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
             'lastname' => 'required|string|min:2|max:50|regex:/^[a-zA-ZáéíóúÁÉÍÓÚñÑ\s]+$/',
-            'cedula' => 'required|regex:/^\d{1,2}\.\d{3}\.\d{3}$/|unique:users,cedula,' . $user->id,
+            'cedula' => 'required|regex:/^\d{1,2}\.\d{3}\.\d{3}$/|unique:users,cedula,' . $userId,
             'fecha_nacimiento' => 'sometimes|nullable|date|before:today',
-            'username' => 'required|string|min:3|max:20|unique:users,username,' . $user->id . '|regex:/^[a-zA-Z0-9_]+$/',
-            'email' => 'required|email|unique:users,email,' . $user->id,
+            'username' => 'required|string|min:3|max:20|unique:users,username,' . $userId . '|regex:/^[a-zA-Z0-9_]+$/',
+            'email' => 'required|email|unique:users,email,' . $userId,
             'departamento' => 'required|string',
-            'roles' => 'required|integer|min:1',
+            'roles' => 'required',
             'password' => 'sometimes|nullable|string|min:8|confirmed',
             'password_confirmation' => 'sometimes|nullable|string|min:8',
             'status' => 'nullable|boolean',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ];
     }
 
@@ -78,6 +87,9 @@ class UserEditRequest extends FormRequest
             'roles.integer' => 'Debe seleccionar un rol válido',
 
             'departamento.required' => 'El departamento es obligatorio',
+            'profile_photo.image' => 'El archivo debe ser una imagen válida',
+            'profile_photo.mimes' => 'La foto de perfil debe ser de formato JPG, JPEG, PNG o WEBP',
+            'profile_photo.max' => 'La foto de perfil no debe superar los 2MB',
         ];
     }
 }

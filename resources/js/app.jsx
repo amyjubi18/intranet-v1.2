@@ -1,47 +1,136 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import DashboardMetrics from './components/dashboard/DashboardMetrics';
 import DocumentViewer from './components/documents/DocumentViewer';
 import EstanteriaSelector from './components/documents/EstanteriaSelector';
 import NotificationCenter from './components/ui/NotificationCenter';
+import ActivityLog from './components/gtic/ActivityLog';
+import BienesPublicos from './components/administracion/BienesPublicos';
+import InventarioOficinas from './components/administracion/InventarioOficinas';
+import Consumibles from './components/administracion/Consumibles';
+import DigitalizacionDocumentos from './components/gestion_humana/DigitalizacionDocumentos';
+import UsersManagement from './components/gtic/UsersManagement';
+import RolesManagement from './components/gtic/RolesManagement';
+import PermisosManagement from './components/gtic/PermisosManagement';
+import DocumentosManagement from './components/administracion/DocumentosManagement';
+import EstanteriasManagement from './components/administracion/EstanteriasManagement';
+import CategoriasManagement from './components/administracion/CategoriasManagement';
+import UnidadesAdministrativasManagement from './components/administracion/UnidadesAdministrativasManagement';
+import UsuariosDeUsoManagement from './components/administracion/UsuariosDeUsoManagement';
+import FormasAdquisicionManagement from './components/administracion/FormasAdquisicionManagement';
+import EstadosUsoManagement from './components/administracion/EstadosUsoManagement';
+import ColorsManagement from './components/administracion/ColorsManagement';
+import CondicionesManagement from './components/administracion/CondicionesManagement';
+import UsuariosAdministrativosManagement from './components/administracion/UsuariosAdministrativosManagement';
 
-// Componente de ejemplo para integrar React en Blade
+// Helper global para montar componentes React en cualquier vista Blade
 function mountComponent(componentName, component) {
     const elements = document.querySelectorAll(`[data-react-component="${componentName}"]`);
 
     elements.forEach(element => {
-        const props = JSON.parse(element.dataset.props || '{}');
-        const root = ReactDOM.createRoot(element);
-        root.render(React.createElement(component, props));
+        if (!element.hasAttribute('data-react-mounted')) {
+            element.setAttribute('data-react-mounted', 'true');
+            const props = JSON.parse(element.dataset.props || '{}');
+            const root = ReactDOM.createRoot(element);
+            root.render(React.createElement(component, props));
+        }
     });
 }
 
-// Inicializar componentes cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', () => {
-    // Mount Dashboard Metrics
-    mountComponent('DashboardMetrics', DashboardMetrics);
+function mountById(elementId, component) {
+    const el = document.getElementById(elementId);
+    if (el && !el.hasAttribute('data-react-mounted')) {
+        el.setAttribute('data-react-mounted', 'true');
+        const root = ReactDOM.createRoot(el);
+        root.render(React.createElement(component));
+    }
+}
 
-    // Mount Document Viewer
+// Inicializar componentes cuando el DOM esté listo o inmediatamente si ya cargó
+function initReactRoots() {
+    // GTIC: Registro de Actividades, Gestión de Usuarios, Roles y Permisos
+    mountComponent('ActivityLog', ActivityLog);
+    mountById('activity-log-root', ActivityLog);
+    mountComponent('UsersManagement', UsersManagement);
+    mountById('users-management-root', UsersManagement);
+    mountComponent('RolesManagement', RolesManagement);
+    mountById('roles-management-root', RolesManagement);
+    mountComponent('PermisosManagement', PermisosManagement);
+    mountById('permisos-management-root', PermisosManagement);
+
+    // OGA: Bienes Públicos / Muebles
+    mountComponent('BienesPublicos', BienesPublicos);
+    mountById('bienes-publicos-root', BienesPublicos);
+
+    // OGA: Inventario de Oficina y Consumibles
+    mountComponent('InventarioOficinas', InventarioOficinas);
+    mountById('inventario-oficinas-root', InventarioOficinas);
+    mountComponent('Consumibles', Consumibles);
+    mountById('consumibles-root', Consumibles);
+
+    // OGA: Documentos, Estanterías y Categorías
+    mountComponent('DocumentosManagement', DocumentosManagement);
+    mountById('documentos-management-root', DocumentosManagement);
+    mountComponent('EstanteriasManagement', EstanteriasManagement);
+    mountById('estanterias-management-root', EstanteriasManagement);
+    mountComponent('CategoriasManagement', CategoriasManagement);
+    mountById('categorias-management-root', CategoriasManagement);
+
+    // OGA: Carga Previa Bienes Públicos
+    mountComponent('UnidadesAdministrativasManagement', UnidadesAdministrativasManagement);
+    mountById('unidades-administrativas-root', UnidadesAdministrativasManagement);
+    mountComponent('UsuariosDeUsoManagement', UsuariosDeUsoManagement);
+    mountById('usuarios-de-uso-root', UsuariosDeUsoManagement);
+    mountComponent('UsuariosAdministrativosManagement', UsuariosAdministrativosManagement);
+    mountById('usuarios-administrativos-root', UsuariosAdministrativosManagement);
+    mountComponent('FormasAdquisicionManagement', FormasAdquisicionManagement);
+    mountById('formas-adquisicion-root', FormasAdquisicionManagement);
+    mountComponent('EstadosUsoManagement', EstadosUsoManagement);
+    mountById('estados-uso-root', EstadosUsoManagement);
+    mountComponent('ColorsManagement', ColorsManagement);
+    mountById('colors-root', ColorsManagement);
+    mountComponent('CondicionesManagement', CondicionesManagement);
+    mountById('condiciones-root', CondicionesManagement);
+
+    // OGH: Digitalización de Documentos
+    mountComponent('DigitalizacionDocumentos', DigitalizacionDocumentos);
+    mountById('digitalizacion-documentos-root', DigitalizacionDocumentos);
+
+    // Documentos & Selectores auxiliares
     mountComponent('DocumentViewer', DocumentViewer);
-
-    // Mount Estanteria Selector
     mountComponent('EstanteriaSelector', EstanteriaSelector);
 
-    // Mount Notification Center (solo si existe el elemento)
-    const notificationElement = document.getElementById('react-notification-center');
-    if (notificationElement) {
-        const root = ReactDOM.createRoot(notificationElement);
-        root.render(<NotificationCenter />);
+    // Notification Center (si existe el elemento)
+    mountById('react-notification-center', NotificationCenter);
+}
+
+if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initReactRoots);
+    } else {
+        initReactRoots();
     }
-});
+    window.addEventListener('load', initReactRoots);
+}
 
 // Exportar componentes para uso global
-window.ReactComponents = {
-    DashboardMetrics,
-    DocumentViewer,
-    EstanteriaSelector,
-    NotificationCenter
-};
+if (typeof window !== 'undefined') {
+    window.ReactComponents = {
+        ActivityLog,
+        UsersManagement,
+        RolesManagement,
+        PermisosManagement,
+        BienesPublicos,
+        InventarioOficinas,
+        Consumibles,
+        DigitalizacionDocumentos,
+        DocumentosManagement,
+        EstanteriasManagement,
+        CategoriasManagement,
+        DocumentViewer,
+        EstanteriaSelector,
+        NotificationCenter
+    };
+}
 
 // Exportar funciones helpers
 export function useFetch(url, options = {}) {
@@ -100,11 +189,20 @@ export function useDebounce(value, delay = 300) {
 }
 
 export default {
-    DashboardMetrics,
+    ActivityLog,
+    UsersManagement,
+    RolesManagement,
+    PermisosManagement,
+    BienesPublicos,
+    InventarioOficinas,
+    Consumibles,
+    DigitalizacionDocumentos,
+    DocumentosManagement,
+    EstanteriasManagement,
+    CategoriasManagement,
     DocumentViewer,
     EstanteriaSelector,
     NotificationCenter,
     useFetch,
     useDebounce
 };
-

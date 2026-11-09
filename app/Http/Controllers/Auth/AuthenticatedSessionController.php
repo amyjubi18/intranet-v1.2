@@ -53,12 +53,37 @@ class AuthenticatedSessionController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
+        if (Auth::check()) {
+            $user = Auth::user();
+            if (\Illuminate\Support\Facades\Schema::hasColumn('users', 'session_token')) {
+                $user->session_token = null;
+                $user->save();
+            }
+        }
+
         Auth::guard('web')->logout();
 
         $request->session()->invalidate();
 
         $request->session()->regenerateToken();
 
-        return redirect('/');
+        $currentModule = config('modules.current');
+        $currentHost = $request->getHost();
+        $mainHost = parse_url(preg_match('#^https?://#', config('modules.main_url', 'http://172.17.50.219')) ? config('modules.main_url', 'http://172.17.50.219') : 'http://' . config('modules.main_url', 'http://172.17.50.219'), PHP_URL_HOST);
+
+        $isMain = empty($currentModule) || in_array($currentModule, ['main', 'portal', 'all']) || ($currentHost === $mainHost) || str_contains($currentHost, '219') || str_contains($currentHost, 'localhost');
+
+        $mainUrl = rtrim(config('modules.main_url', 'http://172.17.50.219'), '/');
+
+        if (!$isMain) {
+            $param = $request->has('timeout') ? 'timeout=1' : 'logout=1';
+            return redirect("{$mainUrl}/logout?{$param}");
+        }
+
+        if ($request->has('timeout')) {
+            return redirect("{$mainUrl}/login?timeout=1");
+        }
+
+        return redirect()->route('login');
     }
 }

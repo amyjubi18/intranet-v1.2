@@ -18,7 +18,7 @@ class DigitalizacioneController extends Controller
     {
         abort_if(Gate::denies('digitalizaciones_index'), 403);
 
-        $search_general = $request->get('search_general', '');
+        $search_general = $request->get('search_general', '') ?: $request->get('search', '');
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
 
@@ -61,6 +61,26 @@ class DigitalizacioneController extends Controller
         }
 
         $digitalizaciones = $query->orderBy($sort, $direction)->paginate(15);
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'digitalizaciones' => $digitalizaciones,
+                    'areas_adscritas' => AreaAdscrita::all(),
+                    'tipo_documentos' => TipoDocumento::all(),
+                    'total' => Digitalizacione::count(),
+                    'totalDocumentos' => DigitalizacionDocumento::count(),
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('digitalizaciones_create') ?? false,
+                        'can_edit' => auth()->user()?->can('digitalizaciones_edit') ?? false,
+                        'can_destroy' => auth()->user()?->can('digitalizaciones_destroy') ?? false,
+                    ]
+                ],
+                'message' => 'Digitalizaciones obtenidas exitosamente'
+            ], 200);
+        }
 
         return view('gestion-humana.digitalizacion_documentos.index', [
             'digitalizaciones' => $digitalizaciones,

@@ -37,9 +37,41 @@
         .calendar-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 0.875rem; border-radius: 0.5rem; cursor: default; transition: all 0.2s ease; position: relative; }
         .calendar-day:not(.other-month):hover { background: rgba(30, 58, 138, 0.1); }
         .calendar-day.today { background: #1e3a8a; color: white; font-weight: 600; }
-        .calendar-day.has-birthday { position: relative; cursor: pointer; font-weight: 600; }
-        .calendar-day.has-birthday::after { content: ''; position: absolute; bottom: 4px; width: 5px; height: 5px; background: #f59e0b; border-radius: 50%; }
-        .calendar-day.today.has-birthday::after { background: #fbbf24; }
+        .calendar-day.has-birthday {
+            position: relative;
+            cursor: pointer;
+            font-weight: 700;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            line-height: 1.1;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .calendar-day.has-birthday:hover {
+            transform: scale(1.12);
+            z-index: 25;
+        }
+        .calendar-day.has-birthday.is-today-birthday {
+            background: linear-gradient(135deg, #10b981, #059669) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.45);
+        }
+        .calendar-day.has-birthday.is-urgent-birthday {
+            background: linear-gradient(135deg, #f59e0b, #ea580c) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 12px rgba(245, 158, 11, 0.4);
+        }
+        .calendar-day.has-birthday.is-near-birthday {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(59, 130, 246, 0.35);
+        }
+        .calendar-day.has-birthday.is-other-birthday {
+            background: linear-gradient(135deg, #8b5cf6, #6366f1) !important;
+            color: #ffffff !important;
+            box-shadow: 0 4px 10px rgba(139, 92, 246, 0.3);
+        }
         .calendar-day.other-month { color: var(--muted); opacity: 0.5; }
 
         /* Event calendar styles */
@@ -47,8 +79,21 @@
         .calendar-day.has-event:hover { transform: scale(1.05); }
         .calendar-day.today.has-event { color: white; }
 
-        .event-tooltip { position: fixed; background: white; border: 1px solid var(--card-border); border-radius: 0.75rem; padding: 0.75rem; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); z-index: 100; opacity: 0; visibility: hidden; transition: all 0.2s ease; max-width: 280px; }
-        .event-tooltip.show { opacity: 1; visibility: visible; }
+        .event-tooltip {
+            position: fixed;
+            background: white;
+            border: 1px solid rgba(226, 232, 240, 0.9);
+            border-radius: 0.85rem;
+            padding: 0.85rem;
+            box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22);
+            z-index: 99999;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            max-width: 320px;
+            pointer-events: none;
+        }
+        .event-tooltip.show { opacity: 1; visibility: visible; transform: translateY(-4px); }
 
         .news-card { background: rgba(255, 255, 255, 0.5); border: 1px solid var(--card-border); border-radius: 1rem; padding: 1rem; cursor: pointer; transition: all 0.2s ease; }
         .news-card:hover { background: rgba(255, 255, 255, 0.8); transform: translateX(4px); }
@@ -562,9 +607,24 @@
         let selectedEventColor = '#3b82f6';
 
         function showToast(msg, type = 'success') {
+            if (typeof Swal !== 'undefined' && (type === 'error' || type === 'warning')) {
+                Swal.fire({
+                    icon: type,
+                    title: type === 'error' ? 'Error' : 'Atención',
+                    html: msg,
+                    confirmButtonColor: '#2563eb',
+                    confirmButtonText: 'Aceptar'
+                });
+                return;
+            }
+            if (typeof window.showAppToast === 'function') {
+                window.showAppToast(msg, type);
+                return;
+            }
             const toast = document.getElementById('toast');
             const icon = document.getElementById('toastIcon');
             const msgEl = document.getElementById('toastMsg');
+            if (!toast || !msgEl) return;
             const icons = { success: '✅', error: '❌', warning: '⚠️', info: 'ℹ️' };
             icon.textContent = icons[type] || icons.success;
             msgEl.textContent = msg;
@@ -866,31 +926,73 @@
             const end = document.getElementById('eventEnd').value;
             const all_day = document.getElementById('eventAllDay').checked;
 
+            if (!title.trim()) {
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({ icon: 'warning', title: 'Campo obligatorio', text: 'El título del evento es obligatorio.', confirmButtonColor: '#2563eb' });
+                } else {
+                    showToast('El título del evento es obligatorio', 'warning');
+                }
+                return;
+            }
+
             const url = id ? `/api/events/${id}` : '/api/events';
             const method = id ? 'PUT' : 'POST';
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
 
             fetch(url, {
                 method: method,
                 headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
+                    'X-CSRF-TOKEN': token,
                     'Content-Type': 'application/json',
                     'Accept': 'application/json'
                 },
                 body: JSON.stringify({ title, descripcion, start, end, color: selectedEventColor, all_day })
             })
-            .then(response => response.json())
+            .then(async response => {
+                const data = await response.json().catch(() => ({}));
+                if (!response.ok) {
+                    let errMsg = data.message || 'Error al guardar el evento';
+                    if (data.errors) {
+                        errMsg = Object.values(data.errors).flat().join('<br>');
+                    }
+                    throw new Error(errMsg);
+                }
+                return data;
+            })
             .then(data => {
                 if (data.success) {
-                    showToast(data.message, 'success');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({
+                            icon: 'success',
+                            title: '¡Evento Guardado!',
+                            text: data.message || 'El evento ha sido registrado exitosamente.',
+                            timer: 2000,
+                            showConfirmButton: false
+                        });
+                    } else {
+                        showToast(data.message, 'success');
+                    }
                     closeEventModal();
                     loadEvents();
                 } else {
-                    showToast(data.message || 'Error al guardar', 'error');
+                    if (typeof Swal !== 'undefined') {
+                        Swal.fire({ icon: 'error', title: 'Error', html: data.message || 'Error al guardar el evento' });
+                    } else {
+                        showToast(data.message || 'Error al guardar', 'error');
+                    }
                 }
             })
             .catch(error => {
                 console.error('Error:', error);
-                showToast('Error al guardar', 'error');
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al registrar evento',
+                        html: error.message || 'No se pudo guardar el evento. Intente nuevamente.'
+                    });
+                } else {
+                    showToast(error.message || 'Error al guardar', 'error');
+                }
             });
         }
 
@@ -1010,10 +1112,10 @@
         }
         function requestForm() { window.location.href = '/intranet/Formato-Solicitud-de-Materiales.xls'; }
         function requestVacation() { window.location.href = '/intranet/FORMATO-SOLICITUD-DISFRUTE-DE-VACACIONES.xls'; }
-        function openConsumables() { showToast('Abriendo inventario de consumibles...', 'info'); }
-        function openAssets() { showToast('Abriendo inventario de bienes...', 'info'); }
-        function openMaterials() { showToast('Abriendo inventario de materiales...', 'info'); }
-        function openDigitalization() { showToast('Abriendo digitalización...', 'info'); }
+        function openConsumables() { window.location.href = "{{ route('sso.go', ['module' => 'admin', 'redirect' => '/administracion/almacenamiento_impresoras']) }}"; }
+        function openAssets() { window.location.href = "{{ route('sso.go', ['module' => 'admin', 'redirect' => '/administracion/bienes_publicos']) }}"; }
+        function openMaterials() { window.location.href = "{{ route('sso.go', ['module' => 'admin', 'redirect' => '/administracion/inventario_oficinas']) }}"; }
+        function openDigitalization() { window.location.href = "{{ route('sso.go', ['module' => 'admin', 'redirect' => '/administracion/documentos']) }}"; }
         function openConsultancy() { showToast('Abriendo servicios de consultoría...', 'info'); }
 
         function readNews(newsId) {
@@ -1184,8 +1286,30 @@
 
         function openBirthdayCalendar() {
             if (!birthdayData) {
-                showToast('Cargando calendario...', 'info');
-                loadBirthdays();
+                fetch('/api/dashboard/birthdays')
+                    .then(r => r.json())
+                    .then(data => {
+                        birthdayData = data;
+                        renderBirthdaysList(data.birthdays);
+                        if (data.birthdays && data.birthdays.length > 0) {
+                            const currentM = (new Date().getMonth() + 1);
+                            if (!data.calendar_data[currentM] || data.calendar_data[currentM].length === 0) {
+                                const nextB = data.birthdays[0];
+                                if (nextB && nextB.birthday_month) {
+                                    birthdayCalendarMonth = nextB.birthday_month - 1;
+                                }
+                            }
+                        }
+                        renderBirthdayCalendar();
+                    });
+            } else if (birthdayData.birthdays && birthdayData.birthdays.length > 0) {
+                const currentM = (new Date().getMonth() + 1);
+                if (!birthdayData.calendar_data[currentM] || birthdayData.calendar_data[currentM].length === 0) {
+                    const nextB = birthdayData.birthdays[0];
+                    if (nextB && nextB.birthday_month) {
+                        birthdayCalendarMonth = nextB.birthday_month - 1;
+                    }
+                }
             }
             document.getElementById('birthdayModal').classList.add('show');
             renderBirthdayCalendar();
@@ -1228,7 +1352,7 @@
 
             let html = '';
 
-            // Empty cells for days before the first day
+            // Celdas vacías del mes anterior
             for (let i = 0; i < firstDay; i++) {
                 const prevMonth = birthdayCalendarMonth === 0 ? 11 : birthdayCalendarMonth - 1;
                 const prevYear = birthdayCalendarMonth === 0 ? birthdayCalendarYear - 1 : birthdayCalendarYear;
@@ -1237,28 +1361,51 @@
                 html += `<div class="calendar-day other-month">${day}</div>`;
             }
 
-            // Days of the month
+            // Días del mes
             for (let day = 1; day <= daysInMonth; day++) {
                 const isToday = today.getDate() === day && today.getMonth() === birthdayCalendarMonth && today.getFullYear() === birthdayCalendarYear;
 
-                // Check for birthdays on this day
                 const monthKey = birthdayCalendarMonth + 1;
                 const birthdaysOnDay = birthdayData.calendar_data[monthKey]?.filter(b => b.day === day) || [];
 
                 let classes = 'calendar-day';
-                if (isToday) classes += ' today';
-                if (birthdaysOnDay.length > 0) classes += ' has-birthday';
+                let content = `<span>${day}</span>`;
+
+                if (birthdaysOnDay.length > 0) {
+                    classes += ' has-birthday';
+
+                    // Determinar proximidad y color
+                    const hasTodayBirthday = birthdaysOnDay.some(b => b.is_today || b.days_until === 0) || isToday;
+                    const minDays = Math.min(...birthdaysOnDay.map(b => (typeof b.days_until === 'number' ? b.days_until : 999)));
+
+                    if (hasTodayBirthday) {
+                        classes += ' is-today-birthday';
+                    } else if (minDays <= 7) {
+                        classes += ' is-urgent-birthday';
+                    } else if (minDays <= 31) {
+                        classes += ' is-near-birthday';
+                    } else {
+                        classes += ' is-other-birthday';
+                    }
+
+                    content = `
+                        <span class="text-xs font-bold">${day}</span>
+                        <span class="text-[10px] leading-none">🎂</span>
+                    `;
+                } else if (isToday) {
+                    classes += ' today';
+                }
 
                 let events = '';
                 if (birthdaysOnDay.length > 0) {
-                    const names = birthdaysOnDay.map(b => b.name).join(', ');
-                    events = ` onmouseenter="showBirthdayTooltip(event, '${names.replace(/'/g, "\\'")}')" onmouseleave="hideBirthdayTooltip()"`;
+                    const safeData = JSON.stringify(birthdaysOnDay).replace(/"/g, '&quot;');
+                    events = ` onmouseenter="showBirthdayTooltip(event, ${safeData})" onmouseleave="hideBirthdayTooltip()"`;
                 }
 
-                html += `<div class="${classes}"${events}>${day}</div>`;
+                html += `<div class="${classes}"${events}>${content}</div>`;
             }
 
-            // Fill remaining cells
+            // Rellenar celdas restantes del mes siguiente
             const totalCells = firstDay + daysInMonth;
             const remainingCells = 42 - totalCells;
             for (let day = 1; day <= remainingCells; day++) {
@@ -1267,46 +1414,90 @@
 
             document.getElementById('birthdayCalendarDays').innerHTML = html;
 
-            // Update the list below the calendar
+            // Actualizar la lista debajo del calendario
             const monthKey = birthdayCalendarMonth + 1;
             const birthdaysOnMonth = birthdayData.calendar_data[monthKey] || [];
 
             if (birthdaysOnMonth.length === 0) {
                 document.getElementById('birthdayModalList').innerHTML = `
                     <div class="text-center py-4 text-slate-400">
-                        <p>No hay cumpleaños en ${months[birthdayCalendarMonth]}</p>
+                        <p>No hay cumpleaños registrados en ${months[birthdayCalendarMonth]}</p>
                     </div>
                 `;
             } else {
-                document.getElementById('birthdayModalList').innerHTML = birthdaysOnMonth.map(b => `
-                    <div class="flex items-center gap-3 p-2 rounded-lg bg-white/5">
-                        <div class="birthday-avatar" style="width: 36px; height: 36px; font-size: 0.75rem;">${b.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}</div>
-                        <div class="flex-1">
-                            <p class="font-semibold text-sm">${b.name}</p>
-                            <p class="text-xs text-slate-400">${b.departamento}</p>
+                document.getElementById('birthdayModalList').innerHTML = birthdaysOnMonth.map(b => {
+                    const tag = (b.is_today || b.days_until === 0)
+                        ? '🎉 ¡Hoy es su cumpleaños!'
+                        : (b.days_until === 1 ? '¡Mañana!' : (b.days_until <= 30 ? `En ${b.days_until} días` : `${b.day} de ${months[birthdayCalendarMonth]}`));
+                    const badgeClass = (b.is_today || b.days_until === 0)
+                        ? 'bg-emerald-500/20 text-emerald-600 font-bold'
+                        : (b.days_until <= 7 ? 'bg-amber-500/20 text-amber-600 font-bold' : 'bg-blue-500/20 text-blue-600 font-medium');
+
+                    return `
+                        <div class="flex items-center gap-3 p-2.5 rounded-xl bg-slate-50 border border-slate-100 shadow-sm hover:bg-white transition-all">
+                            <div class="birthday-avatar" style="width: 38px; height: 38px; font-size: 0.8rem; font-weight: bold; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: white; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center;">
+                                ${b.name.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <p class="font-bold text-sm text-slate-800 truncate">${b.name}</p>
+                                <p class="text-xs text-slate-400 truncate">${b.departamento || 'Sin asignar'}</p>
+                            </div>
+                            <div class="text-right flex flex-col items-end">
+                                <span class="text-xs px-2.5 py-0.5 rounded-full ${badgeClass}">${tag}</span>
+                                <span class="text-[11px] text-slate-400 mt-0.5 font-medium">Día ${b.day}</span>
+                            </div>
                         </div>
-                        <span class="text-sm font-semibold text-amber-500">${b.day}</span>
-                    </div>
-                `).join('');
+                    `;
+                }).join('');
             }
         }
 
-        function showBirthdayTooltip(event, names) {
+        function showBirthdayTooltip(event, birthdays) {
             const tooltip = document.getElementById('birthdayTooltip');
             const namesEl = document.getElementById('birthdayTooltipNames');
             const deptEl = document.getElementById('birthdayTooltipDept');
+            if (!tooltip || !namesEl) return;
 
-            namesEl.textContent = names;
-            deptEl.textContent = 'Cumpleaños';
+            if (Array.isArray(birthdays)) {
+                let html = birthdays.map(b => {
+                    let status = (b.is_today || b.days_until === 0)
+                        ? '<span class="text-emerald-600 font-bold">🎉 ¡Hoy cumple años!</span>'
+                        : (b.days_until === 1 ? '<span class="text-amber-600 font-bold">¡Mañana!</span>' : `<span class="text-blue-600 font-semibold">En ${b.days_until} días</span>`);
+                    return `
+                        <div class="py-1.5 border-b border-slate-100 last:border-b-0">
+                            <div class="font-bold text-slate-800 text-sm flex items-center gap-1.5">
+                                <span>🎂</span>
+                                <span>${b.name}</span>
+                            </div>
+                            <div class="text-xs text-slate-500 mt-0.5 flex items-center justify-between gap-3">
+                                <span>${b.departamento || 'Sin asignar'}</span>
+                                ${status}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                namesEl.innerHTML = html;
+                if (deptEl) deptEl.textContent = '';
+            } else {
+                namesEl.textContent = birthdays;
+                if (deptEl) deptEl.textContent = 'Cumpleaños';
+            }
 
             const rect = event.target.getBoundingClientRect();
-            tooltip.style.left = (rect.left + (rect.width / 2) - 140) + 'px';
-            tooltip.style.top = (rect.top - 60) + 'px';
+            let left = rect.left + (rect.width / 2) - 130;
+            if (left < 10) left = 10;
+            if (left + 270 > window.innerWidth) left = window.innerWidth - 280;
+            let top = rect.top - 85;
+            if (top < 10) top = rect.bottom + 10;
+
+            tooltip.style.left = left + 'px';
+            tooltip.style.top = top + 'px';
             tooltip.classList.add('show');
         }
 
         function hideBirthdayTooltip() {
-            document.getElementById('birthdayTooltip').classList.remove('show');
+            const tooltip = document.getElementById('birthdayTooltip');
+            if (tooltip) tooltip.classList.remove('show');
         }
 
         document.addEventListener('DOMContentLoaded', function() {
@@ -1315,7 +1506,6 @@
             loadEvents();
             loadUserStats();
             loadNews();
-            showToast('Dashboard cargado correctamente', 'success');
         });
     </script>
 

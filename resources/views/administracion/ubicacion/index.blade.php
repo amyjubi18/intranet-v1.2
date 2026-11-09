@@ -180,7 +180,7 @@
 
     <!-- Controles -->
     <div class="px-6 mb-6 sticky top-0 z-10">
-        <div class=" rounded-2xl p-6 fade-in">
+        <div class="glass rounded-2xl p-6 fade-in">
             <div class="flex flex-wrap items-center justify-start gap-4">
                 <div class="flex flex-wrap items-center gap-4">
                     <!-- No filters for ubicacion -->

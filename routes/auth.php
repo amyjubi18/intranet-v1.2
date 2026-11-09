@@ -55,7 +55,8 @@ Route::middleware('auth')->group(function () {
 
     // Use the custom PasswordUpdateRequest for password updates with strength validation
     Route::put('password', [App\Http\Controllers\ProfileController::class, 'updatePassword'])->name('password.update');
-
-    Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
-                ->name('logout');
 });
+
+// Logout route (acepta GET y POST para permitir single sign-out entre contenedores)
+Route::match(['get', 'post'], 'logout', [AuthenticatedSessionController::class, 'destroy'])
+    ->name('logout');

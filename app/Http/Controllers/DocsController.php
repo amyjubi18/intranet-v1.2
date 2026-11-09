@@ -25,7 +25,7 @@ class DocsController extends Controller
         abort_if(Gate::denies('documentos_index'), 403);
 
         // Parámetros de búsqueda y ordenamiento
-        $searchGeneral = $request->get('search_general');
+        $searchGeneral = $request->get('search_general') ?: $request->get('search');
         $sort = $request->get('sort', 'created_at');
         $direction = $request->get('direction', 'desc');
 
@@ -42,38 +42,69 @@ class DocsController extends Controller
         // Filtro por estantería
         $estanteriaId = $request->get('estanteria_id');
 
-        $documentos = Documento::query()->with('archivos.categoria', 'estanteria')
-            // Búsqueda general
-            ->when($searchGeneral, function ($query) use ($searchGeneral) {
-                return $query->where('name', 'LIKE', '%' . $searchGeneral . '%')
+        $query = Documento::query()->with('archivos.categoria', 'estanteria', 'categoria');
+
+        // Búsqueda general
+        if ($searchGeneral) {
+            $query->where(function ($q) use ($searchGeneral) {
+                $q->where('name', 'LIKE', '%' . $searchGeneral . '%')
                     ->orWhere('description', 'LIKE', '%' . $searchGeneral . '%')
-                    ->orWhereHas('archivos', function ($q) use ($searchGeneral) {
-                        $q->where('nombre_archivo', 'LIKE', '%' . $searchGeneral . '%');
+                    ->orWhereHas('archivos', function ($sub) use ($searchGeneral) {
+                        $sub->where('nombre_archivo', 'LIKE', '%' . $searchGeneral . '%');
                     });
-            })
-            // Filtro por Nº Expediente
-            ->when($filterType === 'name' && $search, function ($query) use ($search) {
-                return $query->where('name', 'LIKE', '%' . $search . '%');
-            })
-            // Filtro por Descripción
-            ->when($filterType === 'description' && $search, function ($query) use ($search) {
-                return $query->where('description', 'LIKE', '%' . $search . '%');
-            })
-            // Filtro por rango de fechas
-            ->when($filterType === 'fecha' && $fechaDesde && $fechaHasta, function ($query) use ($fechaDesde, $fechaHasta) {
-                return $query->whereBetween('fecha', [$fechaDesde, $fechaHasta]);
-            })
-            // Filtro por estantería
-            ->when($estanteriaId, function ($query) use ($estanteriaId) {
-                return $query->where('estanteria_id', $estanteriaId);
-            })
-            ->orderBy($sort, $direction)
-            ->paginate(10);
+            });
+        }
+
+        // Filtro por Nº Expediente
+        if ($filterType === 'name' && $search) {
+            $query->where('name', 'LIKE', '%' . $search . '%');
+        }
+
+        // Filtro por Descripción
+        if ($filterType === 'description' && $search) {
+            $query->where('description', 'LIKE', '%' . $search . '%');
+        }
+
+        // Filtro por Categoría
+        if ($filterType === 'categoria_id' && $secondFilter) {
+            $query->where('categoria_id', $secondFilter);
+        }
+
+        // Filtro por rango de fechas
+        if ($filterType === 'fecha' && $fechaDesde && $fechaHasta) {
+            $query->whereBetween('fecha', [$fechaDesde, $fechaHasta]);
+        }
+
+        // Filtro por estantería
+        if ($estanteriaId) {
+            $query->where('estanteria_id', $estanteriaId);
+        }
+
+        $perPage = (int) $request->input('per_page', 10);
+        $documentos = $query->orderBy($sort, $direction)->paginate($perPage);
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'documentos' => $documentos,
+                    'categorias' => Categoria::orderBy('name')->get(),
+                    'estanterias' => Estanteria::withCount('documentos')->get(),
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('documentos_create') ?? false,
+                        'can_edit' => auth()->user()?->can('documentos_edit') ?? false,
+                        'can_destroy' => auth()->user()?->can('documentos_destroy') ?? false,
+                    ]
+                ],
+                'message' => 'Documentos obtenidos exitosamente'
+            ], 200);
+        }
 
         return view('administracion.documentos.index', [
             'documentos' => $documentos,
-            'categorias' => Categoria::all(),
-            'estanterias' => Estanteria::all(),
+            'categorias' => Categoria::orderBy('name')->get(),
+            'estanterias' => Estanteria::withCount('documentos')->get(),
             'sort' => $sort,
             'direction' => $direction,
             'search_general' => $searchGeneral
@@ -97,9 +128,15 @@ class DocsController extends Controller
      */
     public function store(Request $request)
     {
+        abort_if(Gate::denies('documentos_create'), 403);
+
         $request->validate([
-            'pdfs.*' => 'file|mimes:pdf',
-            'categoria_archivo_id.*' => 'required|exists:categorias,id'
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'fecha' => 'required|date',
+            'estanteria_id' => 'required|exists:estanterias,id',
+            'categoria_id' => 'nullable|exists:categorias,id',
+            'pdfs.*' => 'nullable|file|mimes:pdf|max:10240'
         ]);
 
         try {
@@ -118,8 +155,15 @@ class DocsController extends Controller
             if ($request->hasFile('pdfs')) {
                 $categoriasArchivos = $request->get('categoria_archivo_id', []);
 
+                // Asegurar que directorio existe
+                $destDir = public_path('archivos');
+                if (!file_exists($destDir)) {
+                    mkdir($destDir, 0755, true);
+                }
+
                 foreach ($request->file('pdfs') as $index => $pdf) {
-                    $fileName = Str::slug(pathinfo($pdf->getClientOriginalName(), PATHINFO_FILENAME), '-') . '.' . $pdf->getClientOriginalExtension();
+                    $originalName = $pdf->getClientOriginalName();
+                    $fileName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME), '-') . '.' . $pdf->getClientOriginalExtension();
                     $path = $fileName;
 
                     // Evitar conflictos de nombres
@@ -131,19 +175,36 @@ class DocsController extends Controller
 
                     DocumentoArchivo::create([
                         'documento_id' => $documento->id,
-                        'nombre_archivo' => $pdf->getClientOriginalName(),
+                        'nombre_archivo' => $originalName,
                         'ruta' => $path,
-                        'categoria_id' => $categoriasArchivos[$index] ?? null,
+                        'categoria_id' => $categoriasArchivos[$index] ?? $request->get('categoria_id'),
                         'user_id' => $request->user()->id
                     ]);
                 }
             }
 
             DB::commit();
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 200,
+                    'success' => true,
+                    'message' => 'Documento guardado correctamente',
+                    'data' => $documento->load('archivos.categoria', 'estanteria', 'categoria')
+                ], 200);
+            }
+
             return redirect()->route("administracion.documentos.index")
                 ->with('success', 'Documento(s) guardado(s) correctamente');
         } catch (Exception $e) {
             DB::rollBack();
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 500,
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 500);
+            }
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -151,18 +212,42 @@ class DocsController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(string $id)
+    public function show($id, Request $request)
     {
-        //
+        abort_if(Gate::denies('documentos_index'), 403);
+        $documento = Documento::with('archivos.categoria', 'estanteria', 'categoria')->findOrFail($id);
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => $documento
+            ], 200);
+        }
+
+        return redirect()->route('administracion.documentos.edit', $id);
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit($id)
+    public function edit($id, Request $request)
     {
         abort_if(Gate::denies('documentos_edit'), 403);
-        $documento = Documento::with('archivos.categoria', 'estanteria', 'categoria')->find($id);
+        $documento = Documento::with('archivos.categoria', 'estanteria', 'categoria')->findOrFail($id);
+
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'documento' => $documento,
+                    'categorias' => Categoria::orderBy('name')->get(),
+                    'estanterias' => Estanteria::all()
+                ]
+            ], 200);
+        }
+
         return view('administracion.documentos.edit', [
             'documento' => $documento,
             'categorias' => Categoria::orderBy('name')->get(),
@@ -173,8 +258,21 @@ class DocsController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Documento $documento)
+    public function update(Request $request, $id)
     {
+        abort_if(Gate::denies('documentos_edit'), 403);
+
+        $documento = Documento::findOrFail($id);
+
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'required|string',
+            'fecha' => 'required|date',
+            'estanteria_id' => 'required|exists:estanterias,id',
+            'categoria_id' => 'nullable|exists:categorias,id',
+            'pdfs.*' => 'nullable|file|mimes:pdf|max:10240'
+        ]);
+
         try {
             DB::beginTransaction();
 
@@ -191,8 +289,8 @@ class DocsController extends Controller
             if ($request->has('categoria_existente')) {
                 foreach ($request->get('categoria_existente') as $archivoId => $categoriaId) {
                     $archivo = DocumentoArchivo::find($archivoId);
-                    if ($archivo) {
-                        $archivo->update(['categoria_id' => $categoriaId]);
+                    if ($archivo && $archivo->documento_id == $documento->id) {
+                        $archivo->update(['categoria_id' => $categoriaId ?: null]);
                     }
                 }
             }
@@ -201,8 +299,14 @@ class DocsController extends Controller
             if ($request->hasFile('pdfs')) {
                 $categoriasArchivos = $request->get('categoria_archivo_id', []);
 
+                $destDir = public_path('archivos');
+                if (!file_exists($destDir)) {
+                    mkdir($destDir, 0755, true);
+                }
+
                 foreach ($request->file('pdfs') as $index => $pdf) {
-                    $fileName = Str::slug(pathinfo($pdf->getClientOriginalName(), PATHINFO_FILENAME), '-') . '.' . $pdf->getClientOriginalExtension();
+                    $originalName = $pdf->getClientOriginalName();
+                    $fileName = Str::slug(pathinfo($originalName, PATHINFO_FILENAME), '-') . '.' . $pdf->getClientOriginalExtension();
                     $path = $fileName;
 
                     // Evitar conflictos de nombres
@@ -214,19 +318,36 @@ class DocsController extends Controller
 
                     DocumentoArchivo::create([
                         'documento_id' => $documento->id,
-                        'nombre_archivo' => $pdf->getClientOriginalName(),
+                        'nombre_archivo' => $originalName,
                         'ruta' => $path,
-                        'categoria_id' => $categoriasArchivos[$index] ?? null,
+                        'categoria_id' => $categoriasArchivos[$index] ?? $request->get('categoria_id'),
                         'user_id' => $request->user()->id
                     ]);
                 }
             }
 
             DB::commit();
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 200,
+                    'success' => true,
+                    'message' => 'Documento actualizado correctamente',
+                    'data' => $documento->fresh()->load('archivos.categoria', 'estanteria', 'categoria')
+                ], 200);
+            }
+
             return redirect()->route('administracion.documentos.index')
                 ->with('success', 'Documento actualizado correctamente');
         } catch (Exception $e) {
             DB::rollBack();
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 500,
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 500);
+            }
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -234,24 +355,42 @@ class DocsController extends Controller
     /**
      * Eliminar un archivo específico
      */
-    public function destroyArchivo(DocumentoArchivo $archivo)
+    public function destroyArchivo($id, Request $request)
     {
         try {
             DB::beginTransaction();
 
+            $archivo = DocumentoArchivo::findOrFail($id);
+
             // Eliminar archivo físico
             if ($archivo->ruta && file_exists(public_path('archivos/' . $archivo->ruta))) {
-                unlink(public_path('archivos/' . $archivo->ruta));
+                @unlink(public_path('archivos/' . $archivo->ruta));
             }
 
             $documento_id = $archivo->documento_id;
             $archivo->delete();
 
             DB::commit();
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 200,
+                    'success' => true,
+                    'message' => 'Archivo eliminado correctamente'
+                ], 200);
+            }
+
             return redirect()->route('administracion.documentos.edit', $documento_id)
                 ->with('success', 'Archivo eliminado correctamente');
         } catch (Exception $e) {
             DB::rollBack();
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 500,
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 500);
+            }
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }
@@ -259,17 +398,19 @@ class DocsController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Documento $documento)
+    public function destroy($id, Request $request)
     {
         abort_if(Gate::denies('documentos_destroy'), 403);
 
         try {
             DB::beginTransaction();
 
+            $documento = Documento::with('archivos')->findOrFail($id);
+
             // Eliminar todos los archivos asociados
             foreach ($documento->archivos as $archivo) {
                 if ($archivo->ruta && file_exists(public_path('archivos/' . $archivo->ruta))) {
-                    unlink(public_path('archivos/' . $archivo->ruta));
+                    @unlink(public_path('archivos/' . $archivo->ruta));
                 }
                 $archivo->delete();
             }
@@ -277,10 +418,26 @@ class DocsController extends Controller
             $documento->delete();
 
             DB::commit();
+
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 200,
+                    'success' => true,
+                    'message' => 'Documento(s) eliminado(s) correctamente'
+                ], 200);
+            }
+
             return redirect()->route('administracion.documentos.index')
                 ->with('success', 'Documento(s) eliminado(s) correctamente');
         } catch (Exception $e) {
             DB::rollBack();
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json([
+                    'status' => 500,
+                    'success' => false,
+                    'message' => $e->getMessage()
+                ], 500);
+            }
             return back()->withErrors(['error' => $e->getMessage()]);
         }
     }

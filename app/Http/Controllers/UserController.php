@@ -17,6 +17,9 @@ class UserController extends Controller
     public function index(Request $request)
     {
         if (!auth()->check()) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['error' => 'unauthenticated', 'message' => 'Tu sesión ha expirado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
 
@@ -29,6 +32,17 @@ class UserController extends Controller
         $direction = in_array($direction, ['asc', 'desc']) ? $direction : 'desc';
 
         $users = User::query()->with('roles');
+
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $users->where(function($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('cedula', 'like', "%{$search}%")
+                  ->orWhere('lastname', 'like', "%{$search}%");
+            });
+        }
 
         // Filtro avanzado por tipo de campo
         if ($request->filled('filterType') && $request->filled('secondFilter') && $request->secondFilter != '') {
@@ -105,6 +119,36 @@ class UserController extends Controller
         // Obtener roles para el filtro
         $roles = Role::all()->pluck('name', 'id');
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'users' => $users,
+                    'roles' => Role::orderBy('name')->get(['id', 'name']),
+                    'departamentos' => [
+                        'GTIC',
+                        'OGH',
+                        'OAC',
+                        'Consultoria Juridica',
+                        'GEDP',
+                        'OPP',
+                        'OGA',
+                        'Presidencia',
+                        'Auditoría Interna',
+                    ],
+                    'current_user_id' => auth()->id(),
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('user_create') ?? false,
+                        'can_edit' => auth()->user()?->can('user_edit') ?? false,
+                        'can_destroy' => auth()->user()?->can('user_destroy') ?? false,
+                        'can_export' => true,
+                    ]
+                ],
+                'message' => 'Usuarios obtenidos exitosamente'
+            ], 200);
+        }
+
         return view('users.index', [
             'users' => $users,
             'roles' => $roles,
@@ -141,8 +185,13 @@ class UserController extends Controller
     public function store(UserCreateRequest $request)
     {
         if (!auth()->check()) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['error' => 'unauthenticated', 'message' => 'Tu sesión ha expirado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
+
+        abort_if(Gate::denies('user_create'), 403);
 
         // Crear usuario con todos los campos
         $user = User::create([
@@ -161,11 +210,11 @@ class UserController extends Controller
         // Asignar roles - sincronizar por nombre, no por ID
         $roles = $request->input('roles');
         if (!empty($roles)) {
-            // Convertir ID a nombre de rol (maneja integer o array)
+            // Convertir ID o nombre a rol
             $roleNames = [];
             $roleIds = is_array($roles) ? $roles : [$roles];
             foreach ($roleIds as $roleId) {
-                $role = Role::findById($roleId, 'web');
+                $role = is_numeric($roleId) ? Role::findById($roleId, 'web') : Role::findByName($roleId, 'web');
                 if ($role) {
                     $roleNames[] = $role->name;
                 }
@@ -178,20 +227,40 @@ class UserController extends Controller
         // Manejar foto de perfil si se subió
         if ($request->hasFile('profile_photo')) {
             $file = $request->file('profile_photo');
-            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $guessedExt = strtolower($file->guessExtension() ?? '');
+            $safeExt = in_array($guessedExt, ['jpeg', 'jpg', 'png', 'webp'])
+                ? ($guessedExt === 'jpeg' ? 'jpg' : $guessedExt)
+                : 'jpg';
+            $filename = time() . '_' . $user->id . '_' . Str::random(6) . '.' . $safeExt;
             $file->move(public_path('archivos/avatars'), $filename);
             $user->profile_photo = $filename;
             $user->save();
         }
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            $user->load('roles');
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario creado correctamente',
+                'data' => $user
+            ], 201);
+        }
+
         return redirect()->route('users.index')->with('success', 'Usuario creado correctamente');
     }
 
-    public function show(User $user)
+    public function show(User $user, Request $request)
     {
         $user->load('roles');
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => $user,
+                'message' => 'Usuario obtenido exitosamente'
+            ], 200);
+        }
         return view('users.show', compact('user'));
-
     }
 
     public function edit(User $user)
@@ -223,8 +292,13 @@ class UserController extends Controller
     public function update(UserEditRequest $request, User $user)
     {
         if (!auth()->check()) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['error' => 'unauthenticated', 'message' => 'Tu sesión ha expirado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
+
+        abort_if(Gate::denies('user_edit'), 403);
 
         // Actualizar datos del usuario
         $data = [
@@ -247,14 +321,13 @@ class UserController extends Controller
 
         $user->update($data);
 
-        // Actualizar roles - convertir IDs a nombres de rol
+        // Actualizar roles - convertir IDs o nombres a rol
         $roles = $request->input('roles');
         if (!empty($roles)) {
-            // Convertir ID a nombre de rol (maneja integer o array)
             $roleNames = [];
             $roleIds = is_array($roles) ? $roles : [$roles];
             foreach ($roleIds as $roleId) {
-                $role = Role::findById($roleId, 'web');
+                $role = is_numeric($roleId) ? Role::findById($roleId, 'web') : Role::findByName($roleId, 'web');
                 if ($role) {
                     $roleNames[] = $role->name;
                 }
@@ -271,24 +344,43 @@ class UserController extends Controller
                 unlink(public_path('archivos/avatars/' . $user->profile_photo));
             }
             $file = $request->file('profile_photo');
-            $filename = time() . '_' . $user->id . '.' . $file->getClientOriginalExtension();
+            $guessedExt = strtolower($file->guessExtension() ?? '');
+            $safeExt = in_array($guessedExt, ['jpeg', 'jpg', 'png', 'webp'])
+                ? ($guessedExt === 'jpeg' ? 'jpg' : $guessedExt)
+                : 'jpg';
+            $filename = time() . '_' . $user->id . '_' . Str::random(6) . '.' . $safeExt;
             $file->move(public_path('archivos/avatars'), $filename);
             $user->profile_photo = $filename;
             $user->save();
         }
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            $user->load('roles');
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario actualizado correctamente',
+                'data' => $user
+            ], 200);
+        }
+
         return redirect()->route('users.index')->with('success', 'Usuario actualizado correctamente');
     }
 
-    public function destroy(User $user)
+    public function destroy(User $user, Request $request)
     {
         if (!auth()->check()) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'Tu sesión ha expirado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
         }
 
         abort_if(Gate::denies('user_destroy'), 403);
 
         if (auth()->user()->id == $user->id) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'No puedes eliminar tu propia cuenta'], 422);
+            }
             return redirect()->route('users.index')->with('error', 'No puedes eliminar tu propia cuenta');
         }
 
@@ -304,8 +396,15 @@ class UserController extends Controller
             // Eliminar el usuario
             $user->delete();
 
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => true, 'message' => 'Usuario eliminado correctamente']);
+            }
+
             return back()->with('success', 'Usuario eliminado correctamente');
         } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->is('api/*')) {
+                return response()->json(['success' => false, 'message' => 'No se puede eliminar el usuario porque tiene registros asociados'], 422);
+            }
             return back()->with('error', 'No se puede eliminar el usuario porque tiene registros asociados');
         }
     }

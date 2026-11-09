@@ -5,6 +5,7 @@ namespace App\Providers;
 use Carbon\Carbon;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\View;
+use Illuminate\Pagination\Paginator;
 use App\Models\User;
 use App\Observers\UserObserver;
 
@@ -23,6 +24,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Configurar paginador predeterminado uniforme para todos los contenedores
+        Paginator::useTailwind();
+        Paginator::defaultView('vendor.pagination.tailwind');
+
         // Registrar el ViewComposer para notificaciones
         View::composer('layouts.app', \App\Http\View\Composers\NotificationComposer::class);
 

@@ -19,6 +19,20 @@ class RedirectIfAuthenticated
     {
         $guards = empty($guards) ? [null] : $guards;
 
+        // Si la petición a login incluye indicación de logout o proviene de un contenedor secundario (.250, .251, .252)
+        $referer = (string) $request->headers->get('referer', '');
+        $isFromSecondary = str_contains($referer, '250') || str_contains($referer, '251') || str_contains($referer, '252');
+
+        if ($request->has('logout') || $request->has('timeout') || ($request->has('action') && $request->action === 'logout') || $isFromSecondary) {
+            foreach ($guards as $guard) {
+                Auth::guard($guard)->logout();
+            }
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return $next($request);
+        }
+
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
                 return redirect(RouteServiceProvider::HOME);

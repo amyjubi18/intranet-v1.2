@@ -69,6 +69,29 @@ class CartuchoController extends Controller
         $all_cartuchos = Cartucho::all();
         $gerencias = \App\Models\Gerencia::with('area')->get(); // Para el filtro y mostrar gerencia
 
+        if ($request->wantsJson() || $request->is('api/*')) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'data' => [
+                    'cartuchos' => $cartuchos,
+                    'catalogs' => [
+                        'impresoras' => $impresoras,
+                        'colores' => $colores,
+                        'fabricantes' => $fabricantes,
+                        'all_cartuchos' => $all_cartuchos,
+                        'gerencias' => $gerencias,
+                    ],
+                    'permissions' => [
+                        'can_create' => auth()->user()?->can('cartucho_create') ?? false,
+                        'can_edit' => auth()->user()?->can('cartucho_edit') ?? false,
+                        'can_destroy' => auth()->user()?->can('cartucho_destroy') ?? false,
+                    ]
+                ],
+                'message' => 'Consumibles obtenidos exitosamente'
+            ], 200);
+        }
+
         return view('administracion.consumibles.index', [
             'cartuchos' => $cartuchos,
             'impresoras' => $impresoras,

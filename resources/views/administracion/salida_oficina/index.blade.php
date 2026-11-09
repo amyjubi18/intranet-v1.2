@@ -13,6 +13,36 @@
     @keyframes animateFadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
     .record-card { transition: all 0.3s ease; }
     .record-card:hover { transform: translateY(-4px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04); }
+    
+    /* Filtros con buscador */
+    .searchable-select { position: relative; z-index: 99999; }
+    .searchable-select-dropdown {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: #ffffff !important;
+        border: 1px solid rgba(15,23,42,0.15);
+        backdrop-filter: blur(12px);
+        border-radius: 0.75rem;
+        margin-top: 0.25rem;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 999999 !important;
+        opacity: 0;
+        visibility: hidden;
+        transform: translateY(-10px);
+        transition: all 0.2s ease;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+    }
+    .searchable-select-dropdown.open { opacity: 1; visibility: visible; transform: translateY(0); }
+    .searchable-select-search { padding: 0.75rem; border-bottom: 1px solid rgba(15,23,42,0.08); }
+    .searchable-select-search input { width: 100%; background: transparent; border: none; outline: none; font-size: 0.875rem; color: #0f172a; }
+    .searchable-select-options { max-height: 200px; overflow-y: auto; }
+    .searchable-select-option { padding: 0.75rem; cursor: pointer; transition: 0.2s; color: #64748b; }
+    .searchable-select-option:hover { background: rgba(30,58,138,0.08); color: #1e3a8a; }
+    .searchable-select-option.selected { background: #1e3a8a; color: white !important; }
+    .searchable-select-option.hidden { display: none; }
 </style>
 
 <x-app-layout>
@@ -89,12 +119,25 @@
     <form method="GET" action="{{ route('administracion.salida_oficina.index') }}" id="filterForm">
         <div class="px-6 mb-6">
             <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
-                <div class="flex flex-wrap items-center justify-between gap-4">
-                    <div class="flex flex-wrap items-center gap-4">
-                        {{-- <button type="button" onclick="toggleAdvancedFilters()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">Filtros Avanzados</button> --}}
-                        {{-- <select id="filterType" name="filterType" onchange="updateSecondFilter()" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('filterType') ? 'bg-blue-100 border-blue-500' : '' }}" style="display:none;">
- --}}
+                <div class="flex flex-col gap-4">
+                    <!-- Fila de acciones (Exportar, Eliminar Seleccionados, Eliminar Todo, Nuevo) -->
+                    <div class="flex flex-wrap items-center justify-end gap-3 pb-4 border-b border-gray-100">
+                        <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
+                            <option value="">📤 Exportar</option>
+                            <option value="{{ route('administracion.salida_oficina.export.excel', request()->all()) }}">Exportar a Excel</option>
+                            <option value="{{ route('administracion.salida_oficina.export.pdf', request()->all()) }}">Exportar a PDF</option>
+                        </select>
+                        @can('salidaofic_destroy')
+                        <button type=button onclick="confirmDeleteSelected()" id="deleteSelectedBtn" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm" disabled><span>🗑️</span> Eliminar Seleccionados</button>
+                        <button type=button onclick="confirmDeleteAll()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm"><span>⚠️</span> Eliminar Todo</button>
+                        @endcan
+                        @can('salidaofic_create')
+                        <a href="{{ route('administracion.salida_oficina.create') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"><span>➕</span> Nuevo</a>
+                        @endcan
+                    </div>
 
+                    <!-- Fila de filtros -->
+                    <div class="flex flex-wrap items-center gap-4">
                         <select id="filterType" onchange="updateSecondFilter()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('gerencia') || request('area') || request('articulo') ||  request('busqueda') || request('fecha_desde') || request('fecha_hasta') || request('fecha_ingreso_desde') || request('fecha_ingreso_hasta') ? 'bg-blue-700 border-blue-400' : '' }}">
                             <option value="">Seleccionar filtro</option>
                             <option value="gerencia" {{ request('gerencia') ? 'selected' : '' }}>Gerencia</option>
@@ -102,89 +145,66 @@
                             <option value="articulo" {{ request('articulo') ? 'selected' : '' }}>Artículo</option>
                             <option value="busqueda" {{ request('busqueda') ? 'selected' : '' }}>Búsqueda General</option>
                             <option value="fecha" {{ (request('fecha_desde') || request('fecha_hasta')) ? 'selected' : '' }}>Fecha de Salida</option>
-                        <option value="fecha_ingreso" {{ (request('fecha_ingreso_desde') || request('fecha_ingreso_hasta')) ? 'selected' : '' }}>Fecha de Ingreso</option>
+                            <option value="fecha_ingreso" {{ (request('fecha_ingreso_desde') || request('fecha_ingreso_hasta')) ? 'selected' : '' }}>Fecha de Ingreso</option>
                         </select>
 
-
-                        
                         <!-- Filtro secundario - Dinámico según selección -->
-                    <div id="secondFilterContainer" class="relative" style="z-index: 99999;">
-                        <select id="secondFilter" onchange="applySelectFilter()" class="glass bg-blue-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('gerencia') || request('area') || request('articulo') ? 'bg-blue-200 border-blue-500' : '' }}" disabled>
-                            <option value="">Primero selecciona un filtro</option>
-                        </select>
-                               @if(request('gerencia'))
-                                @foreach($gerencias->sortBy('gerencia') as $gerencia)
-                                <option value="{{ $gerencia->id }}" {{ request('gerencia') == $gerencia->id ? 'selected' : '' }}>{{ $gerencia->gerencia }} ({{ $gerencia->area->area ?? "N/A" }})</option>
-                                @endforeach
-                            @endif
-                            @if(request('area'))
-                                @foreach($areas as $area)
-                                <option value="{{ $area->id }}" {{ request('area') == $area->id ? 'selected' : '' }}>{{ $area->area }}</option>
-                                @endforeach
-                            @endif
+                        <div id="secondFilterContainer" class="relative" style="z-index: 99999;">
+                            <select id="secondFilter" onchange="applySelectFilter()" class="glass bg-blue-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('gerencia') || request('area') || request('articulo') ? 'bg-blue-200 border-blue-500' : '' }}" {{ request('gerencia') || request('area') || request('articulo') ? '' : 'disabled' }}>
+                                <option value="">Primero selecciona un filtro</option>
+                                @if(request('gerencia'))
+                                    @foreach(->sortBy('gerencia') as )
+                                    <option value="{{ ->id }}" {{ request('gerencia') == ->id ? 'selected' : '' }}>{{ ->gerencia }} ({{ ->area->area ?? "N/A" }})</option>
+                                    @endforeach
+                                @elseif(request('area'))
+                                    @foreach( as )
+                                    <option value="{{ ->id }}" {{ request('area') == ->id ? 'selected' : '' }}>{{ ->area }}</option>
+                                    @endforeach
                                 @elseif(request('articulo'))
-                                    @foreach($articulos as $articulo)
-                                    <option value="{{ $articulo->id }}" {{ request('articulo') == $articulo->id ? 'selected' : '' }}>{{ str_pad($articulo->id, 4, '0', STR_PAD_LEFT) }} - {{ $articulo->articulo }}</option>
+                                    @foreach( as )
+                                    <option value="{{ ->id }}" {{ request('articulo') == ->id ? 'selected' : '' }}>{{ str_pad(->id, 4, '0', STR_PAD_LEFT) }} - {{ ->articulo }}</option>
                                     @endforeach
                                 @endif
                             </select>
 
+                            <!-- Filtro con buscador personalizado -->
+                            <div id="searchableFilter" class="searchable-select hidden">
+                                <button type="button" id="searchableFilterButton" class="glass rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full text-left flex items-center justify-between">
+                                    <span id="searchableFilterText">Primero selecciona un filtro</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400">
+                                        <polyline points="6,9 12,15 18,9"/>
+                                    </svg>
+                                </button>
 
+                                <div id="searchableFilterDropdown" class="searchable-select-dropdown">
+                                    <div class="searchable-select-search">
+                                        <input type="text" id="searchableFilterInput" placeholder="Buscar...">
+                                    </div>
+                                    <div id="searchableFilterOptions" class="searchable-select-options"></div>
+                                </div>
+                            </div>
+                        </div>
 
-                        <!-- Filtro con buscador personalizado -->
-                        <div id="searchableFilter" class="searchable-select hidden">
-        <button type="button" id="searchableFilterButton" class="glass rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full text-left flex items-center justify-between">
-            <span id="searchableFilterText">Primero selecciona un filtro</span>
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400">
-                <polyline points="6,9 12,15 18,9"/>
-            </svg>
-        </button>
+                        <div id="dateRangeFilter" class="hidden">
+                            <input type="text" id="dateRangePicker" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" placeholder="Seleccionar rango de fechas">
+                            <input type="hidden" name="fecha_desde" id="fecha_desde" value="{{ request('fecha_desde') }}">
+                            <input type="hidden" name="fecha_hasta" id="fecha_hasta" value="{{ request('fecha_hasta') }}">
+                        </div>
 
-        <div id="searchableFilterDropdown" class="searchable-select-dropdown">
-            <div class="searchable-select-search">
-                <input type="text" id="searchableFilterInput" placeholder="Buscar...">
-            </div>
-            <div id="searchableFilterOptions" class="searchable-select-options"></div>
-        </div>
-    </div>
-    
-    <div id="dateRangeFilter" class="hidden">
-        <input type="text" id="dateRangePicker" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" placeholder="Seleccionar rango de fechas">
-        <input type="hidden" name="fecha_desde" id="fecha_desde" value="{{ request('fecha_desde') }}">
-        <input type="hidden" name="fecha_hasta" id="fecha_hasta" value="{{ request('fecha_hasta') }}">
-    </div>
                         <!-- Input de fecha de ingreso -->
-                    <div id="dateIngresoRangeFilter" class="hidden">
-                        <input type="text" id="dateIngresoRangePicker" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" placeholder="Seleccionar rango de fechas">
-                        <input type="hidden" name="fecha_ingreso_desde" id="fecha_ingreso_desde" value="{{ request('fecha_ingreso_desde') }}">
-                        <input type="hidden" name="fecha_ingreso_hasta" id="fecha_ingreso_hasta" value="{{ request('fecha_ingreso_hasta') }}">
-                    </div>
+                        <div id="dateIngresoRangeFilter" class="hidden">
+                            <input type="text" id="dateIngresoRangePicker" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" placeholder="Seleccionar rango de fechas">
+                            <input type="hidden" name="fecha_ingreso_desde" id="fecha_ingreso_desde" value="{{ request('fecha_ingreso_desde') }}">
+                            <input type="hidden" name="fecha_ingreso_hasta" id="fecha_ingreso_hasta" value="{{ request('fecha_ingreso_hasta') }}">
+                        </div>
 
-                         <!-- Input de texto para búsqueda -->
+                        <!-- Input de texto para búsqueda -->
                         <input type="text" id="textFilter" placeholder="Presiona Enter para buscar..." value="{{ request('busqueda') }}" class="glass rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('busqueda') ? 'bg-blue-200 border-blue-500' : '' }} hidden">
 
                         <!-- Botón para limpiar filtros -->
                         <button type="button" onclick="clearFilters()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
                             🗑️ Limpiar
                         </button>
-                    </div>
-
-
-
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
-                            <option value="">📤 Exportar</option>
-                            <option value="{{ route('administracion.salida_oficina.export.excel', request()->all()) }}">Exportar a Excel</option>
-                            <option value="{{ route('administracion.salida_oficina.export.pdf', request()->all()) }}">Exportar a PDF</option>
-                        </select>
-                        @can('salidaofic_destroy')
-                        <button type="button" onclick="confirmDeleteSelected()" id="deleteSelectedBtn" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm" disabled><span>🗑️</span> Eliminar Seleccionados</button>
-                        <button type="button" onclick="confirmDeleteAll()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm"><span>⚠️</span> Eliminar Todo</button>
-                        @endcan
-                        @can('salidaofic_create')
-                        <a href="{{ route('administracion.salida_oficina.create') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"><span>➕</span> Nuevo</a>
-                        @endcan
-                    </div>
                     </div>
                 </div>
             </div>
@@ -309,7 +329,6 @@
             </div>
         </div>
         @endif
-    </div>
 
     <!-- Registros de Salida Agrupados por Artículo -->
     <div class="px-6 mb-8">

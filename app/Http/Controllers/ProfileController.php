@@ -54,8 +54,12 @@ class ProfileController extends Controller
                 unlink(public_path('archivos/avatars/' . $user->profile_photo));
             }
 
-            // Generar nombre único para la nueva foto
-            $photoName = time() . '_' . uniqid() . '.' . $photo->getClientOriginalExtension();
+            // Generar nombre seguro para la nueva foto basado en tipo real de imagen
+            $guessedExt = strtolower($photo->guessExtension() ?? '');
+            $safeExt = in_array($guessedExt, ['jpeg', 'jpg', 'png', 'webp', 'gif'])
+                ? ($guessedExt === 'jpeg' ? 'jpg' : $guessedExt)
+                : 'jpg';
+            $photoName = time() . '_' . uniqid() . '.' . $safeExt;
 
             // Mover la foto al directorio de avatars
             $photo->move(public_path('archivos/avatars'), $photoName);

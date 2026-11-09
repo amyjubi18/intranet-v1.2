@@ -58,6 +58,7 @@
             font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 35%, #cbd5e1 70%, #94a3b8 100%);
             color:#1e293b;
+            overflow-x: hidden;
         }
         .glass{ background:var(--card-bg); border:1px solid var(--card-border); backdrop-filter:blur(8px); }
         .btn{ display:inline-flex; align-items:center; gap:.5rem; border-radius:.75rem; padding:.625rem .9rem; font-weight:600; transition:.2s; border:1px solid var(--card-border); }
@@ -76,10 +77,10 @@
             border-right:1px solid rgba(255,255,255,0.1);
             backdrop-filter:blur(12px);
             z-index:40;
-            transition:all .3s ease;
+            transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sidebar.collapsed{
-            width:80px;
+            transform: translateX(-100%);
         }
         .sidebar-item{
             display:flex;
@@ -93,31 +94,32 @@
             color:#ffffff;
             position:relative;
         }
-        .sidebar.collapsed .sidebar-item{
-            padding:.75rem;
-            margin:.25rem .5rem;
-            justify-content:center;
-        }
-        .sidebar.collapsed .sidebar-item span{
-            display:none;
-        }
         .sidebar-item:hover{
             background:rgba(255,255,255,0.1);
             color:#ffffff;
             transform:translateX(4px);
         }
         .sidebar-item.active{
-            background:rgba(255,255,255,0.2);
-            color:#ffffff;
-            box-shadow:0 4px 12px rgba(0,0,0,0.3);
+            background:rgba(255,255,255,0.22) !important;
+            color:#ffffff !important;
+            font-weight:700 !important;
+            border-left:4px solid #60a5fa !important;
+            padding-left:0.75rem !important;
+            box-shadow:0 4px 14px rgba(0,0,0,0.35) !important;
         }
         .main-content{
             margin-left:280px;
             min-height:100vh;
-            transition:margin-left .3s ease;
+            transition: margin-left .3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .main-content.sidebar-collapsed{
-            margin-left:80px;
+            margin-left:0 !important;
+        }
+        #menuToggle{
+            display:none;
+        }
+        .main-content.sidebar-collapsed #menuToggle{
+            display:inline-flex !important;
         }
         .stat-card{
             background:var(--card-bg);
@@ -251,35 +253,12 @@
             display: none;
         }
        
-        .sidebar.collapsed .sidebar-header-content{
-            display:none;
-        }
-        .sidebar.collapsed .sidebar-header{
-            padding:1rem;
-            justify-content:center;
-        }
-        .sidebar.collapsed .sidebar-nav{
-            padding:1rem 0.5rem;
-        }
-        .sidebar.collapsed .sidebar-bottom{
-            padding:1rem 0.5rem;
-        }
-        .sidebar.collapsed .sidebar-bottom > div:not(.sidebar-item){
-            display:none;
-        }
         @media (max-width: 1024px) {
-            .sidebar { transform: translateX(-100%); }
-            .main-content { margin-left: 0; }
-            .main-content.sidebar-collapsed { margin-left: 0; }
+            .sidebar { transform: translateX(-100%); width: 280px; }
             .sidebar.open { transform: translateX(0); }
-            .sidebar.collapsed { width: 280px; }
-            .sidebar.collapsed .sidebar-item { padding: .75rem 1.25rem; margin: .25rem .75rem; justify-content: flex-start; }
-            .sidebar.collapsed .sidebar-item span { display: inline; }
-            .sidebar.collapsed .sidebar-header-content { display: block; }
-            .sidebar.collapsed .sidebar-header { padding: 1.5rem; justify-content: flex-start; }
-            .sidebar.collapsed .sidebar-nav { padding: 1rem; }
-            .sidebar.collapsed .sidebar-bottom { padding: 1rem; }
-            .sidebar.collapsed .sidebar-bottom > div:not(.sidebar-item) { display: block; }
+            .main-content { margin-left: 0 !important; }
+            .main-content.sidebar-collapsed { margin-left: 0 !important; }
+            #menuToggle { display: inline-flex !important; }
         }
     </style>
 </head>
@@ -300,7 +279,7 @@
             <div class="glass rounded-2xl p-6 mb-6">
                 <div class="flex items-center justify-between">
                     <div class="flex items-center gap-4">
-                        <button id="menuToggle" class="lg:hidden btn btn-secondary">
+                        <button id="menuToggle" type="button" class="btn btn-secondary shadow-sm hover:bg-white transition-all mr-2" onclick="toggleSidebar()" title="Mostrar menú">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="3" y1="6" x2="21" y2="6"/>
                                 <line x1="3" y1="12" x2="21" y2="12"/>
@@ -394,46 +373,39 @@
             }
         });
 
-        // Menu toggle para móvil
-        document.getElementById('menuToggle').addEventListener('click', () => {
-            const sidebar = document.querySelector('.sidebar');
+        function closeSidebar() {
+            const sidebar = document.getElementById('sidebar');
             const backdrop = document.getElementById('sidebarBackdrop');
-            sidebar.classList.toggle('open');
-            if (sidebar.classList.contains('open')) {
-                backdrop.classList.remove('hidden');
-            } else {
+            if (sidebar) {
+                sidebar.classList.remove('open');
+            }
+            if (backdrop) {
                 backdrop.classList.add('hidden');
             }
-        });
-
-        function closeSidebar() {
-            document.querySelector('.sidebar').classList.remove('open');
-            document.getElementById('sidebarBackdrop').classList.add('hidden');
         }
 
-        // Toggle sidebar collapse/expand
+        // Toggle sidebar collapse/expand (unificado para móvil y escritorio)
         function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
             const mainContent = document.getElementById('mainContent');
-            const toggleIcon = document.getElementById('sidebarToggleIcon');
-            const toggleText = document.getElementById('sidebarToggleText');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (!sidebar) return;
 
-            const isCollapsed = sidebar.classList.contains('collapsed');
-
-            if (isCollapsed) {
-                // Expandir sidebar
-                sidebar.classList.remove('collapsed');
-                mainContent.classList.remove('sidebar-collapsed');
-                if (toggleIcon) toggleIcon.innerHTML = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
-                if (toggleText) toggleText.textContent = 'Ocultar Menú';
-                showToast('Menú expandido', 'info');
+            if (window.innerWidth <= 1024) {
+                // Móvil / tablet: drawer overlay con backdrop
+                const isOpen = sidebar.classList.toggle('open');
+                if (backdrop) {
+                    backdrop.classList.toggle('hidden', !isOpen);
+                }
             } else {
-                // Colapsar sidebar
-                sidebar.classList.add('collapsed');
-                mainContent.classList.add('sidebar-collapsed');
-                if (toggleIcon) toggleIcon.innerHTML = '<path d="M3 12h18m-9-9l9 9-9 9"/>';
-                if (toggleText) toggleText.textContent = 'Mostrar Menú';
-                showToast('Menú contraído', 'info');
+                // Escritorio: ocultar completamente el menú a la izquierda
+                const isCollapsed = sidebar.classList.toggle('collapsed');
+                if (mainContent) {
+                    mainContent.classList.toggle('sidebar-collapsed', isCollapsed);
+                }
+                try {
+                    localStorage.setItem('sidebar_collapsed', isCollapsed ? '1' : '0');
+                } catch (e) {}
             }
         }
 
@@ -457,14 +429,54 @@
 
         function logout() {
             showToast('Cerrando sesión...', 'info');
-            setTimeout(() => {
-                window.location.href = '{{ route("login") }}';
-            }, 1000);
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '{{ route("logout") }}';
+            const csrf = document.querySelector('meta[name="csrf-token"]');
+            if (csrf) {
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = '_token';
+                input.value = csrf.getAttribute('content');
+                form.appendChild(input);
+            }
+            document.body.appendChild(form);
+            form.submit();
         }
+
+        // Helper global para mostrar/ocultar contraseñas
+        window.togglePasswordVisibility = function(inputId) {
+            var input = document.getElementById(inputId);
+            var eyeIcon = document.getElementById('eye-icon-' + inputId);
+            if (!input) return;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (eyeIcon) {
+                    eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+                }
+            } else {
+                input.type = 'password';
+                if (eyeIcon) {
+                    eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+                }
+            }
+        };
 
         // Inicialización
         function init() {
             showToast('Módulo cargado correctamente', 'success');
+
+            if (window.innerWidth > 1024) {
+                try {
+                    if (localStorage.getItem('sidebar_collapsed') === '1') {
+                        const sidebar = document.getElementById('sidebar');
+                        const mainContent = document.getElementById('mainContent');
+                        if (sidebar) sidebar.classList.add('collapsed');
+                        if (mainContent) mainContent.classList.add('sidebar-collapsed');
+                    }
+                } catch (e) {}
+            }
         }
 
         // Inicializar cuando el DOM esté listo

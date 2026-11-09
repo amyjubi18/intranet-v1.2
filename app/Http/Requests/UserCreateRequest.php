@@ -32,9 +32,10 @@ class UserCreateRequest extends FormRequest
             'email' => 'required|email|unique:users,email',
             'password' => 'required|string|min:8|confirmed',
             'password_confirmation' => 'required|string|min:8',
-            'roles' => 'required|integer|min:1',
+            'roles' => 'required',
             'departamento' => 'required|string',
             'status' => 'nullable|boolean',
+            'profile_photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ];
     }
 
@@ -80,6 +81,9 @@ class UserCreateRequest extends FormRequest
             'roles.integer' => 'Debe seleccionar un rol válido',
 
             'departamento.required' => 'El departamento es obligatorio',
+            'profile_photo.image' => 'El archivo debe ser una imagen válida',
+            'profile_photo.mimes' => 'La foto de perfil debe ser de formato JPG, JPEG, PNG o WEBP',
+            'profile_photo.max' => 'La foto de perfil no debe superar los 2MB',
         ];
     }
 }

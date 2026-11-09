@@ -35,6 +35,7 @@
 
     <!-- Scripts -->
      @yield('scripts')
+    @viteReactRefresh
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
 
@@ -61,6 +62,7 @@
             font-family:'Inter',system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
             background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 35%, #cbd5e1 70%, #94a3b8 100%);
             color:#1e293b;
+            overflow-x: hidden;
         }
         .glass{ background:var(--card-bg); border:1px solid var(--card-border); backdrop-filter:blur(8px); }
         .btn{ display:inline-flex; align-items:center; gap:.5rem; border-radius:.75rem; padding:.625rem .9rem; font-weight:600; transition:.2s; border:1px solid var(--card-border); }
@@ -79,10 +81,10 @@
             border-right:1px solid rgba(255,255,255,0.1);
             backdrop-filter:blur(12px);
             z-index:40;
-            transition:all .3s ease;
+            transition: transform .3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .sidebar.collapsed{
-            width:80px;
+            transform: translateX(-100%);
         }
         .sidebar-item{
             display:flex;
@@ -96,52 +98,70 @@
             color:#ffffff;
             position:relative;
         }
-        .sidebar.collapsed .sidebar-item{
-            padding:.75rem;
-            margin:.25rem .5rem;
-            justify-content:center;
-        }
-        .sidebar.collapsed .sidebar-item > svg{
-            width: 28px;
-            height: 28px;
-            flex-shrink: 0;
-        }
-        .sidebar.collapsed .sidebar-nav .submenu > div:first-child svg:first-child{
-            width: 28px;
-            height: 28px;
-            flex-shrink: 0;
-        }
-        .sidebar.collapsed .submenu-arrow{
-            width: 20px;
-            height: 20px;
-            flex-shrink: 0;
-        }
-        /* Iconos de los submenús cuando están colapsados */
-        .sidebar.collapsed .sidebar-item[onclick] > svg:first-child{
-            width: 28px;
-            height: 28px;
-            flex-shrink: 0;
-        }
-        .sidebar.collapsed .sidebar-item span{
-            display:none;
-        }
         .sidebar-item:hover{
             background:rgba(255,255,255,0.1);
             color:#ffffff;
             transform:translateX(4px);
         }
         .sidebar-item.active{
-            background:rgba(255,255,255,0.2);
-            color:#ffffff;
-            box-shadow:0 4px 12px rgba(0,0,0,0.3);
+            background:rgba(255,255,255,0.22) !important;
+            color:#ffffff !important;
+            font-weight:700 !important;
+            border-left:4px solid #60a5fa !important;
+            padding-left:0.75rem !important;
+            box-shadow:0 4px 14px rgba(0,0,0,0.35) !important;
+        }
+
+        /* Animaciones para el preloader */
+        @keyframes preloaderLogoPulse {
+            0%, 100% {
+                transform: scale(1);
+                filter: drop-shadow(0 0 14px rgba(96, 165, 250, 0.45));
+            }
+            50% {
+                transform: scale(1.05);
+                filter: drop-shadow(0 0 30px rgba(96, 165, 250, 0.85));
+            }
+        }
+        .preloader-logo-pulse {
+            animation: preloaderLogoPulse 2.4s ease-in-out infinite;
+        }
+        .wave-parallax > use {
+            animation: move-wave-forever 20s cubic-bezier(.55,.5,.45,.5) infinite;
+        }
+        .wave-parallax > use:nth-child(1) {
+            animation-delay: -2s;
+            animation-duration: 7s;
+        }
+        .wave-parallax > use:nth-child(2) {
+            animation-delay: -3s;
+            animation-duration: 10s;
+        }
+        .wave-parallax > use:nth-child(3) {
+            animation-delay: -4s;
+            animation-duration: 13s;
+        }
+        .wave-parallax > use:nth-child(4) {
+            animation-delay: -5s;
+            animation-duration: 18s;
+        }
+        @keyframes move-wave-forever {
+            0% { transform: translate3d(-90px, 0, 0); }
+            100% { transform: translate3d(85px, 0, 0); }
         }
         .main-content{
             margin-left:280px;
             min-height:100vh;
-            transition:margin-left .3s ease;
+            transition: margin-left .3s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .main-content.sidebar-collapsed{
-            margin-left:80px;
+            margin-left:0 !important;
+        }
+        #menuToggle{
+            display:none;
+        }
+        .main-content.sidebar-collapsed #menuToggle{
+            display:inline-flex !important;
         }
         .stat-card{
             background:var(--card-bg);
@@ -275,21 +295,6 @@
             display: none;
         }
 
-        .sidebar.collapsed .sidebar-header-content{
-            display:none;
-        }
-        .sidebar.collapsed .sidebar-header{
-            padding:1rem;
-            justify-content:center;
-        }
-        .sidebar.collapsed .sidebar-nav{
-            padding:1rem 0.5rem;
-        }
-        .sidebar.collapsed .sidebar-bottom{
-            padding:1rem 0.5rem;
-        }
-        .sidebar.collapsed .sidebar-bottom > div:not(.sidebar-item){ display:none;
-        }
 
         /* Estilos del modal de notificaciones */
         .notification-modal {
@@ -427,18 +432,11 @@
         }
 
         @media (max-width: 1024px) {
-            .sidebar { transform: translateX(-100%); }
-            .main-content { margin-left: 0; }
-            .main-content.sidebar-collapsed { margin-left: 0; }
+            .sidebar { transform: translateX(-100%); width: 280px; }
             .sidebar.open { transform: translateX(0); }
-            .sidebar.collapsed { width: 280px; }
-            .sidebar.collapsed .sidebar-item { padding: .75rem 1.25rem; margin: .25rem .75rem; justify-content: flex-start; }
-            .sidebar.collapsed .sidebar-item span { display: inline; }
-            .sidebar.collapsed .sidebar-header-content { display: block; }
-            .sidebar.collapsed .sidebar-header { padding: 1.5rem; justify-content: flex-start; }
-            .sidebar.collapsed .sidebar-nav { padding: 1rem; }
-            .sidebar.collapsed .sidebar-bottom { padding: 1rem; }
-            .sidebar.collapsed .sidebar-bottom > div:not(.sidebar-item) { display: block; }
+            .main-content { margin-left: 0 !important; }
+            .main-content.sidebar-collapsed { margin-left: 0 !important; }
+            #menuToggle { display: inline-flex !important; }
         }
 
         /* Responsive para pantallas pequeñas (500px) */
@@ -459,6 +457,65 @@
     </style>
 </head>
 <body class="scroll-smooth">
+
+    <!-- Preloader Institucional: Fondo azul degradado con animación de olas y logo animado al centro -->
+    <div id="page-preloader" class="fixed inset-0 z-[999999] flex flex-col items-center justify-center overflow-hidden transition-all duration-500 pointer-events-auto" style="background: linear-gradient(135deg, #07152b 0%, #0c234a 35%, #1e3a8a 75%, #1e40af 100%);">
+        <!-- Contenedor central con logo animado -->
+        <div class="relative z-20 flex flex-col items-center justify-center px-4 text-center">
+            <div class="relative p-6 sm:p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl flex items-center justify-center">
+                <img src="{{ asset('img/Logo.png') }}" class="h-24 sm:h-32 md:h-36 w-auto object-contain preloader-logo-pulse" alt="CODECYT">
+                <div class="absolute -inset-1 rounded-3xl bg-gradient-to-r from-blue-400/30 to-cyan-300/30 blur-md pointer-events-none animate-pulse"></div>
+            </div>
+
+            <!-- Indicador sutil de carga de 3 puntos -->
+            <div class="mt-6 flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-cyan-400 animate-bounce" style="animation-delay: 0s;"></span>
+                <span class="w-3 h-3 rounded-full bg-blue-300 animate-bounce" style="animation-delay: 0.15s;"></span>
+                <span class="w-3 h-3 rounded-full bg-indigo-300 animate-bounce" style="animation-delay: 0.3s;"></span>
+            </div>
+            <p class="text-xs uppercase tracking-widest text-blue-200/80 font-medium mt-3">Cargando...</p>
+        </div>
+
+        <!-- Animación de olas suaves en la parte inferior -->
+        <div class="absolute bottom-0 left-0 w-full overflow-hidden leading-none pointer-events-none z-10" style="height: 140px;">
+            <svg class="preloader-waves" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto" style="width: 100%; height: 100%;">
+                <defs>
+                    <path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s 58 18 88 18 58-18 88-18 58 18 88 18 v44h-352z" />
+                </defs>
+                <g class="wave-parallax">
+                    <use xlink:href="#gentle-wave" x="48" y="0" fill="rgba(37, 99, 235, 0.22)" />
+                    <use xlink:href="#gentle-wave" x="48" y="3" fill="rgba(59, 130, 246, 0.32)" />
+                    <use xlink:href="#gentle-wave" x="48" y="5" fill="rgba(96, 165, 250, 0.22)" />
+                    <use xlink:href="#gentle-wave" x="48" y="7" fill="rgba(30, 58, 138, 0.6)" />
+                </g>
+            </svg>
+        </div>
+    </div>
+    <script>
+        (function() {
+            function removePreloader() {
+                const el = document.getElementById('page-preloader');
+                if (!el || el.dataset.dismissed) return;
+                el.dataset.dismissed = 'true';
+                el.classList.add('opacity-0', 'pointer-events-none');
+                setTimeout(() => {
+                    if (el && el.parentNode) {
+                        el.style.display = 'none';
+                    }
+                }, 550);
+            }
+
+            if (document.readyState === 'complete') {
+                setTimeout(removePreloader, 350);
+            } else {
+                window.addEventListener('load', function() {
+                    setTimeout(removePreloader, 350);
+                });
+            }
+            // Failsafe: nunca bloquear la pantalla más de 2 segundos
+            setTimeout(removePreloader, 2000);
+        })();
+    </script>
 
     <!-- Modal de notificaciones (fuera del flujo para aparecer por encima de todo) -->
     @php
@@ -694,7 +751,7 @@
     <div id="sidebarBackdrop" class=" inset-0 z-30 hidden bg-black/50 lg:hidden" onclick="closeSidebar()"></div>
 
     <!-- Dropdown del buscador (fuera del main-content para que aparezca sobre todo) -->
-    <div id="searchResults" class="hidden fixed bg-white rounded-xl shadow-2xl border border-gray-200 max-h-80 overflow-y-auto w-96 z-[99999] sm:w-20">
+    <div id="searchResults" class="hidden fixed bg-white rounded-2xl shadow-2xl border border-slate-200/90 max-h-[460px] overflow-y-auto z-[99999] transition-all">
     </div>
 
     <!-- Contenido principal -->
@@ -704,8 +761,8 @@
             <div class="p-6 mb-6 glass rounded-2xl header-container">
                 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                     <div class="flex items-center gap-4 w-full sm:w-auto">
-                        <!-- Botón de menú hamburguesa - solo visible en móvil y tablet -->
-                        <button id="menuToggle" class="btn btn-secondary" style="display: none;" onclick="toggleSidebar()">
+                        <!-- Botón de menú hamburguesa -->
+                        <button id="menuToggle" type="button" class="btn btn-secondary shadow-sm hover:bg-white transition-all mr-2" onclick="toggleSidebar()" title="Mostrar menú">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <line x1="3" y1="6" x2="21" y2="6"/>
                                 <line x1="3" y1="12" x2="21" y2="12"/>
@@ -802,9 +859,9 @@
                 </div>
             @endif
 
-            @if(session('error'))
+            @if(session('error') || request('sso_error'))
                 <div class="p-4 mb-4 text-red-700 bg-red-100 border border-red-400 rounded-lg">
-                    {{ session('error') }}
+                    {{ session('error') ?? request('sso_error') }}
                 </div>
             @endif
 
@@ -814,8 +871,62 @@
                 </div>
             @endif
 
+            @if(session('success') || session('datos') || session('status'))
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        if (typeof showToast === 'function') {
+                            showToast(@json(session('success') ?: (session('datos') ?: session('status'))), 'success');
+                        }
+                    });
+                </script>
+            @endif
+            @if(session('error') || request('sso_error'))
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const errMsg = @json(session('error') ?? request('sso_error'));
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Atención',
+                                text: errMsg,
+                                confirmButtonText: 'Aceptar',
+                                confirmButtonColor: '#2563eb',
+                                customClass: {
+                                    popup: 'rounded-2xl shadow-2xl'
+                                }
+                            });
+                        } else if (typeof showToast === 'function') {
+                            showToast(errMsg, 'error');
+                        }
+                    });
+                </script>
+            @endif
+
             @if($errors->any())
-                <div class="p-4 mb-4 text-yellow-700 bg-yellow-100 border border-yellow-400 rounded-lg">
+                <script>
+                    document.addEventListener('DOMContentLoaded', function() {
+                        const errors = @json($errors->all());
+                        let errorHtml = '<div class="text-left text-sm text-slate-700 mt-2 space-y-1.5">';
+                        errors.forEach(function(msg) {
+                            errorHtml += '<div class="flex items-start gap-2"><span class="text-red-500 font-bold">•</span><span>' + msg + '</span></div>';
+                        });
+                        errorHtml += '</div>';
+
+                        if (typeof Swal !== 'undefined') {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Por favor corrija los siguientes errores:',
+                                html: errorHtml,
+                                confirmButtonText: 'Entendido',
+                                confirmButtonColor: '#2563eb',
+                                customClass: {
+                                    popup: 'rounded-2xl shadow-2xl border border-slate-200'
+                                }
+                            });
+                        }
+                    });
+                </script>
+                <div class="p-4 mb-4 text-red-700 bg-red-100 border border-red-400 rounded-lg">
                     <p class="font-bold">Por favor corrija los siguientes errores:</p>
                     <ul class="pl-5 mt-2 list-disc">
                         @foreach($errors->all() as $error)
@@ -833,20 +944,27 @@
         </main>
     </main>
 
-    <!-- Toast -->
-    <div id="toast" class="fixed z-50 hidden bottom-4 right-4">
-        <div class="flex items-center gap-2 px-4 py-3 glass rounded-xl">
-            <div id="toastIcon">✅</div>
-            <div id="toastMsg" class="text-sm"></div>
+    <!-- Toast de Notificaciones -->
+    <div id="toast" class="fixed bottom-5 right-5 z-[99999] hidden transition-all duration-300 transform translate-y-3 opacity-0 pointer-events-none">
+        <div class="flex items-center gap-3 px-5 py-3.5 bg-white text-slate-800 rounded-2xl shadow-2xl border border-slate-200 max-w-md">
+            <div id="toastIcon" class="text-xl shrink-0">✅</div>
+            <div id="toastMsg" class="text-sm font-semibold text-slate-700 leading-snug"></div>
+            <button type="button" onclick="hideToast()" class="ml-2 text-slate-400 hover:text-slate-600 p-1 rounded-lg transition-colors focus:outline-none">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+            </button>
         </div>
     </div>
 
     <script>
-        // Toast
+        // Toast dinámico
+        let toastTimeout = null;
         function showToast(msg, type = 'success') {
             const toast = document.getElementById('toast');
             const icon = document.getElementById('toastIcon');
             const msgEl = document.getElementById('toastMsg');
+            if (!toast || !msgEl) return;
 
             const icons = {
                 success: '✅',
@@ -855,39 +973,238 @@
                 info: 'ℹ️'
             };
 
+            if (toastTimeout) {
+                clearTimeout(toastTimeout);
+            }
+
             icon.textContent = icons[type] || icons.success;
             msgEl.textContent = msg;
+
             toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
+            // Forzar reflow para que la animación CSS aplique suavemente
+            void toast.offsetWidth;
+            toast.classList.remove('translate-y-3', 'opacity-0', 'pointer-events-none');
+            toast.classList.add('translate-y-0', 'opacity-100', 'pointer-events-auto');
+
+            toastTimeout = setTimeout(() => {
+                hideToast();
+            }, 4000);
         }
 
-        // Modal de notificaciones
-        let modalAbierto = false;
+        function hideToast() {
+            const toast = document.getElementById('toast');
+            if (!toast) return;
+            if (toastTimeout) clearTimeout(toastTimeout);
 
-        // Verificar si el usuario ya vio las notificaciones
-        function hasUserViewedNotifications() {
-            return localStorage.getItem('notifications_viewed') === 'true';
+            toast.classList.remove('translate-y-0', 'opacity-100', 'pointer-events-auto');
+            toast.classList.add('translate-y-3', 'opacity-0', 'pointer-events-none');
+
+            setTimeout(() => {
+                toast.classList.add('hidden');
+            }, 300);
         }
+        window.showToast = showToast;
+        window.showAppToast = showToast;
+        window.hideToast = hideToast;
+        window.showErrorAlert = function(msg, title = 'Error') {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'error',
+                    title: title,
+                    text: msg,
+                    confirmButtonColor: '#2563eb',
+                    confirmButtonText: 'Entendido'
+                });
+            } else {
+                showToast(msg, 'error');
+            }
+        };
 
-        // Marcar como vistas las notificaciones
-        function markNotificationsAsViewed() {
-            localStorage.setItem('notifications_viewed', 'true');
-        }
+        // URLs base para redirección limpia de sesión y SSO
+        const MAIN_PORTAL_LOGIN = @json(rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/login?timeout=1');
+        const MAIN_PORTAL_LOGOUT = @json(rtrim(config('modules.main_url', 'http://172.17.50.219'), '/') . '/logout?timeout=1');
 
-        // Ocultar badge de notificaciones si ya fueron vistas
-        function hideNotificationBadgeIfViewed() {
-            if (hasUserViewedNotifications()) {
-                const badge = document.querySelector('.notification-badge');
-                if (badge) {
-                    badge.style.display = 'none';
+        // Interceptor global para capturar 401 (expiración de sesión) y redirigir limpiamente sin alert de error
+        (function() {
+            const originalFetch = window.fetch;
+            window.fetch = async function(...args) {
+                try {
+                    const response = await originalFetch.apply(this, args);
+                    if (response && response.status === 401) {
+                        if (!window.location.pathname.includes('/login')) {
+                            window.location.href = MAIN_PORTAL_LOGIN;
+                        }
+                    }
+                    return response;
+                } catch (err) {
+                    throw err;
                 }
+            };
+        })();
+
+        // ==========================================
+        // SISTEMA DE NOTIFICACIONES DINÁMICO EN TIEMPO REAL (JS)
+        // ==========================================
+        let modalAbierto = false;
+        let currentUnreadCount = {{ (int)($totalNotificaciones ?? 0) }};
+
+        function updateNotificationBadge(count) {
+            currentUnreadCount = Math.max(0, parseInt(count) || 0);
+            const badge = document.querySelector('.notification-badge');
+            const bellBtn = document.querySelector('button[onclick*="toggleNotificationDropdown"]');
+            const headerBadge = document.querySelector('#notificationModal .rounded-full');
+
+            if (currentUnreadCount > 0) {
+                const text = currentUnreadCount > 99 ? '99+' : currentUnreadCount;
+                if (badge) {
+                    badge.textContent = text;
+                    badge.style.display = 'flex';
+                } else if (bellBtn) {
+                    const newBadge = document.createElement('span');
+                    newBadge.className = 'notification-badge absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 sm:w-5 sm:h-5 text-xs text-white bg-red-500 rounded-full animate-pulse';
+                    newBadge.textContent = text;
+                    bellBtn.appendChild(newBadge);
+                }
+                if (headerBadge) {
+                    headerBadge.textContent = text;
+                    headerBadge.style.display = 'inline-block';
+                }
+            } else {
+                if (badge) badge.style.display = 'none';
+                if (headerBadge) headerBadge.style.display = 'none';
             }
         }
 
-        // Ejecutar al cargar la página
-        document.addEventListener('DOMContentLoaded', function() {
-            hideNotificationBadgeIfViewed();
+        // Sondeo asíncrono en segundo plano (cada 25 segundos)
+        function pollNotifications() {
+            if (document.hidden) return; // Pausar cuando la pestaña no está visible
+
+            fetch('/api/notificaciones/unread-count', {
+                headers: { 
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(res => {
+                if (res && res.status === 401) {
+                    window.location.href = MAIN_PORTAL_LOGIN;
+                    return null;
+                }
+                return res && res.ok ? res.json() : null;
+            })
+            .then(data => {
+                if (data && typeof data.count !== 'undefined') {
+                    const newCount = parseInt(data.count) || 0;
+                    if (newCount > currentUnreadCount) {
+                        showToast(`Nueva notificación: tienes ${newCount} pendiente(s)`, 'info');
+                    }
+                    updateNotificationBadge(newCount);
+                }
+            })
+            .catch(() => {});
+        }
+
+        setInterval(pollNotifications, 25000);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) pollNotifications();
         });
+
+        // ==========================================================
+        // CONTROL DE INACTIVIDAD DEL USUARIO (20 MINUTOS)
+        // ==========================================================
+        (function() {
+            const INACTIVITY_LIMIT_MS = 20 * 60 * 1000; // 20 minutos (1.200.000 ms)
+            const WARNING_BEFORE_MS = 60 * 1000; // Aviso 1 minuto antes (a los 19 minutos)
+            let lastUserActivity = Date.now();
+            let warningModalShown = false;
+            let checkInterval = null;
+
+            function recordUserActivity() {
+                lastUserActivity = Date.now();
+                if (warningModalShown) {
+                    warningModalShown = false;
+                    const modal = document.getElementById('inactivityWarningModal');
+                    if (modal) modal.classList.add('hidden');
+                }
+            }
+
+            // Escuchar interacciones reales del usuario
+            const activityEvents = ['mousemove', 'mousedown', 'keydown', 'touchstart', 'scroll'];
+            let throttleTimer = null;
+            activityEvents.forEach(evt => {
+                window.addEventListener(evt, () => {
+                    if (!throttleTimer) {
+                        recordUserActivity();
+                        throttleTimer = setTimeout(() => { throttleTimer = null; }, 5000); // Máximo 1 actualización cada 5s
+                    }
+                }, { passive: true });
+            });
+
+            // Temporizador para verificar inactividad cada 10 segundos
+            checkInterval = setInterval(() => {
+                const idleTime = Date.now() - lastUserActivity;
+
+                // Si se alcanzaron los 20 minutos de inactividad
+                if (idleTime >= INACTIVITY_LIMIT_MS) {
+                    clearInterval(checkInterval);
+                    cerrarSesionPorInactividad();
+                    return;
+                }
+
+                // Aviso 1 minuto antes (a los 19 minutos)
+                if (idleTime >= (INACTIVITY_LIMIT_MS - WARNING_BEFORE_MS) && !warningModalShown) {
+                    warningModalShown = true;
+                    mostrarModalAvisoInactividad();
+                }
+            }, 10000);
+
+            function mostrarModalAvisoInactividad() {
+                let modal = document.getElementById('inactivityWarningModal');
+                if (!modal) {
+                    modal = document.createElement('div');
+                    modal.id = 'inactivityWarningModal';
+                    modal.className = 'fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 backdrop-blur-sm';
+                    modal.innerHTML = `
+                        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center border border-amber-200">
+                            <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                                ⏳
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-800">¿Sigues trabajando?</h3>
+                            <p class="text-sm text-slate-600 mt-1">
+                                Tu sesión se cerrará en <span id="inactivityCountdown" class="font-bold text-red-600">60</span> segundos por inactividad.
+                            </p>
+                            <p class="text-xs text-slate-400 mt-2">Mueve el cursor o presiona cualquier tecla para continuar.</p>
+                            <button type="button" onclick="window.continuarSesion()" class="mt-4 w-full py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl transition-all shadow-md">
+                                Continuar Trabajando
+                            </button>
+                        </div>
+                    `;
+                    document.body.appendChild(modal);
+                } else {
+                    modal.classList.remove('hidden');
+                }
+
+                let secondsLeft = 60;
+                const countdownEl = document.getElementById('inactivityCountdown');
+                const countdownInterval = setInterval(() => {
+                    secondsLeft--;
+                    if (countdownEl) countdownEl.textContent = secondsLeft;
+                    if (secondsLeft <= 0 || !warningModalShown) {
+                        clearInterval(countdownInterval);
+                    }
+                }, 1000);
+            }
+
+            window.continuarSesion = function() {
+                recordUserActivity();
+                // Notificar ping ligero al servidor para actualizar last_activity en backend
+                fetch('/api/buscar?q=ping').catch(() => {});
+            };
+
+            function cerrarSesionPorInactividad() {
+                window.location.href = MAIN_PORTAL_LOGOUT;
+            }
+        })();
 
         function toggleNotificationDropdown(event) {
             if (event) {
@@ -897,65 +1214,134 @@
 
             const modal = document.getElementById('notificationModal');
             const backdrop = document.getElementById('notificationBackdrop');
-            const badge = document.querySelector('.notification-badge');
 
             modalAbierto = !modalAbierto;
 
             if (modalAbierto) {
                 modal.classList.remove('hidden');
                 backdrop.classList.remove('hidden');
-
-                // Marcar como vistas y ocultar el badge
-                markNotificationsAsViewed();
-                if (badge) {
-                    badge.style.display = 'none';
-                }
             } else {
                 modal.classList.add('hidden');
                 backdrop.classList.add('hidden');
             }
         }
 
-        // Función para marcar notificaciones como leídas
+        // Marcar todas las notificaciones como leídas sin recargar la página
         function markNotificationsAsRead() {
+            const btn = document.querySelector('#notificationModal button[onclick*="markNotificationsAsRead"]');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = `<span class="inline-block animate-spin mr-1">↻</span> Procesando...`;
+            }
+
             fetch('/api/notificaciones/mark-all-read', {
                 method: 'POST',
                 headers: {
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
                 }
             })
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    // Ocultar el badge visualmente (en la campana)
-                    const badge = document.querySelector('.notification-badge');
-                    if (badge) {
-                        badge.style.display = 'none';
-                    }
+                    updateNotificationBadge(0);
 
-                    // Ocultar el contador en el header del modal
-                    const headerBadge = document.querySelector('#notificationModal .rounded-full');
-                    if (headerBadge) {
-                        headerBadge.style.display = 'none';
-                    }
-
-                    // Ocultar el footer con el botón de marcar como leído
+                    // Ocultar botón del footer
                     const footer = document.querySelector('#notificationModal .border-t');
-                    if (footer) {
-                        footer.style.display = 'none';
-                    }
+                    if (footer) footer.style.display = 'none';
 
-                    // Recargar la página para actualizar las notificaciones como leídas
-                    window.location.reload();
+                    // Atenuar visualmente items como leídos
+                    document.querySelectorAll('#notificationModal .border-l-4').forEach(item => {
+                        item.classList.add('opacity-50', 'bg-gray-50');
+                    });
 
-                    console.log('Notificaciones marcadas como leídas');
+                    showToast('Todas las notificaciones fueron marcadas como leídas', 'success');
                 }
             })
             .catch(error => {
                 console.error('Error al marcar notificaciones:', error);
+                showToast('Error al marcar notificaciones', 'error');
+                if (btn) {
+                    btn.disabled = false;
+                    btn.textContent = 'Marcar todo como leído';
+                }
             });
         }
+
+        // ==========================================
+        // ACELERADOR DE NAVEGACIÓN Y CARGAS RÁPIDAS (PREFETCH & FEEDBACK JS)
+        // ==========================================
+        // Barra superior de progreso ultraligera
+        const progressBar = document.createElement('div');
+        progressBar.id = 'pageProgressBar';
+        progressBar.style.cssText = 'position:fixed;top:0;left:0;height:3px;background:linear-gradient(to right, #2563eb, #60a5fa);z-index:99999;transition:width 0.25s ease, opacity 0.3s ease;width:0%;pointer-events:none;opacity:0;';
+        document.body.appendChild(progressBar);
+
+        function triggerProgress() {
+            progressBar.style.opacity = '1';
+            progressBar.style.width = '35%';
+            setTimeout(() => { progressBar.style.width = '75%'; }, 120);
+            setTimeout(() => { progressBar.style.width = '95%'; }, 300);
+        }
+
+        // Precarga inteligente de enlaces en hover/touch (Instant Page Prefetch)
+        const prefetchedUrls = new Set();
+        function prefetchLink(url) {
+            if (!url || prefetchedUrls.has(url) || url.startsWith('#') || url.includes('/logout') || url.includes('javascript:')) return;
+            try {
+                const parsed = new URL(url, window.location.origin);
+                if (parsed.origin !== window.location.origin) return;
+                prefetchedUrls.add(url);
+                const link = document.createElement('link');
+                link.rel = 'prefetch';
+                link.href = url;
+                document.head.appendChild(link);
+            } catch(e) {}
+        }
+
+        document.addEventListener('mouseover', function(e) {
+            const anchor = e.target.closest('a');
+            if (anchor && anchor.href) {
+                prefetchLink(anchor.href);
+            }
+        }, { passive: true });
+
+        document.addEventListener('touchstart', function(e) {
+            const anchor = e.target.closest('a');
+            if (anchor && anchor.href) {
+                prefetchLink(anchor.href);
+            }
+        }, { passive: true });
+
+        // Activar barra de progreso en clics de navegación
+        document.addEventListener('click', function(e) {
+            const anchor = e.target.closest('a');
+            if (anchor && anchor.href && !anchor.target && !anchor.hasAttribute('download') && !anchor.href.startsWith('#') && !anchor.href.includes('javascript:')) {
+                try {
+                    const url = new URL(anchor.href, window.location.origin);
+                    if (url.origin === window.location.origin && url.pathname !== window.location.pathname) {
+                        triggerProgress();
+                    }
+                } catch(e) {}
+            }
+        });
+
+        // Feedback inmediato en envíos de formularios para evitar doble submit
+        document.addEventListener('submit', function(e) {
+            const form = e.target;
+            const submitBtn = form.querySelector('button[type="submit"]:not([disabled])');
+            if (submitBtn && !form.classList.contains('no-spin')) {
+                triggerProgress();
+                setTimeout(() => {
+                    if (!form.checkValidity || form.checkValidity()) {
+                        submitBtn.classList.add('opacity-75', 'pointer-events-none');
+                        submitBtn.innerHTML = `<span class="inline-block animate-spin mr-1">↻</span> Guardando...`;
+                    }
+                }, 20);
+            }
+        });
 
         function closeNotificationModal() {
             const modal = document.getElementById('notificationModal');
@@ -1012,39 +1398,46 @@
             });
         });
 
-        // Menu toggle para móvil
-        document.getElementById('menuToggle')?.addEventListener('click', () => {
-            const sidebar = document.querySelector('.sidebar');
-            const backdrop = document.getElementById('sidebarBackdrop');
-            sidebar.classList.toggle('open');
-            backdrop.classList.toggle('hidden');
-        });
-
         function closeSidebar() {
-            document.querySelector('.sidebar')?.classList.remove('open');
-            document.getElementById('sidebarBackdrop')?.classList.add('hidden');
-        }
-
-        // Toggle sidebar collapse/expand
-        function toggleSidebar() {
             const sidebar = document.getElementById('sidebar');
-            const mainContent = document.getElementById('mainContent');
-
-            if (sidebar && mainContent) {
-                const isCollapsed = sidebar.classList.contains('collapsed');
-
-                if (isCollapsed) {
-                    sidebar.classList.remove('collapsed');
-                    mainContent.classList.remove('sidebar-collapsed');
-                } else {
-                    sidebar.classList.add('collapsed');
-                    mainContent.classList.add('sidebar-collapsed');
-                }
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (sidebar) {
+                sidebar.classList.remove('open');
+            }
+            if (backdrop) {
+                backdrop.classList.add('hidden');
             }
         }
 
-        // ============ BUSCADOR GLOBAL ============
+        // Toggle sidebar collapse/expand (unificado para móvil y escritorio)
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const mainContent = document.getElementById('mainContent');
+            const backdrop = document.getElementById('sidebarBackdrop');
+            if (!sidebar) return;
+
+            if (window.innerWidth <= 1024) {
+                // Móvil / tablet: drawer overlay con backdrop
+                const isOpen = sidebar.classList.toggle('open');
+                if (backdrop) {
+                    backdrop.classList.toggle('hidden', !isOpen);
+                }
+            } else {
+                // Escritorio: ocultar completamente el menú a la izquierda
+                const isCollapsed = sidebar.classList.toggle('collapsed');
+                if (mainContent) {
+                    mainContent.classList.toggle('sidebar-collapsed', isCollapsed);
+                }
+                try {
+                    localStorage.setItem('sidebar_collapsed', isCollapsed ? '1' : '0');
+                } catch (e) {}
+            }
+        }
+        window.toggleSidebarUnified = toggleSidebar;
+
+        // ============ BUSCADOR GLOBAL EN TIEMPO REAL ============
         let searchTimeout = null;
+        let searchAbortController = null;
         const searchInput = document.getElementById('searchInput');
         const searchResults = document.getElementById('searchResults');
         const searchLoading = document.getElementById('searchLoading');
@@ -1053,27 +1446,27 @@
             searchInput.addEventListener('input', function(e) {
                 const query = e.target.value.trim();
 
-                console.log('Buscando:', query);
-
-                // Limpiar timeout anterior
+                // Limpiar timeout y llamadas anteriores
                 if (searchTimeout) {
                     clearTimeout(searchTimeout);
                 }
+                if (searchAbortController) {
+                    searchAbortController.abort();
+                }
 
-                // Ocultar resultados si la búsqueda está vacía
-                if (query.length < 2) {
+                // Requisito: Mínimo 3 letras para disparar búsqueda en tiempo real
+                if (query.length < 3) {
                     searchResults.classList.add('hidden');
-                    searchLoading.classList.add('hidden');
+                    if (searchLoading) searchLoading.classList.add('hidden');
                     return;
                 }
 
-                // Mostrar loading
-                searchLoading.classList.remove('hidden');
+                if (searchLoading) searchLoading.classList.remove('hidden');
 
-                // Debounce: esperar 300ms antes de buscar
+                // Debounce snappy de 250ms
                 searchTimeout = setTimeout(() => {
                     performSearch(query);
-                }, 300);
+                }, 250);
             });
 
             // Cerrar resultados al hacer clic fuera
@@ -1083,39 +1476,49 @@
                 }
             });
 
-            // Manejar teclado
+            // Manejo de teclado en el buscador
             searchInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Escape') {
                     searchResults.classList.add('hidden');
                     searchInput.blur();
+                } else if (e.key === 'Enter') {
+                    // Si presiona enter y hay resultados visibles, abrir el primer resultado
+                    const primerResultado = searchResults.querySelector('a[href]');
+                    if (primerResultado && !searchResults.classList.contains('hidden')) {
+                        e.preventDefault();
+                        primerResultado.click();
+                    }
                 }
             });
+
+            // Posicionar al redimensionar o scroll
+            window.addEventListener('resize', positionSearchDropdown);
+            window.addEventListener('scroll', positionSearchDropdown, true);
         }
 
         function performSearch(query) {
+            searchAbortController = new AbortController();
             const url = `/api/buscar?q=${encodeURIComponent(query)}`;
-            console.log('URL de búsqueda:', url);
 
-            fetch(url)
+            fetch(url, { signal: searchAbortController.signal })
                 .then(response => {
-                    console.log('Status:', response.status);
                     if (!response.ok) {
-                        throw new Error('Error en la búsqueda');
+                        throw new Error('Error al consultar el servidor');
                     }
                     return response.json();
                 })
                 .then(data => {
-                    console.log('Resultados:', data);
-                    searchLoading.classList.add('hidden');
-                    renderSearchResults(data);
+                    if (searchLoading) searchLoading.classList.add('hidden');
+                    renderSearchResults(data, query);
                 })
                 .catch(error => {
-                    console.error('Error en búsqueda:', error);
-                    searchLoading.classList.add('hidden');
+                    if (error.name === 'AbortError') return; // Cancelada por tipeo continuo
+                    console.error('Error en búsqueda global:', error);
+                    if (searchLoading) searchLoading.classList.add('hidden');
                     searchResults.innerHTML = `
-                        <div class="p-4 text-center text-red-500 z-[9999]">
-                            <p class="text-sm">Error al buscar</p>
-                            <p class="text-xs text-gray-400 mt-1">${error.message}</p>
+                        <div class="p-5 text-center text-red-500">
+                            <p class="text-sm font-semibold">Error al realizar la búsqueda</p>
+                            <p class="text-xs text-gray-400 mt-1">${escapeHtml(error.message)}</p>
                         </div>
                     `;
                     searchResults.classList.remove('hidden');
@@ -1123,17 +1526,44 @@
                 });
         }
 
-        function renderSearchResults(results) {
+        let activeCategoriaFiltro = 'todas';
+
+        function filtrarCategoria(tipo, btnElement) {
+            activeCategoriaFiltro = tipo;
+            const container = document.getElementById('searchResults');
+            if (!container) return;
+
+            // Actualizar apariencia de los botones de pestañas
+            container.querySelectorAll('.cat-pill-btn').forEach(btn => {
+                if (btn.dataset.cat === tipo) {
+                    btn.className = 'cat-pill-btn px-3 py-1 rounded-full text-xs font-bold transition-all bg-blue-600 text-white shadow-sm shrink-0 cursor-pointer';
+                } else {
+                    btn.className = 'cat-pill-btn px-3 py-1 rounded-full text-xs font-medium transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 cursor-pointer';
+                }
+            });
+
+            // Mostrar/ocultar los bloques de resultados según la opción seleccionada
+            container.querySelectorAll('.search-group-block').forEach(block => {
+                if (tipo === 'todas' || block.dataset.tipo === tipo) {
+                    block.classList.remove('hidden');
+                } else {
+                    block.classList.add('hidden');
+                }
+            });
+        }
+        window.filtrarCategoria = filtrarCategoria;
+
+        function renderSearchResults(results, query) {
             if (!searchResults) return;
 
-            console.log('Renderizando:', results.length, 'resultados');
-
-            if (results.length === 0) {
-                const searchValue = document.getElementById('searchInput')?.value || '';
+            if (!Array.isArray(results) || results.length === 0) {
                 searchResults.innerHTML = `
-                    <div class="p-4 text-center text-gray-500 z-[9999]">
-                        <p class="text-sm">No se encontraron resultados para "${searchValue}"</p>
-                        <p class="text-xs text-gray-400 mt-1">Intenta con otras palabras clave</p>
+                    <div class="p-6 text-center text-slate-500">
+                        <div class="w-12 h-12 mx-auto mb-2 text-2xl flex items-center justify-center rounded-full bg-slate-100 text-slate-400">
+                            🔍
+                        </div>
+                        <p class="text-sm font-bold text-slate-700">Sin coincidencias para "${escapeHtml(query)}"</p>
+                        <p class="text-xs text-slate-400 mt-1">No se encontraron registros en las páginas y módulos asignados a tu rol actual.</p>
                     </div>
                 `;
                 searchResults.classList.remove('hidden');
@@ -1141,55 +1571,102 @@
                 return;
             }
 
-            let html = '';
-
-            // Agrupar por categoría/tipo
+            // Agrupar resultados por opción / categoría
             const grouped = {};
             results.forEach(item => {
-                const key = item.tabla || item.tipo || 'otro';
+                const key = item.tipo || item.tabla || 'Resultados';
                 if (!grouped[key]) {
                     grouped[key] = [];
                 }
                 grouped[key].push(item);
             });
 
-            console.log('Categorías encontradas:', Object.keys(grouped));
+            const categoriasKeys = Object.keys(grouped);
+            let html = '';
 
-            // Generar HTML
-            for (const [key, items] of Object.entries(grouped)) {
-                const primerItem = items[0];
+            // Encabezado con pestañas/pills de opciones cuando hay múltiples páginas de resultados
+            if (categoriasKeys.length > 1) {
+                html += `
+                    <div class="p-2.5 bg-slate-50/95 border-b border-slate-200 sticky top-0 z-20 backdrop-blur-sm">
+                        <p class="text-[10px] font-bold uppercase tracking-wider text-slate-400 px-1 mb-1.5">Opciones encontradas:</p>
+                        <div class="flex items-center gap-1.5 overflow-x-auto pb-0.5 no-scrollbar">
+                            <button type="button" onclick="filtrarCategoria('todas', this)" data-cat="todas"
+                                class="cat-pill-btn px-3 py-1 rounded-full text-xs font-bold transition-all bg-blue-600 text-white shadow-sm shrink-0 cursor-pointer">
+                                Todas (${results.length})
+                            </button>
+                `;
+                categoriasKeys.forEach(cat => {
+                    const catItems = grouped[cat];
+                    const catIcon = catItems[0]?.icono || '📋';
+                    html += `
+                        <button type="button" onclick="filtrarCategoria('${escapeHtml(cat)}', this)" data-cat="${escapeHtml(cat)}"
+                            class="cat-pill-btn px-3 py-1 rounded-full text-xs font-medium transition-all bg-white text-slate-600 hover:bg-slate-100 border border-slate-200 shrink-0 cursor-pointer">
+                            ${catIcon} ${escapeHtml(cat)} (${catItems.length})
+                        </button>
+                    `;
+                });
+                html += `
+                        </div>
+                    </div>
+                `;
+            }
+
+            for (const [tipo, items] of Object.entries(grouped)) {
+                const primerItem = items[0] || {};
                 const icono = primerItem.icono || '📋';
-                const label = primerItem.tipo || key;
 
                 html += `
-                    <div class="border-b border-gray-100 last:border-b-0">
-                        <div class="px-4 py-2 bg-gray-50 text-xs font-semibold text-gray-600 uppercase tracking-wide flex items-center gap-2">
-                            <span>${icono}</span>
-                            <span>${label}</span>
-                            <span class="text-gray-400">(${items.length})</span>
+                    <div class="search-group-block border-b border-slate-100 last:border-b-0" data-tipo="${escapeHtml(tipo)}">
+                        <div class="px-4 py-2 bg-slate-100/90 border-b border-slate-200/80 flex items-center justify-between">
+                            <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wide">
+                                <span>${icono}</span>
+                                <span>${escapeHtml(tipo)}</span>
+                            </div>
+                            <span class="text-[11px] font-semibold text-slate-500 bg-white px-2 py-0.5 rounded-full border border-slate-200 shadow-sm">
+                                ${items.length}
+                            </span>
                         </div>
                 `;
 
                 items.forEach(item => {
-                    // Destacar el término buscado en el resultado
-                    const searchValue = document.getElementById('searchInput')?.value || '';
-                    const nombreHighlighted = highlightMatch(item.nombre, searchValue);
-
-                    const campoTexto = item.campo_encontrado
-                        ? `<span class="font-medium text-blue-600">${item.campo_encontrado}</span>`
+                    const nombreHighlighted = highlightMatch(item.nombre, query);
+                    const subtituloHighlighted = item.subtitulo ? highlightMatch(item.subtitulo, query) : '';
+                    const matchExtra = (item.campo_encontrado && item.coincidencia &&
+                                        item.campo_encontrado.toLowerCase() !== 'descripcion' &&
+                                        item.campo_encontrado.toLowerCase() !== 'name' &&
+                                        item.campo_encontrado.toLowerCase() !== 'articulo' &&
+                                        item.campo_encontrado.toLowerCase() !== 'cartucho' &&
+                                        item.campo_encontrado.toLowerCase() !== 'impresora' &&
+                                        item.campo_encontrado.toLowerCase() !== 'proveedor')
+                        ? `<p class="text-[11px] text-blue-600 mt-1 flex items-center gap-1 font-medium">
+                             <span class="text-slate-500">${escapeHtml(item.campo_encontrado)}:</span>
+                             <span>${highlightMatch(item.coincidencia, query)}</span>
+                           </p>`
                         : '';
 
+                    const moduloTag = item.modulo ? `<span class="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200/60 shrink-0">${escapeHtml(item.tipo)}</span>` : '';
+
                     html += `
-                        <a href="#" onclick="navegarABusqueda('${item.tabla}', event)"
-                           class="flex items-start gap-3 px-4 py-3 hover:bg-blue-50 transition-colors border-b border-gray-50 last:border-b-0">
-                            <div class="flex-shrink-0 w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center text-sm">
+                        <a href="${item.url || '#'}"
+                           class="group flex items-start gap-3 px-4 py-3 hover:bg-blue-50/80 transition-colors border-b border-slate-50 last:border-b-0">
+                            <div class="w-8 h-8 rounded-lg bg-slate-100 group-hover:bg-blue-100 text-slate-600 group-hover:text-blue-700 flex items-center justify-center shrink-0 text-sm transition-colors mt-0.5 shadow-sm">
                                 ${item.icono || '📋'}
                             </div>
                             <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-800">${nombreHighlighted}</p>
-                                ${campoTexto ? `<p class="text-xs text-gray-500 mt-0.5">Encontrado en: ${campoTexto}</p>` : ''}
+                                <div class="flex items-center justify-between gap-2">
+                                    <p class="text-sm font-semibold text-slate-800 truncate group-hover:text-blue-900 transition-colors">
+                                        ${nombreHighlighted}
+                                    </p>
+                                    ${moduloTag}
+                                </div>
+                                ${subtituloHighlighted ? `<p class="text-xs text-slate-500 truncate mt-0.5">${subtituloHighlighted}</p>` : ''}
+                                ${matchExtra}
+                                <div class="mt-1 flex items-center gap-1 text-[11px] text-blue-600 font-medium group-hover:underline">
+                                    <span>Ir a la página de ${escapeHtml(item.tipo)}</span>
+                                    <span class="group-hover:translate-x-1 transition-transform">→</span>
+                                </div>
                             </div>
-                            <svg class="w-4 h-4 text-gray-400 flex-shrink-0 mt-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-4 h-4 text-slate-300 group-hover:text-blue-600 group-hover:translate-x-0.5 shrink-0 mt-2 transition-all" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                             </svg>
                         </a>
@@ -1199,110 +1676,92 @@
                 html += '</div>';
             }
 
-            // Footer con ver todos
+            // Footer informativo
             html += `
-                <div class="p-3 border-t border-gray-200 bg-gray-50 text-center">
-                    <span class="text-xs text-gray-500">${results.length} resultado(s) encontrado(s)</span>
+                <div class="p-2.5 bg-slate-50 text-center text-xs text-slate-500 font-medium border-t border-slate-100">
+                    ${results.length} resultado(s) disponible(s) según tu rol
                 </div>
             `;
 
             searchResults.innerHTML = html;
             searchResults.classList.remove('hidden');
-
-            // Posicionar el dropdown debajo del input
+            activeCategoriaFiltro = 'todas';
             positionSearchDropdown();
         }
 
-        // Función para resaltar texto coincidente
+        // Función para resaltar coincidencias
         function highlightMatch(text, searchTerm) {
-            if (!text || !searchTerm) return text || '';
+            if (!text || !searchTerm) return escapeHtml(text || '');
             const escapedSearch = searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
             const regex = new RegExp(`(${escapedSearch})`, 'gi');
-            return text.replace(regex, '<span class="bg-yellow-200 font-semibold">$1</span>');
+            return escapeHtml(text).replace(regex, '<span class="bg-yellow-200 text-slate-900 font-bold px-0.5 rounded">$1</span>');
         }
 
-        // Función para posicionar el dropdown del buscador
+        // Helper para escapar HTML seguro
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Posicionar el dropdown debajo del input alineado a la derecha
         function positionSearchDropdown() {
             const searchInputEl = document.getElementById('searchInput');
             const searchResultsEl = document.getElementById('searchResults');
 
-            if (searchInputEl && searchResultsEl) {
+            if (searchInputEl && searchResultsEl && !searchResultsEl.classList.contains('hidden')) {
                 const inputRect = searchInputEl.getBoundingClientRect();
+                const dropdownWidth = Math.min(520, window.innerWidth - 32);
+
                 searchResultsEl.style.top = (inputRect.bottom + 8) + 'px';
-                searchResultsEl.style.left = inputRect.left + 'px';
-                searchResultsEl.style.width = inputRect.width + 'px';
+                searchResultsEl.style.width = dropdownWidth + 'px';
+
+                // Alinear al borde derecho del input pero sin desbordar el viewport
+                let left = inputRect.right - dropdownWidth;
+                if (left < 16) left = 16;
+                if (left + dropdownWidth > window.innerWidth - 16) {
+                    left = window.innerWidth - dropdownWidth - 16;
+                }
+                searchResultsEl.style.left = left + 'px';
             }
         }
 
-        function getIconoPorTipo(tipo) {
-            const iconos = {
-                'cartucho': '🖨️',
-                'articulo': '📦',
-                'impresora': '🖨️',
-                'usuario': '👤',
-                'documento': '📄',
-                'proveedor': '🏢',
-                'area': '🏢',
-                'gerencia': '🏛️'
-            };
-            return iconos[tipo] || '📋';
-        }
+        // Helper global para mostrar/ocultar contraseñas
+        window.togglePasswordVisibility = function(inputId) {
+            var input = document.getElementById(inputId);
+            var eyeIcon = document.getElementById('eye-icon-' + inputId);
+            if (!input) return;
 
-        function navegarABusqueda(tabla, event) {
-            event.preventDefault();
-
-            // Mapear tablas a rutas
-            const rutas = {
-                'cartuchos': '{{ route("administracion.consumibles.index") }}',
-                'articulos': '{{ route("administracion.articulos.index") }}',
-                'impresoras': '{{ route("administracion.impresoras.index") }}',
-                'users': '{{ route("users.index") }}',
-                'proveedores': '{{ route("administracion.proveedores.index") }}',
-                'areas': '{{ route("administracion.areas.index") }}',
-                'gerencias': '{{ route("administracion.gerencias.index") }}',
-                'ubicaciones': '{{ route("administracion.ubicacion.index") }}',
-                'documentos': '{{ route("administracion.documentos.index") }}',
-                'bienes': '{{ route("administracion.bienes_publicos.index") }}',
-                // Gestión Humana
-                'tipo_documentos': '{{ route("gestion-humana.tipo_documentos.index") }}',
-                'areas_adscritas': '{{ route("gestion-humana.area_adscrita.index") }}',
-            };
-
-            console.log('Navegando a:', tabla);
-
-            // Usar la ruta del mapa o ir al dashboard
-            const rutaFinal = rutas[tabla] || '{{ route("inicio") }}';
-            window.location.href = rutaFinal;
-
-            // Ocultar resultados
-            if (searchResults) {
-                searchResults.classList.add('hidden');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (eyeIcon) {
+                    eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/>';
+                }
+            } else {
+                input.type = 'password';
+                if (eyeIcon) {
+                    eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+                }
             }
-            if (searchInput) {
-                searchInput.value = '';
-            }
-        }
+        };
 
         // Inicialización
         document.addEventListener('DOMContentLoaded', function() {
-            showToast('Sistema cargado correctamente', 'success');
-
-            // Controlar visibilidad del botón de hamburguesa
-            const menuToggle = document.getElementById('menuToggle');
-
-            function updateMenuToggleVisibility() {
-                if (window.innerWidth < 1024) {
-                    // Mostrar en móvil y tablet
-                    menuToggle.style.display = 'flex';
-                } else {
-                    // Ocultar en escritorio
-                    menuToggle.style.display = 'none';
-                }
+            // Restaurar estado del sidebar en escritorio desde localStorage
+            if (window.innerWidth > 1024) {
+                try {
+                    if (localStorage.getItem('sidebar_collapsed') === '1') {
+                        const sidebar = document.getElementById('sidebar');
+                        const mainContent = document.getElementById('mainContent');
+                        if (sidebar) sidebar.classList.add('collapsed');
+                        if (mainContent) mainContent.classList.add('sidebar-collapsed');
+                    }
+                } catch (e) {}
             }
-
-            // Ejecutar al cargar y al redimensionar
-            updateMenuToggleVisibility();
-            window.addEventListener('resize', updateMenuToggleVisibility);
         });
     </script>
     <script src="{{asset('js/agenda.js')}}"></script>

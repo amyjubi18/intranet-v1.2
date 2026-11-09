@@ -1,0 +1,25 @@
+{
+  "resources/css/app.css": {
+    "file": "assets/app-D-sBgvy8.css",
+    "src": "resources/css/app.css",
+    "isEntry": true,
+    "name": "app",
+    "names": [
+      "app.css"
+    ]
+  },
+  "resources/js/app.js": {
+    "file": "assets/app-DF6XX50y.js",
+    "name": "app",
+    "src": "resources/js/app.js",
+    "isEntry": true
+  },
+  "vendor/power-components/livewire-powergrid/dist/powergrid.css": {
+    "file": "assets/powergrid-Bb_2IO2o.css",
+    "src": "vendor/power-components/livewire-powergrid/dist/powergrid.css"
+  },
+  "vendor/power-components/livewire-powergrid/dist/tom-select.css": {
+    "file": "assets/tom-select-BPSqPWfV.css",
+    "src": "vendor/power-components/livewire-powergrid/dist/tom-select.css"
+  }
+}

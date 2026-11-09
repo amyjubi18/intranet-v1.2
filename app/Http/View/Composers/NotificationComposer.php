@@ -14,15 +14,45 @@ use App\Models\Impresora;
 class NotificationComposer
 {
     /**
-     * Vincula datos de notificaciones a la vista
+     * Limpia la caché de notificaciones de un usuario
+     */
+    public static function clearUserCache($userId = null)
+    {
+        $id = $userId ?: Auth::id();
+        if ($id) {
+            \Illuminate\Support\Facades\Cache::forget("user_notifs_data_{$id}");
+        }
+    }
+
+    /**
+     * Vincula datos de notificaciones a la vista con caché inteligente de alto rendimiento
      */
     public function compose(View $view)
     {
-        $notificaciones = $this->obtenerNotificaciones();
-        $totalNotificaciones = $this->contarTotalNotificacionesNoLeidas();
+        $user = Auth::user();
+        if (!$user) {
+            $view->with('notificaciones', []);
+            $view->with('totalNotificaciones', 0);
+            return;
+        }
 
-        $view->with('notificaciones', $notificaciones);
-        $view->with('totalNotificaciones', $totalNotificaciones);
+        $cacheKey = "user_notifs_data_{$user->id}";
+        $data = \Illuminate\Support\Facades\Cache::remember($cacheKey, 20, function () {
+            $notificaciones = $this->obtenerNotificaciones();
+            $totalNoLeidas = 0;
+            foreach ($notificaciones as $n) {
+                if (empty($n['leida'])) {
+                    $totalNoLeidas++;
+                }
+            }
+            return [
+                'notificaciones' => $notificaciones,
+                'totalNotificaciones' => $totalNoLeidas,
+            ];
+        });
+
+        $view->with('notificaciones', $data['notificaciones']);
+        $view->with('totalNotificaciones', $data['totalNotificaciones']);
     }
 
     /**
@@ -34,100 +64,17 @@ class NotificationComposer
     }
 
     /**
-     * Cuenta el total de notificaciones NO LEÍDAS
+     * Cuenta el total de notificaciones NO LEÍDAS basándose estrictamente en las notificaciones autorizadas
      */
     private function contarTotalNotificacionesNoLeidas()
     {
+        $notificaciones = $this->obtenerNotificaciones();
         $total = 0;
-        $user = Auth::user();
-
-        if (!$user) {
-            return 0;
-        }
-
-        // Helper para verificar permisos - verificar tanto permisos como rol
-        $can = function($permission) use ($user) {
-            // Verificar si tiene el permiso específico
-            if ($user->can($permission)) {
-                return true;
-            }
-            // Verificar si tiene rol de admin o gtic
-            if ($user->hasAnyRole(['admin', 'gtic', 'super-admin'])) {
-                return true;
-            }
-            return false;
-        };
-
-        // 0. Notificaciones de Laravel NO leídas (solo cumpleanos)
-        $laravelNotifications = DatabaseNotification::where('notifiable_id', $user->id)
-            ->where('notifiable_type', User::class)
-            ->whereNull('read_at')
-            ->orderBy('created_at', 'desc')
-            ->limit(10)
-            ->get();
-
-        foreach ($laravelNotifications as $notif) {
-            $data = $notif->data;
-            $tipo = $data['type'] ?? 'general';
-            if ($tipo === 'birthday_wish') {
-                $total += 1;
+        foreach ($notificaciones as $n) {
+            if (empty($n['leida'])) {
+                $total++;
             }
         }
-
-        // 1. Perfil incompleto (siempre cuenta como 1 notificación)
-        $perfil = $user->perfil_incompleto;
-        if ($perfil['incompleto']) {
-            $total += 1;
-        }
-
-        // 2. Stock bajo en Consumibles
-        if ($can('almacen_inv_index')) {
-            $countConsumibles = $this->contarStockBajoConsumibles();
-            if ($countConsumibles > 0) {
-                $total += 1;
-            }
-        }
-
-        // 3. Stock bajo en Oficina
-        if ($can('inventarioofic_index')) {
-            $countOficina = $this->contarStockBajoOficina();
-            if ($countOficina > 0) {
-                $total += 1;
-            }
-        }
-
-        // 4. Usuarios con datos incompletos (solo para admin/gtic)
-        if ($can('user_index')) {
-            $countUsuariosIncompletos = $this->contarUsuariosConDatosFaltantes();
-            if ($countUsuariosIncompletos > 0) {
-                $total += 1;
-            }
-        }
-
-        // 5. Bienes dañados o en mal estado
-        if ($can('bienes_index')) {
-            $countBienesDaniados = $this->contarBienesDaniados();
-            if ($countBienesDaniados > 0) {
-                $total += 1;
-            }
-        }
-
-        // 6. Bienes sin asignar
-        if ($can('bienes_index')) {
-            $countBienesSinAsignar = $this->contarBienesSinAsignar();
-            if ($countBienesSinAsignar > 0) {
-                $total += 1;
-            }
-        }
-
-        // 7. Impresoras con problemas
-        if ($can('impresora_index')) {
-            $countImpresorasProblema = $this->contarImpresorasConProblemas();
-            if ($countImpresorasProblema > 0) {
-                $total += 1;
-            }
-        }
-
         return $total;
     }
 
@@ -159,7 +106,7 @@ class NotificationComposer
     /**
      * Obtiene todas las notificaciones del sistema (incluyendo las ya leídas)
      */
-    private function obtenerNotificaciones()
+    public function obtenerNotificaciones()
     {
         $notificaciones = [];
         $user = Auth::user();
@@ -169,15 +116,13 @@ class NotificationComposer
             return $notificaciones;
         }
 
-        // Helper para verificar permisos - verificar tanto permisos como rol
+        // Helper para verificar permisos estrictos del usuario (basado en Spatie permissions del usuario)
         $can = function($permission) use ($user) {
-            // Verificar si tiene el permiso específico
-            if ($user->can($permission)) {
-                return true;
-            }
-            // Verificar si tiene rol de admin o gtic
-            if ($user->hasAnyRole(['admin', 'gtic', 'super-admin'])) {
-                return true;
+            $perms = (array) $permission;
+            foreach ($perms as $p) {
+                if ($user->can($p)) {
+                    return true;
+                }
             }
             return false;
         };
@@ -235,14 +180,14 @@ class NotificationComposer
                 'mensaje' => 'Tu perfil necesita ser completado',
                 'cantidad' => $perfil['total'],
                 'campos_faltantes' => $camposTexto,
-                'ruta_ver_todas' => route('profile.edit'),
+                'ruta_ver_todas' => \Illuminate\Support\Facades\Route::has('profile.edit') ? route('profile.edit') : '/profile',
                 'color' => 'blue',
                 'leida' => $isRead
             ];
         }
 
-        // 2. Stock bajo en Consumibles - MOSTRAR SIEMPRE si hay items con stock bajo
-        if ($can('almacen_inv_index')) {
+        // 2. Stock bajo en Consumibles - Solo si tiene permiso de consumibles
+        if ($can(['almacen_inv_index', 'inv-consumibles', 'cartucho_index'])) {
             $countConsumibles = $this->contarStockBajoConsumibles();
             if ($countConsumibles > 0) {
                 $hash = $this->generateNotificationHash('stock_consumibles', $countConsumibles);
@@ -259,7 +204,7 @@ class NotificationComposer
                     'cantidad' => $itemsConsumibles->count(),
                     'items' => $itemsConsumibles,
                     'tipo_item' => 'consumible',
-                    'ruta_ver_todas' => route('administracion.almacenamiento_impresoras.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.almacenamiento_impresoras.index', '/administracion/almacenamiento_impresoras'),
                     'color' => 'orange',
                     'leida' => $isRead
                 ];
@@ -269,8 +214,8 @@ class NotificationComposer
             }
         }
 
-        // 3. Stock bajo en Oficina - MOSTRAR SIEMPRE si hay items con stock bajo
-        if ($can('inventarioofic_index')) {
+        // 3. Stock bajo en Oficina - Solo si tiene permiso de oficina
+        if ($can(['inventarioofic_index', 'inv-oficina', 'articulo_index'])) {
             $countOficina = $this->contarStockBajoOficina();
             if ($countOficina > 0) {
                 $hash = $this->generateNotificationHash('stock_oficina', $countOficina);
@@ -287,7 +232,7 @@ class NotificationComposer
                     'cantidad' => $itemsOficina->count(),
                     'items' => $itemsOficina,
                     'tipo_item' => 'articulo',
-                    'ruta_ver_todas' => route('administracion.inventario_oficinas.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.inventario_oficinas.index', '/administracion/inventario_oficinas'),
                     'color' => 'yellow',
                     'leida' => $isRead
                 ];
@@ -296,8 +241,8 @@ class NotificationComposer
             }
         }
 
-        // 4. Usuarios con datos incompletos (solo para admin/gtic)
-        if ($can('user_index')) {
+        // 4. Usuarios con datos incompletos - Solo si tiene permiso de gestión de usuarios
+        if ($can(['user_index', 'user_edit'])) {
             $countUsuariosIncompletos = $this->contarUsuariosConDatosFaltantes();
             if ($countUsuariosIncompletos > 0) {
                 $hash = $this->generateNotificationHash('usuarios_incompletos', $countUsuariosIncompletos);
@@ -313,7 +258,7 @@ class NotificationComposer
                     'cantidad' => $usuariosIncompletos->count(),
                     'items' => $usuariosIncompletos,
                     'tipo_item' => 'usuario',
-                    'ruta_ver_todas' => route('users.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('gtic', 'users.index', '/users'),
                     'color' => 'red',
                     'leida' => $isRead
                 ];
@@ -322,8 +267,8 @@ class NotificationComposer
             }
         }
 
-        // 5. Bienes dañados o en mal estado
-        if ($can('bienes_index')) {
+        // 5. Bienes dañados o en mal estado - Solo si tiene permiso de bienes públicos
+        if ($can(['bienes_index', 'bienes', 'bienes_edit'])) {
             $countBienesDaniados = $this->contarBienesDaniados();
             if ($countBienesDaniados > 0) {
                 $hash = $this->generateNotificationHash('bienes_daniados', $countBienesDaniados);
@@ -339,7 +284,7 @@ class NotificationComposer
                     'cantidad' => $bienesDaniados->count(),
                     'items' => $bienesDaniados,
                     'tipo_item' => 'bien',
-                    'ruta_ver_todas' => route('administracion.bienes.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.bienes_publicos.index', '/administracion/bienes_publicos'),
                     'color' => 'red',
                     'leida' => $isRead
                 ];
@@ -348,8 +293,8 @@ class NotificationComposer
             }
         }
 
-        // 6. Bienes sin asignar
-        if ($can('bienes_index')) {
+        // 6. Bienes sin asignar - Solo si tiene permiso de bienes públicos
+        if ($can(['bienes_index', 'bienes', 'bienes_edit'])) {
             $countBienesSinAsignar = $this->contarBienesSinAsignar();
             if ($countBienesSinAsignar > 0) {
                 $hash = $this->generateNotificationHash('bienes_sin_asignar', $countBienesSinAsignar);
@@ -365,7 +310,7 @@ class NotificationComposer
                     'cantidad' => $bienesSinAsignar->count(),
                     'items' => $bienesSinAsignar,
                     'tipo_item' => 'bien',
-                    'ruta_ver_todas' => route('administracion.bienes.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.bienes_publicos.index', '/administracion/bienes_publicos'),
                     'color' => 'blue',
                     'leida' => $isRead
                 ];
@@ -374,8 +319,8 @@ class NotificationComposer
             }
         }
 
-        // 7. Impresoras con problemas
-        if ($can('impresora_index')) {
+        // 7. Impresoras con problemas - Solo si tiene permiso de impresoras
+        if ($can(['impresora_index', 'inventarioimpre_index', 'impresora_edit'])) {
             $countImpresorasProblema = $this->contarImpresorasConProblemas();
             if ($countImpresorasProblema > 0) {
                 $hash = $this->generateNotificationHash('impresoras_problema', $countImpresorasProblema);
@@ -391,7 +336,7 @@ class NotificationComposer
                     'cantidad' => $impresorasProblema->count(),
                     'items' => $impresorasProblema,
                     'tipo_item' => 'impresora',
-                    'ruta_ver_todas' => route('administracion.impresoras.index'),
+                    'ruta_ver_todas' => $this->resolverRutaSegura('admin', 'administracion.impresoras.index', '/administracion/impresoras'),
                     'color' => 'orange',
                     'leida' => $isRead
                 ];
@@ -401,6 +346,34 @@ class NotificationComposer
         }
 
         return $notificaciones;
+    }
+
+    /**
+     * Resuelve de forma segura la URL de la notificación para soportar arquitectura modular inter-contenedores con SSO.
+     */
+    private function resolverRutaSegura(string $targetModule, string $routeName, string $fallbackPath): string
+    {
+        $currentModule = config('modules.current');
+        $isCurrent = match($targetModule) {
+            'admin' => in_array($currentModule, ['administracion', 'admin']),
+            'gh'    => in_array($currentModule, ['gestion-humana', 'gh']),
+            'gtic'  => in_array($currentModule, ['gtic']),
+            default => false,
+        };
+
+        if ($isCurrent && \Illuminate\Support\Facades\Route::has($routeName)) {
+            return route($routeName);
+        }
+
+        if (\Illuminate\Support\Facades\Route::has($routeName)) {
+            return route($routeName);
+        }
+
+        if (\Illuminate\Support\Facades\Route::has('sso.go')) {
+            return route('sso.go', ['module' => $targetModule, 'redirect' => $fallbackPath]);
+        }
+
+        return $fallbackPath;
     }
 
     /**

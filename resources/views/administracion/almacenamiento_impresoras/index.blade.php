@@ -675,7 +675,7 @@
             // Create a form to POST to logout route
             const form = document.createElement('form');
             form.method = 'POST';
-            form.action = '/login';
+            form.action = '{{ route("logout") }}';
             // Add CSRF token if needed
             const csrf = document.querySelector('meta[name="csrf-token"]');
             if (csrf) {
