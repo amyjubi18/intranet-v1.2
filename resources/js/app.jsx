@@ -24,11 +24,16 @@ import UsuariosAdministrativosManagement from './components/administracion/Usuar
 import { downloadWithProgress } from './utils/downloadWithProgress';
 
 // Interceptor global para cualquier enlace o select de descarga/exportación (PDF, Excel, Imagen)
+let interceptorInitialized = false;
+
 function initGlobalDownloadInterceptor() {
-    if (typeof document === 'undefined') return;
+    if (typeof document === 'undefined' || interceptorInitialized) return;
+    interceptorInitialized = true;
 
     // 1. Delegar clics en enlaces y botones de descarga
     document.addEventListener('click', (e) => {
+        if (e.defaultPrevented) return;
+
         const target = e.target.closest('a, button[data-download-url]');
         if (!target) return;
 
@@ -60,10 +65,17 @@ function initGlobalDownloadInterceptor() {
         }
     });
 
-    // 2. Delegar cambios en <select> que contengan URLs de exportación
+    // 2. Delegar cambios en <select> que contengan URLs de exportación (solo elementos Blade / fuera de componentes React)
     document.addEventListener('change', (e) => {
+        if (e.defaultPrevented) return;
+
         const select = e.target.closest('select');
         if (!select) return;
+
+        // Si el select está dentro de un componente React, dejamos que el componente gestione su evento
+        if (select.closest('[data-react-component], [id$="-root"]')) {
+            return;
+        }
 
         const val = select.value;
         if (!val) return;

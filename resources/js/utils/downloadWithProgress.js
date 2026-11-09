@@ -1,5 +1,8 @@
 import Swal from 'sweetalert2';
 
+// Mutex global para evitar que se abran múltiples modales simultáneos
+let isCurrentlyDownloading = false;
+
 /**
  * Descarga archivos (PDF, Excel, Imágenes, etc.) con modal de progreso en tiempo real y SweetAlert2.
  * Funciona tanto con URLs remotas del servidor como con Data URLs (Base64) y Blobs.
@@ -16,6 +19,13 @@ import Swal from 'sweetalert2';
  */
 export function downloadWithProgress(urlOrData, options = {}) {
     if (!urlOrData) return Promise.reject(new Error('URL o archivo no especificado'));
+
+    // Evitar descargas duplicadas o modales concurrentes
+    if (isCurrentlyDownloading) {
+        console.warn('downloadWithProgress: ya existe una descarga en curso, omitiendo petición duplicada.');
+        return Promise.resolve();
+    }
+    isCurrentlyDownloading = true;
 
     const {
         filename: customFilename,
@@ -105,6 +115,9 @@ export function downloadWithProgress(urlOrData, options = {}) {
             allowOutsideClick: false,
             allowEscapeKey: false,
             customClass: { popup: 'rounded-2xl p-6 shadow-2xl' },
+            didClose: () => {
+                isCurrentlyDownloading = false;
+            },
             didOpen: () => {
                 const bar = document.getElementById('global-export-progress-bar');
                 const percent = document.getElementById('global-export-progress-percent');
@@ -214,6 +227,7 @@ export function downloadWithProgress(urlOrData, options = {}) {
                         a.remove();
 
                         setTimeout(() => {
+                            isCurrentlyDownloading = false;
                             Swal.fire({
                                 icon: 'success',
                                 title: '¡Descarga Finalizada!',
@@ -228,6 +242,7 @@ export function downloadWithProgress(urlOrData, options = {}) {
                     })
                     .catch(err => {
                         clearInterval(interval);
+                        isCurrentlyDownloading = false;
                         console.error('Error al descargar/exportar:', err);
                         Swal.fire({
                             icon: 'error',

@@ -14,6 +14,7 @@ use Exception;
 use App\Http\Livewire;
 use App\Models\InventarioOficina;
 use Illuminate\Support\Facades\Hash;
+use Barryvdh\DomPDF\Facade\Pdf as PDF;
 
 class InventarioOficController extends Controller
 {
@@ -385,14 +386,18 @@ case 'busqueda':
     public function exportExcel(Request $request)
     {
         abort_if(Gate::denies('inventarioofic_index'), 403);
+        ini_set('memory_limit', '2048M');
+        ini_set('max_execution_time', 300);
         return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\InventarioOficinaExport($request->all()), 'inventario_oficinas.xlsx');
     }
 
     public function exportPdf(Request $request)
     {
         abort_if(Gate::denies('inventarioofic_index'), 403);
+        ini_set('memory_limit', '2048M');
+        ini_set('max_execution_time', 300);
 
-        $query = InventarioOficina::with(['proveedores']);
+        $query = InventarioOficina::with(['proveedores', 'articulos', 'unidad_medidas'])->orderBy('id', 'desc');
 
         if ($request->filled('filterType')) {
             switch ($request->filterType) {
@@ -466,7 +471,7 @@ case 'busqueda':
         $totalUnidades = $inventario_oficinas->sum('unidades');
         $totalUnidadesDisponibles = $inventario_oficinas->sum('unidades_disponibles');
 
-        $pdf = \PDF::loadView('administracion.inventario_oficinas.pdf', compact('inventario_oficinas', 'totalItems', 'totalUnidades', 'totalUnidadesDisponibles'));
+        $pdf = PDF::loadView('administracion.inventario_oficinas.pdf', compact('inventario_oficinas', 'totalItems', 'totalUnidades', 'totalUnidadesDisponibles'));
         return $pdf->download('inventario_oficinas.pdf');
     }
 }

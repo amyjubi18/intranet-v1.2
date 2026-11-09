@@ -175,6 +175,39 @@ export default function InventarioOficinas() {
         }
     };
 
+    // Función de exportación con modal de progreso en tiempo real y filtros activos
+    const handleExport = (format) => {
+        if (!format) return;
+
+        const isExcel = format === 'excel';
+        const filename = isExcel ? 'inventario_oficinas.xlsx' : 'inventario_oficinas.pdf';
+        const url = isExcel
+            ? '/administracion/inventario_oficinas/export/excel'
+            : '/administracion/inventario_oficinas/export/pdf';
+
+        const params = new URLSearchParams();
+        if (busqueda.trim()) {
+            params.append('filterType', 'busqueda');
+            params.append('busqueda', busqueda.trim());
+        } else if (filterType) {
+            params.append('filterType', filterType);
+            if (filterType === 'fecha' || filterType === 'fecha_creacion') {
+                if (fechaDesde) params.append('fecha_desde', fechaDesde);
+                if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            } else if (secondFilter) {
+                params.append('secondFilter', secondFilter);
+            }
+        }
+
+        const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
+
+        downloadWithProgress(fullUrl, {
+            filename,
+            type: isExcel ? 'excel' : 'pdf',
+            title: isExcel ? 'Exportando Inventario a Excel' : 'Exportando Inventario a PDF'
+        });
+    };
+
     // Agrupar items por artículo (como en la vista original)
     const groupedItems = inventario.reduce((acc, curr) => {
         const artId = curr.articulo_id || 'sin_articulo';
@@ -270,13 +303,14 @@ export default function InventarioOficinas() {
                             <select
                                 value=""
                                 onChange={(e) => {
-                                    if (e.target.value) downloadWithProgress(e.target.value);
+                                    e.preventDefault();
+                                    if (e.target.value) handleExport(e.target.value);
                                 }}
                                 className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs"
                             >
                                 <option value="" disabled>📤 Exportar</option>
-                                <option value="/administracion/inventario_oficinas/export/excel">📊 Exportar a Excel</option>
-                                <option value="/administracion/inventario_oficinas/export/pdf">📄 Exportar a PDF</option>
+                                <option value="excel">📊 Exportar a Excel</option>
+                                <option value="pdf">📄 Exportar a PDF</option>
                             </select>
 
                             {permissions.can_create && (
