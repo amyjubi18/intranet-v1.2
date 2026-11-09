@@ -614,6 +614,135 @@ export default function BienesPublicos() {
         setFormErrors({});
     };
 
+    // Función de exportación con modal de progreso en tiempo real
+    const handleExport = (format) => {
+        if (!format) return;
+
+        const isExcel = format === 'excel';
+        const formatTitle = isExcel ? 'Excel' : 'PDF';
+        const icon = isExcel ? '📊' : '📄';
+        const filename = isExcel ? 'bienes_publicos.xlsx' : 'bienes_publicos.pdf';
+        const url = isExcel
+            ? '/administracion/bienes_publicos/export/excel'
+            : '/administracion/bienes_publicos/export/pdf';
+
+        // Armar parámetros con los filtros aplicados actualmente
+        const params = new URLSearchParams();
+        if (busqueda.trim()) params.append('busqueda', busqueda.trim());
+        if (filterType) {
+            params.append('filterType', filterType);
+            if (filterType === 'fecha') {
+                if (fechaDesde) params.append('fecha_desde', fechaDesde);
+                if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            } else if (secondFilter) {
+                params.append('secondFilter', secondFilter);
+            }
+        }
+        const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
+
+        let progress = 12;
+
+        Swal.fire({
+            title: `<div class="flex items-center justify-center gap-2 text-xl font-bold text-slate-800">
+                <span>${icon}</span>
+                <span>Exportando a ${formatTitle}</span>
+            </div>`,
+            html: `
+                <div class="space-y-3.5 pt-2 text-left">
+                    <p id="export-status-text" class="text-xs text-slate-600 font-medium">
+                        Preparando registros y aplicando filtros...
+                    </p>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200 shadow-inner">
+                        <div id="export-progress-bar" class="h-full rounded-full transition-all duration-300"
+                            style="width: 12%; background: linear-gradient(135deg, #14368b 0%, #4f46e5 100%);">
+                        </div>
+                    </div>
+                    <div class="flex justify-between items-center text-[11px] text-slate-400 font-mono">
+                        <span id="export-step-text">Generando archivo en el servidor...</span>
+                        <span id="export-progress-percent" class="font-bold text-blue-900 text-xs">12%</span>
+                    </div>
+                </div>
+            `,
+            showConfirmButton: false,
+            allowOutsideClick: false,
+            allowEscapeKey: false,
+            customClass: { popup: 'rounded-2xl p-6 shadow-2xl' },
+            didOpen: () => {
+                const bar = document.getElementById('export-progress-bar');
+                const percent = document.getElementById('export-progress-percent');
+                const status = document.getElementById('export-status-text');
+                const step = document.getElementById('export-step-text');
+
+                // Intervalo de progreso animado mientras el servidor genera el archivo
+                const interval = setInterval(() => {
+                    if (progress < 85) {
+                        progress += Math.floor(Math.random() * 8) + 4;
+                        if (progress > 85) progress = 85;
+                        if (bar) bar.style.width = `${progress}%`;
+                        if (percent) percent.innerText = `${progress}%`;
+                        if (status) {
+                            if (progress > 25 && progress <= 55) {
+                                status.innerText = 'Recopilando datos y calculando estadísticas...';
+                                if (step) step.innerText = 'Consultando base de datos...';
+                            } else if (progress > 55) {
+                                status.innerText = isExcel ? 'Formateando celdas de Excel...' : 'Renderizando páginas PDF con DomPDF...';
+                                if (step) step.innerText = 'Comprimiendo y empaquetando...';
+                            }
+                        }
+                    }
+                }, 350);
+
+                // Solicitud al servidor
+                fetch(fullUrl)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Error en el servidor (${response.status})`);
+                        }
+                        return response.blob();
+                    })
+                    .then(blob => {
+                        clearInterval(interval);
+                        progress = 100;
+                        if (bar) bar.style.width = '100%';
+                        if (percent) percent.innerText = '100%';
+                        if (status) status.innerText = '¡Archivo generado exitosamente! Descargando...';
+                        if (step) step.innerText = 'Descarga completada';
+
+                        // Forzar descarga en el navegador mediante URL de Blob
+                        const blobUrl = window.URL.createObjectURL(blob);
+                        const link = document.createElement('a');
+                        link.href = blobUrl;
+                        link.download = filename;
+                        document.body.appendChild(link);
+                        link.click();
+                        window.URL.revokeObjectURL(blobUrl);
+                        link.remove();
+
+                        setTimeout(() => {
+                            Swal.fire({
+                                icon: 'success',
+                                title: '¡Descarga Finalizada!',
+                                text: `El reporte en ${formatTitle} se ha descargado correctamente.`,
+                                timer: 1800,
+                                showConfirmButton: false,
+                                customClass: { popup: 'rounded-2xl shadow-xl' }
+                            });
+                        }, 600);
+                    })
+                    .catch(err => {
+                        clearInterval(interval);
+                        console.error('Error al exportar:', err);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error de Exportación',
+                            text: 'No se pudo generar el archivo de exportación. Intenta nuevamente.',
+                            confirmButtonColor: '#14368b'
+                        });
+                    });
+            }
+        });
+    };
+
     // Alternar entre QR y Código de Barras en el modal
     const handleChangeCodeType = (newType) => {
         setModalCodeType(newType);
@@ -885,14 +1014,15 @@ export default function BienesPublicos() {
                             {/* Exportar y Nuevo */}
                             <div className="flex items-center gap-3">
                                 <select
+                                    value=""
                                     onChange={(e) => {
-                                        if (e.target.value) window.location.href = e.target.value;
+                                        if (e.target.value) handleExport(e.target.value);
                                     }}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer"
+                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs"
                                 >
-                                    <option value="">📤 Exportar</option>
-                                    <option value="/administracion/bienes_publicos/export/excel">Excel</option>
-                                    <option value="/administracion/bienes_publicos/export/pdf">PDF</option>
+                                    <option value="" disabled>📤 Exportar</option>
+                                    <option value="excel">📊 Excel (.xlsx)</option>
+                                    <option value="pdf">📄 PDF (.pdf)</option>
                                 </select>
 
                                 {permissions.can_create && (
