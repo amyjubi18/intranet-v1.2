@@ -142,7 +142,7 @@
         .birthday-card.is-today { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
         .birthday-avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 0.875rem; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none !important; align-items: center; justify-content: center; z-index: 1000; }
         .modal-overlay.show { display: flex !important; animation: modalBackdropFadeIn 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important; }
         .modal-content { background: #ffffff; border-radius: 1.25rem; padding: 1.75rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35); }
         .modal-overlay.show .modal-content { animation: modalExpandIn 350ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important; transform-origin: center center; }
