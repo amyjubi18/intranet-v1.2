@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
+
+// Carga perezosa (lazy load) para no sobrecargar el bundle principal de Vite
+let Html5QrcodeModule = null;
+async function getHtml5Qrcode() {
+    if (!Html5QrcodeModule) {
+        Html5QrcodeModule = await import('html5-qrcode');
+    }
+    return Html5QrcodeModule;
+}
 
 /**
  * Componente Modal para Escaneo de Códigos de Barras y Códigos QR en vivo usando la cámara.
@@ -86,6 +94,9 @@ export default function CameraScannerModal({
         }
 
         try {
+            // Cargar módulo dinámicamente
+            const { Html5Qrcode, Html5QrcodeSupportedFormats } = await getHtml5Qrcode();
+
             // Esperar que el div contenedor exista en el DOM
             const container = document.getElementById('camera-reader-viewport');
             if (!container) return;
@@ -216,6 +227,7 @@ export default function CameraScannerModal({
 
         try {
             setCameraError(null);
+            const { Html5Qrcode } = await getHtml5Qrcode();
             let qrCode = html5QrCodeRef.current;
             if (!qrCode) {
                 qrCode = new Html5Qrcode('camera-reader-viewport');

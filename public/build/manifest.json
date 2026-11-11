@@ -1,6 +1,15 @@
 {
+  "node_modules/html5-qrcode/esm/index.js": {
+    "file": "assets/index-B5fLhidt.js",
+    "name": "index",
+    "src": "node_modules/html5-qrcode/esm/index.js",
+    "isDynamicEntry": true,
+    "imports": [
+      "resources/js/app.js"
+    ]
+  },
   "resources/css/app.css": {
-    "file": "assets/app-DSIseh9H.css",
+    "file": "assets/app-C6ozQYK2.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -9,10 +18,13 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-ARyk0o4L.js",
+    "file": "assets/app-Bmq_eG4S.js",
     "name": "app",
     "src": "resources/js/app.js",
-    "isEntry": true
+    "isEntry": true,
+    "dynamicImports": [
+      "node_modules/html5-qrcode/esm/index.js"
+    ]
   },
   "vendor/power-components/livewire-powergrid/dist/powergrid.css": {
     "file": "assets/powergrid-Bb_2IO2o.css",
