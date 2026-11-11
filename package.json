@@ -21,6 +21,7 @@
         "@vitejs/plugin-react": "^4.7.0",
         "flatpickr": "^4.6.13",
         "flowbite-datepicker": "^1.2.2",
+        "html5-qrcode": "^2.3.8",
         "jsbarcode": "^3.12.3",
         "lodash": "^4.17.21",
         "react": "^18.3.1",

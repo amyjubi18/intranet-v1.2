@@ -151,6 +151,61 @@
             box-shadow:0 4px 14px rgba(0,0,0,0.35) !important;
         }
 
+        /* Sidebar Submenu Acordeón Suave con Easing Mikael Ainalem */
+        .sidebar .submenu,
+        .submenu {
+            display: grid !important;
+            grid-template-rows: 1fr;
+            opacity: 1;
+            overflow: hidden;
+            transition: grid-template-rows 350ms cubic-bezier(0.4, 0.0, 0.2, 1),
+                        opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .sidebar .submenu.hidden,
+        .submenu.hidden {
+            display: grid !important;
+            grid-template-rows: 0fr !important;
+            opacity: 0 !important;
+            pointer-events: none !important;
+            visibility: hidden !important;
+            transition: grid-template-rows 300ms cubic-bezier(0.4, 0.0, 0.2, 1),
+                        opacity 200ms cubic-bezier(0.4, 0.0, 0.2, 1),
+                        visibility 300ms !important;
+        }
+        .sidebar .submenu > .submenu-inner,
+        .submenu > .submenu-inner {
+            min-height: 0;
+            overflow: hidden;
+            transition: transform 320ms cubic-bezier(0.4, 0.0, 0.2, 1);
+        }
+        .sidebar .submenu.hidden > .submenu-inner,
+        .submenu.hidden > .submenu-inner {
+            transform: translateY(-8px);
+        }
+        .sidebar .submenu:not(.hidden) > .submenu-inner,
+        .submenu:not(.hidden) > .submenu-inner {
+            transform: translateY(0);
+        }
+        .sidebar .submenu:not(.hidden) > .submenu-inner > *:nth-child(1),
+        .submenu:not(.hidden) > .submenu-inner > *:nth-child(1) { transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 30ms, opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 30ms; }
+        .sidebar .submenu:not(.hidden) > .submenu-inner > *:nth-child(2),
+        .submenu:not(.hidden) > .submenu-inner > *:nth-child(2) { transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 60ms, opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 60ms; }
+        .sidebar .submenu:not(.hidden) > .submenu-inner > *:nth-child(3),
+        .submenu:not(.hidden) > .submenu-inner > *:nth-child(3) { transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 90ms, opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 90ms; }
+        .sidebar .submenu:not(.hidden) > .submenu-inner > *:nth-child(4),
+        .submenu:not(.hidden) > .submenu-inner > *:nth-child(4) { transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 120ms, opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 120ms; }
+        .sidebar .submenu:not(.hidden) > .submenu-inner > *:nth-child(5),
+        .submenu:not(.hidden) > .submenu-inner > *:nth-child(5) { transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 150ms, opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 150ms; }
+        .sidebar .submenu:not(.hidden) > .submenu-inner > *:nth-child(6),
+        .submenu:not(.hidden) > .submenu-inner > *:nth-child(6) { transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 180ms, opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 180ms; }
+        .sidebar .submenu:not(.hidden) > .submenu-inner > *:nth-child(7),
+        .submenu:not(.hidden) > .submenu-inner > *:nth-child(7) { transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 210ms, opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 210ms; }
+        .sidebar .submenu:not(.hidden) > .submenu-inner > *:nth-child(8),
+        .submenu:not(.hidden) > .submenu-inner > *:nth-child(8) { transition: transform 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 240ms, opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1) 240ms; }
+        .sidebar svg.transition-transform {
+            transition: transform 320ms cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+        }
+
         /* Animaciones para el preloader */
         @keyframes preloaderLogoPulse {
             0%, 100% {

@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import Swal from 'sweetalert2';
 import JsBarcode from 'jsbarcode';
 import { downloadWithProgress } from '../../utils/downloadWithProgress';
+import CameraScannerModal from '../ui/CameraScannerModal';
 
 /**
  * Selector buscable interactivo con autocompletado y diseño Tailwind
@@ -29,6 +30,18 @@ function SearchableSelect({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Elevar el contenedor padre inmediato para que el dropdown flote por encima de los demás campos y fechas
+    useEffect(() => {
+        if (containerRef.current && containerRef.current.parentElement) {
+            if (isOpen) {
+                containerRef.current.parentElement.style.zIndex = '99';
+                containerRef.current.parentElement.style.position = 'relative';
+            } else {
+                containerRef.current.parentElement.style.zIndex = '';
+            }
+        }
+    }, [isOpen]);
+
     const filtered = useMemo(() => {
         if (!search.trim()) return options;
         const q = search.toLowerCase();
@@ -41,7 +54,7 @@ function SearchableSelect({
     const selectedOption = options.find(opt => String(opt.id) === String(value));
 
     return (
-        <div className={`relative w-full ${isOpen ? 'z-50' : 'z-10'}`} ref={containerRef}>
+        <div className={`relative w-full ${isOpen ? 'z-[99]' : 'z-20'}`} ref={containerRef}>
             {label && (
                 <label className="block text-xs font-semibold text-blue-900 mb-1">
                     {label}
@@ -82,7 +95,7 @@ function SearchableSelect({
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 left-0 mt-1 w-full min-w-[220px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-fadeIn ring-1 ring-black/5">
+                <div className="absolute z-[100] left-0 mt-1 w-full min-w-[240px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-fadeIn ring-1 ring-black/5">
                     <div className="relative mb-2">
                         <input
                             type="text"
@@ -256,6 +269,101 @@ export default function BienesPublicos() {
     const [quickColorHex, setQuickColorHex] = useState('#14368b');
     const [quickColorSubmitting, setQuickColorSubmitting] = useState(false);
     const [quickColorError, setQuickColorError] = useState(null);
+
+    // Modal de Escaneo con Cámara (Serial, N° Interno, Código Identificador o Búsqueda)
+    const [cameraModalOpen, setCameraModalOpen] = useState(false);
+    const [cameraTargetField, setCameraTargetField] = useState('serial');
+    const [cameraModalTitle, setCameraModalTitle] = useState('Escanear con Cámara');
+
+    const openCameraScanner = (target = 'serial', customTitle = null) => {
+        setCameraTargetField(target);
+        if (customTitle) {
+            setCameraModalTitle(customTitle);
+        } else if (target === 'serial') {
+            setCameraModalTitle('Escanear Serial del Bien');
+        } else if (target === 'n_interno_bien') {
+            setCameraModalTitle('Escanear N° Interno del Bien');
+        } else if (target === 'qr_code') {
+            setCameraModalTitle(modalCodeType === 'barcode' ? 'Escanear Código de Barras' : 'Escanear Código QR');
+        } else if (target === 'search') {
+            setCameraModalTitle('Escanear QR o Código de Barras');
+        }
+        setCameraModalOpen(true);
+    };
+
+    const handleCameraScanSuccess = (code, target) => {
+        const cleanCode = (code || '').trim();
+        if (!cleanCode) return;
+
+        if (target === 'search') {
+            setCameraModalOpen(false);
+            const matched = (bienes || []).find(b =>
+                String(b.serial || '').toLowerCase() === cleanCode.toLowerCase() ||
+                String(b.n_interno_bien || '').toLowerCase() === cleanCode.toLowerCase() ||
+                String(b.qr_code || '').includes(cleanCode) ||
+                String(b.id) === cleanCode
+            );
+
+            if (matched) {
+                Swal.fire({
+                    title: '¡Bien Encontrado!',
+                    html: `
+                        <div class="text-left text-sm space-y-1.5 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <p><strong>Descripción:</strong> ${matched.descripcion || 'S/D'}</p>
+                            <p><strong>N° Interno:</strong> <span class="font-mono text-blue-900 font-bold">${matched.n_interno_bien || 'S/I'}</span></p>
+                            <p><strong>Serial:</strong> <span class="font-mono text-slate-700">${matched.serial || 'S/S'}</span></p>
+                            <p><strong>Marca / Modelo:</strong> ${matched.marca || ''} ${matched.modelo || ''}</p>
+                        </div>
+                    `,
+                    icon: 'success',
+                    showCancelButton: true,
+                    confirmButtonColor: '#1e3a8a',
+                    cancelButtonColor: '#64748b',
+                    confirmButtonText: '✏️ Editar este Bien',
+                    cancelButtonText: 'Filtrar en la lista'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        handleOpenEdit(matched);
+                    } else {
+                        setSearch(cleanCode);
+                    }
+                });
+            } else {
+                setSearch(cleanCode);
+                Swal.fire({
+                    toast: true,
+                    position: 'top-end',
+                    icon: 'info',
+                    title: `Filtrado por: ${cleanCode}`,
+                    showConfirmButton: false,
+                    timer: 3000
+                });
+            }
+        } else {
+            if (target === 'serial') {
+                setFormData(prev => ({ ...prev, serial: cleanCode }));
+            } else if (target === 'n_interno_bien') {
+                setFormData(prev => ({ ...prev, n_interno_bien: cleanCode }));
+            } else if (target === 'qr_code') {
+                if (modalCodeType === 'barcode') {
+                    setFormData(prev => ({ ...prev, qr_code: `barcode:${cleanCode}` }));
+                } else {
+                    setFormData(prev => ({ ...prev, qr_code: cleanCode }));
+                }
+            }
+
+            setCameraModalOpen(false);
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: `Código asignado: ${cleanCode}`,
+                showConfirmButton: false,
+                timer: 2500
+            });
+        }
+    };
 
     const initialFormData = {
         sede: 'CODECYT S.A',
@@ -1253,17 +1361,12 @@ export default function BienesPublicos() {
                             <div className="flex items-center gap-3 flex-wrap">
                                 <button
                                     type="button"
-                                    onClick={() => {
-                                        Swal.fire({
-                                            title: 'Escanear QR o Código de Barras',
-                                            text: 'Apunta la cámara o pistola lectora al código QR o código de barras del bien para buscarlo directamente.',
-                                            icon: 'info',
-                                            confirmButtonColor: '#1e3a8a'
-                                        });
-                                    }}
-                                    className="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 shadow-xs"
+                                    onClick={() => openCameraScanner('search', 'Escanear QR o Código de Barras')}
+                                    className="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 shadow-xs cursor-pointer inline-flex items-center gap-1.5 transition-all hover:scale-[1.02]"
+                                    title="Abrir la cámara para escanear y buscar un bien"
                                 >
-                                    📷 Escanear QR / Barras
+                                    <span>📷</span>
+                                    <span>Escanear QR / Barras</span>
                                 </button>
 
                                 <button
@@ -1373,9 +1476,9 @@ export default function BienesPublicos() {
                         >
                             <div className={`${showAdvancedFilters ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300`}>
                                 <div className="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-20 overflow-visible">
                                         {/* Unidad Administrativa */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-75 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="🏢 Unidad Administrativa"
                                                 options={unidadesOptions}
@@ -1392,7 +1495,7 @@ export default function BienesPublicos() {
                                         </div>
 
                                         {/* Usuario Administrativo (filtrado) */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-100 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="👔 Usuario Administrativo"
                                                 options={usuariosAdminOptions}
@@ -1405,7 +1508,7 @@ export default function BienesPublicos() {
                                         </div>
 
                                         {/* Usuario de Uso (filtrado) */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-150 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="👤 Usuario de Uso"
                                                 options={usuariosUsoOptions}
@@ -1418,7 +1521,7 @@ export default function BienesPublicos() {
                                         </div>
 
                                         {/* Estado de Uso */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-200 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="⚙️ Estado del Uso"
                                                 options={estadosUsoOptions}
@@ -1431,7 +1534,7 @@ export default function BienesPublicos() {
                                         </div>
 
                                         {/* Condición Física */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-225 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="🔍 Condición Física"
                                                 options={condicionesOptions}
@@ -1444,7 +1547,7 @@ export default function BienesPublicos() {
                                         </div>
 
                                         {/* Color */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-250 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="🎨 Color del Bien"
                                                 options={colorsOptions}
@@ -1457,7 +1560,7 @@ export default function BienesPublicos() {
                                         </div>
 
                                         {/* Forma de Adquisición */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-275 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="📑 Forma de Adquisición"
                                                 options={formasAdquisicionOptions}
@@ -1471,7 +1574,7 @@ export default function BienesPublicos() {
                                     </div>
 
                                     {/* Sección de Fechas de Adquisición con Presets */}
-                                    <div className={`mt-5 pt-4 border-t border-blue-100 transition-all duration-500 delay-300 ${showAdvancedFilters ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-2'}`}>
+                                    <div className={`mt-5 pt-4 border-t border-blue-100 relative z-10 transition-opacity duration-300 ${showAdvancedFilters ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                                         <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
                                             <span className="text-xs font-bold text-blue-950">📅 Filtrar por Fecha de Adquisición:</span>
 
@@ -1970,9 +2073,20 @@ export default function BienesPublicos() {
                                     {formErrors.usuario_de_uso_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.usuario_de_uso_id[0]}</p>}
                                 </div>
                                 <div>
-                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        N° Interno del Bien: <span className="text-red-500">*</span>
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-sm font-semibold text-slate-800">
+                                            N° Interno del Bien: <span className="text-red-500">*</span>
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => openCameraScanner('n_interno_bien', 'Escanear N° Interno con Cámara')}
+                                            className="text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Escanear N° Interno con la cámara"
+                                        >
+                                            <span>📷</span>
+                                            <span>Escanear</span>
+                                        </button>
+                                    </div>
                                     <input
                                         type="text"
                                         value={formData.n_interno_bien}
@@ -2257,9 +2371,20 @@ export default function BienesPublicos() {
                                     {formErrors.color_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.color_id[0]}</p>}
                                 </div>
                                 <div>
-                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        Serial: <span className="text-red-500">*</span>
-                                    </label>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-sm font-semibold text-slate-800">
+                                            Serial: <span className="text-red-500">*</span>
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => openCameraScanner('serial', 'Escanear Serial del Bien con Cámara')}
+                                            className="text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Escanear serial con la cámara"
+                                        >
+                                            <span>📷</span>
+                                            <span>Escanear</span>
+                                        </button>
+                                    </div>
                                     <input
                                         type="text"
                                         value={formData.serial}
@@ -2381,6 +2506,17 @@ export default function BienesPublicos() {
                                         </p>
 
                                         <div className="flex flex-wrap gap-2 mt-3">
+                                            {/* Botón de Escanear con Cámara */}
+                                            <button
+                                                type="button"
+                                                onClick={() => openCameraScanner('qr_code', modalCodeType === 'barcode' ? 'Escanear Código de Barras' : 'Escanear Código QR')}
+                                                className="px-3 py-1.5 text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 rounded-lg transition-colors shadow-xs cursor-pointer inline-flex items-center gap-1.5 hover:scale-[1.02]"
+                                                title="Abrir la cámara para escanear el código físico"
+                                            >
+                                                <span>📷</span>
+                                                <span>Escanear con Cámara</span>
+                                            </button>
+
                                             {modalCodeType === 'barcode' ? (
                                                 <>
                                                     <button
@@ -2679,6 +2815,17 @@ export default function BienesPublicos() {
                     </div>
                 </div>
             )}
+
+            {/* Modal de Escaneo en Vivo con Cámara */}
+            <CameraScannerModal
+                isOpen={cameraModalOpen}
+                onClose={() => setCameraModalOpen(false)}
+                onScan={handleCameraScanSuccess}
+                title={cameraModalTitle}
+                subtitle="Apunta la cámara al código de barras o código QR"
+                allowedFields={['serial', 'n_interno_bien', 'qr_code']}
+                defaultTargetField={cameraTargetField}
+            />
         </div>
     );
 }

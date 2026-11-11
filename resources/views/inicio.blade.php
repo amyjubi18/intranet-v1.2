@@ -98,30 +98,41 @@
         .news-card { background: rgba(255, 255, 255, 0.5); border: 1px solid var(--card-border); border-radius: 1rem; padding: 1rem; cursor: pointer; transition: all 0.2s ease; }
         .news-card:hover { background: rgba(255, 255, 255, 0.8); transform: translateX(4px); }
 
-        /* Accordion styles for news */
+        /* Accordion styles for news con animación suave */
         .news-accordion { display: none; }
-        .news-accordion.show { display: block; }
-        .news-accordion-item { border-bottom: 1px solid rgba(0,0,0,0.1); }
-        .news-accordion-item:last-child { border-bottom: none; }
+        .news-accordion.show { display: block; animation: modalBackdropFadeIn 300ms cubic-bezier(0.4, 0.0, 0.2, 1); }
+        .news-accordion-item { border-radius: 1rem; transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
         .news-accordion-header {
             cursor: pointer;
             padding: 1rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            transition: background 0.2s;
-            border-radius: 0.5rem;
+            transition: background 0.2s cubic-bezier(0.4, 0.0, 0.2, 1);
+            border-radius: 1rem;
         }
-        .news-accordion-header:hover { background: rgba(255, 255, 255, 0.3); }
+        .news-accordion-header:hover { background: rgba(255, 255, 255, 0.4); }
         .news-accordion-content {
-            max-height: 0;
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 350ms cubic-bezier(0.4, 0.0, 0.2, 1), opacity 300ms cubic-bezier(0.4, 0.0, 0.2, 1);
+            opacity: 0;
             overflow: hidden;
-            transition: max-height 0.3s ease-out;
-            padding: 0 1rem;
         }
-        .news-accordion-content.open {
-            max-height: 500px;
-            padding: 0 1rem 1rem 1rem;
+        .news-accordion-content.open,
+        .news-accordion-content.grid-rows-\[1fr\] {
+            grid-template-rows: 1fr;
+            opacity: 1;
+        }
+        .news-accordion-content > div {
+            min-height: 0;
+            overflow: hidden;
+            transition: transform 320ms cubic-bezier(0.4, 0.0, 0.2, 1);
+            transform: translateY(-6px);
+        }
+        .news-accordion-content.open > div,
+        .news-accordion-content.grid-rows-\[1fr\] > div {
+            transform: translateY(0);
         }
         .news-grid-view { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
         .news-grid-view.hidden { display: none; }
@@ -131,10 +142,10 @@
         .birthday-card.is-today { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
         .birthday-avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 0.875rem; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1), visibility 300ms cubic-bezier(0.4, 0, 0.2, 1); }
-        .modal-overlay.show { opacity: 1; visibility: visible; }
-        .modal-content { background: #ffffff; border-radius: 1.5rem; padding: 1.75rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; transform: scale(0.68) translateY(20px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35); transition: transform 340ms cubic-bezier(0.4, 0.0, 0.2, 1), border-radius 340ms cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 340ms cubic-bezier(0.4, 0.0, 0.2, 1); }
-        .modal-overlay.show .modal-content { transform: scale(1) translateY(0); border-radius: 1rem; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: none; align-items: center; justify-content: center; z-index: 1000; }
+        .modal-overlay.show { display: flex !important; animation: modalBackdropFadeIn 320ms cubic-bezier(0.4, 0, 0.2, 1) forwards !important; }
+        .modal-content { background: #ffffff; border-radius: 1.25rem; padding: 1.75rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35); }
+        .modal-overlay.show .modal-content { animation: modalExpandIn 350ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important; transform-origin: center center; }
 
         @media (max-width: 640px) {
             .quick-access-card { padding: 1rem; }
@@ -1870,18 +1881,20 @@
                             </div>
                         </div>
                         <div class="news-accordion-content" id="news-content-${item.id}">
-                            ${item.imagen ? `
-                            <div class="w-full h-40 bg-gray-100 rounded-lg overflow-hidden mb-3">
-                                <img src="/storage/noticias/${item.imagen}" alt="${item.titulo}" class="w-full h-full object-cover">
+                            <div class="px-4 pb-4 pt-1 space-y-2">
+                                ${item.imagen ? `
+                                <div class="w-full h-44 bg-gray-100 rounded-xl overflow-hidden mb-3 shadow-inner">
+                                    <img src="/storage/noticias/${item.imagen}" alt="${item.titulo}" class="w-full h-full object-cover">
+                                </div>
+                                ` : ''}
+                                <p class="text-sm text-slate-600 leading-relaxed">${item.contenido}</p>
+                                ${canManageNews ? `
+                                <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-slate-200/80">
+                                    <button onclick="event.stopPropagation(); editNews(${item.id})" class="btn btn-secondary text-xs">✏️ Editar</button>
+                                    <button onclick="event.stopPropagation(); deleteNews(${item.id})" class="btn bg-red-500 hover:bg-red-600 text-white text-xs">🗑️ Eliminar</button>
+                                </div>
+                                ` : ''}
                             </div>
-                            ` : ''}
-                            <p class="text-sm text-slate-600 mt-2">${item.contenido}</p>
-                            ${canManageNews ? `
-                            <div class="flex justify-end gap-2 mt-3 pt-3 border-t border-slate-200">
-                                <button onclick="event.stopPropagation(); editNews(${item.id})" class="btn btn-secondary text-xs">✏️ Editar</button>
-                                <button onclick="event.stopPropagation(); deleteNews(${item.id})" class="btn bg-red-500 hover:bg-red-600 text-white text-xs">🗑️ Eliminar</button>
-                            </div>
-                            ` : ''}
                         </div>
                     </div>
                 `;

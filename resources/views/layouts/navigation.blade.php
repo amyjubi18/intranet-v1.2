@@ -265,39 +265,41 @@
             </svg>
         </div>
         <div class="submenu ml-4 {{ $isGticOpen ? 'bg-blue-700' : 'hidden' }}" id="gtic-submenu">
-            @can('user_index')
-            <a href="{{ $moduleUrl('gtic', 'users.index') }}" class="sidebar-item {{ $activeUsers ? 'active' : '' }}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-                <span>Usuarios</span>
-            </a>
-            @endcan
-            @can('role_index')
-            <a href="{{ $moduleUrl('gtic', 'gtic.roles.index') }}" class="sidebar-item {{ $activeRoles ? 'active' : '' }}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                </svg>
-                <span>Roles</span>
-            </a>
-            @endcan
-            @can('permission_index')
-            <a href="{{ $moduleUrl('gtic', 'gtic.permisos.index') }}" class="sidebar-item {{ $activePermisos ? 'active' : '' }}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                </svg>
-                <span>Permisos</span>
-            </a>
-            @endcan
-            @can('activity_log_index')
-            <a href="{{ $moduleUrl('gtic', 'gtic.activity-log.index') }}" class="sidebar-item {{ $activeActivityLog ? 'active' : '' }}">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-4m-4 0V9a2 2 0 1 1 4 0v2m-4 0v2a2 2 0 0 0 4 0v-2"/>
-                </svg>
-                <span>Registro de Actividades</span>
-            </a>
-            @endcan
+            <div class="submenu-inner">
+                @can('user_index')
+                <a href="{{ $moduleUrl('gtic', 'users.index') }}" class="sidebar-item {{ $activeUsers ? 'active' : '' }}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <span>Usuarios</span>
+                </a>
+                @endcan
+                @can('role_index')
+                <a href="{{ $moduleUrl('gtic', 'gtic.roles.index') }}" class="sidebar-item {{ $activeRoles ? 'active' : '' }}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    <span>Roles</span>
+                </a>
+                @endcan
+                @can('permission_index')
+                <a href="{{ $moduleUrl('gtic', 'gtic.permisos.index') }}" class="sidebar-item {{ $activePermisos ? 'active' : '' }}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span>Permisos</span>
+                </a>
+                @endcan
+                @can('activity_log_index')
+                <a href="{{ $moduleUrl('gtic', 'gtic.activity-log.index') }}" class="sidebar-item {{ $activeActivityLog ? 'active' : '' }}">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M9 11H5a2 2 0 0 0-2 2v3a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2h-4m-4 0V9a2 2 0 1 1 4 0v2m-4 0v2a2 2 0 0 0 4 0v-2"/>
+                    </svg>
+                    <span>Registro de Actividades</span>
+                </a>
+                @endcan
+            </div>
         </div>
         @endcan
         @endif
@@ -315,55 +317,190 @@
             </svg>
         </div>
         <div class="submenu ml-4 {{ $isOgaOpen ? 'bg-blue-700' : 'hidden' }}" id="oga-submenu">
-            @can('documentos')
-            <div class="sidebar-item {{ $isDocumentosOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('documentos')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                </svg>
-                <span>Dig de Documentos</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="documentos-arrow" style="{{ $isDocumentosOpen ? 'transform: rotate(180deg);' : '' }}">
-                    <polyline points="6,9 12,15 18,9"/>
-                </svg>
-            </div>
-            <div class="submenu ml-4 {{ $isDocumentosOpen ? 'bg-blue-700' : 'hidden' }}" id="documentos-submenu">
-                @can('documentos_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.documentos.index') }}" class="sidebar-item {{ $activeDocOGA ? 'active' : '' }}">
-                    <span>Documentos</span>
-                </a>
+            <div class="submenu-inner">
+                @can('documentos')
+                <div class="sidebar-item {{ $isDocumentosOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('documentos')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                    </svg>
+                    <span>Dig de Documentos</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="documentos-arrow" style="{{ $isDocumentosOpen ? 'transform: rotate(180deg);' : '' }}">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                <div class="submenu ml-4 {{ $isDocumentosOpen ? 'bg-blue-700' : 'hidden' }}" id="documentos-submenu">
+                    <div class="submenu-inner">
+                        @can('documentos_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.documentos.index') }}" class="sidebar-item {{ $activeDocOGA ? 'active' : '' }}">
+                            <span>Documentos</span>
+                        </a>
+                        @endcan
+                        @can('categorias_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.categorias.index') }}" class="sidebar-item {{ $activeCatOGA ? 'active' : '' }}">
+                            <span>Categorías</span>
+                        </a>
+                        @endcan
+                        @can('estanterias_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.estanterias.index') }}" class="sidebar-item {{ $activeEstOGA ? 'active' : '' }}">
+                            <span>Estanterías</span>
+                        </a>
+                        @endcan
+                    </div>
+                </div>
                 @endcan
-                @can('categorias_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.categorias.index') }}" class="sidebar-item {{ $activeCatOGA ? 'active' : '' }}">
-                    <span>Categorías</span>
-                </a>
-                @endcan
-                @can('estanterias_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.estanterias.index') }}" class="sidebar-item {{ $activeEstOGA ? 'active' : '' }}">
-                    <span>Estanterías</span>
-                </a>
-                @endcan
-            </div>
-            @endcan
 
-            @can('bienes')
-            <div class="sidebar-item {{ $isBienesOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('bienes')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/>
-                    <line x1="7" y1="7" x2="7.01" y2="7"/>
-                </svg>
-                <span>Bienes Muebles</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="bienes-arrow" style="{{ $isBienesOpen ? 'transform: rotate(180deg);' : '' }}">
-                    <polyline points="6,9 12,15 18,9"/>
-                </svg>
-            </div>
-            <div class="submenu ml-4 {{ $isBienesOpen ? 'bg-blue-700' : 'hidden' }}" id="bienes-submenu">
-                @can('bienes_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.bienes_publicos.index') }}" class="sidebar-item {{ $activeBienesRegistros ? 'active' : '' }}">
-                    <span>Registros</span>
-                </a>
+                @can('bienes')
+                <div class="sidebar-item {{ $isBienesOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('bienes')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.83z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                    <span>Bienes Muebles</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="bienes-arrow" style="{{ $isBienesOpen ? 'transform: rotate(180deg);' : '' }}">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                <div class="submenu ml-4 {{ $isBienesOpen ? 'bg-blue-700' : 'hidden' }}" id="bienes-submenu">
+                    <div class="submenu-inner">
+                        @can('bienes_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.bienes_publicos.index') }}" class="sidebar-item {{ $activeBienesRegistros ? 'active' : '' }}">
+                            <span>Registros</span>
+                        </a>
+                        @endcan
+                        @if($isAdminUser || $user->can('unidad_adminis_index') || $user->can('usuario_de_uso_index') || $user->can('usuario_administrativo_index') || $user->can('forma_adquisicion_index') || $user->can('estado_uso_index') || $user->can('color_index') || $user->can('condicion_index'))
+                        <div class="sidebar-item {{ $isCargaPreviaBienesOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('carga-previa-bienes')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                            <span>Carga Previa</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-bienes-arrow" style="{{ $isCargaPreviaBienesOpen ? 'transform: rotate(180deg);' : '' }}">
+                                <polyline points="6,9 12,15 18,9"/>
+                            </svg>
+                        </div>
+                        <div class="submenu ml-4 {{ $isCargaPreviaBienesOpen ? 'bg-blue-700' : 'hidden' }}" id="carga-previa-bienes-submenu">
+                            <div class="submenu-inner">
+                                @can('unidad_adminis_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.unidad_administrativa.index') }}" class="sidebar-item {{ $activeUnidadAdmin ? 'active' : '' }}">
+                                    <span>Unidad Administrativa</span>
+                                </a>
+                                @endcan
+                                @can('usuario_de_uso_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.usuario_de_uso.index') }}" class="sidebar-item {{ $activeUsuarioUso ? 'active' : '' }}">
+                                    <span>Usuarios de Uso</span>
+                                </a>
+                                @endcan
+                                @can('usuario_administrativo_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.usuario_administrativo.index') }}" class="sidebar-item {{ $activeUsuarioAdmin ? 'active' : '' }}">
+                                    <span>Usuarios Administrativo</span>
+                                </a>
+                                @endcan
+                                @can('forma_adquisicion_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.forma_adquisicion.index') }}" class="sidebar-item {{ $activeFormaAdq ? 'active' : '' }}">
+                                    <span>Forma de Adquisición</span>
+                                </a>
+                                @endcan
+                                @can('estado_uso_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.estado_del_uso.index') }}" class="sidebar-item {{ $activeEstadoUso ? 'active' : '' }}">
+                                    <span>Estado del Uso</span>
+                                </a>
+                                @endcan
+                                @can('color_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.colors.index') }}" class="sidebar-item {{ $activeColors ? 'active' : '' }}">
+                                    <span>Color</span>
+                                </a>
+                                @endcan
+                                @can('condicion_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.condicion_fisica.index') }}" class="sidebar-item {{ $activeCondicion ? 'active' : '' }}">
+                                    <span>Condición Física</span>
+                                </a>
+                                @endcan
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
                 @endcan
-                @if($isAdminUser || $user->can('unidad_adminis_index') || $user->can('usuario_de_uso_index') || $user->can('usuario_administrativo_index') || $user->can('forma_adquisicion_index') || $user->can('estado_uso_index') || $user->can('color_index') || $user->can('condicion_index'))
-                <div class="sidebar-item {{ $isCargaPreviaBienesOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('carga-previa-bienes')">
+
+                @can('inv-oficina')
+                <div class="sidebar-item {{ $isInvOficinaOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('inv-oficina')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        <polyline points="7.5,4.27 16.5,9.27"/>
+                        <polyline points="3.29,7 12,12 20.71,7"/>
+                        <line x1="12" y1="22.5" x2="12" y2="12"/>
+                    </svg>
+                    <span>Inv Oficina</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="inv-oficina-arrow" style="{{ $isInvOficinaOpen ? 'transform: rotate(180deg);' : '' }}">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                <div class="submenu ml-4 {{ $isInvOficinaOpen ? 'bg-blue-700' : 'hidden' }}" id="inv-oficina-submenu">
+                    <div class="submenu-inner">
+                        @can('inventarioofic_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.inventario_oficinas.index') }}" class="sidebar-item {{ $activeIngresoOfic ? 'active' : '' }}">
+                            <span>Ingresos de Oficina</span>
+                        </a>
+                        @endcan
+                        @can('salidaofic_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.salida_oficina.index') }}" class="sidebar-item {{ $activeSalidaOfic ? 'active' : '' }}">
+                            <span>Salida de Oficina</span>
+                        </a>
+                        @endcan
+                        @if($isAdminUser || $user->can('articulo_index') || $user->can('proveedor_index') || $user->can('unidad_medida_index') || $user->can('area_index') || $user->can('gerencia_index'))
+                        <div class="sidebar-item {{ $isCargaPreviaOficinaOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('carga-previa-oficina')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                            <span>Carga Previa</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-oficina-arrow" style="{{ $isCargaPreviaOficinaOpen ? 'transform: rotate(180deg);' : '' }}">
+                                <polyline points="6,9 12,15 18,9"/>
+                            </svg>
+                        </div>
+                        <div class="submenu ml-4 {{ $isCargaPreviaOficinaOpen ? 'bg-blue-700' : 'hidden' }}" id="carga-previa-oficina-submenu">
+                            <div class="submenu-inner">
+                                @can('articulo_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.articulos.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeArticuloOfic ? 'active' : '' }}">
+                                    <span>Artículos</span>
+                                </a>
+                                @endcan
+                                @can('proveedor_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.proveedores.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeProveedorOfic ? 'active' : '' }}">
+                                    <span>Proveedores</span>
+                                </a>
+                                @endcan
+                                @can('unidad_medida_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.unidad_medidas.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeUnidadMedidaOfic ? 'active' : '' }}">
+                                    <span>Unidad de Medida</span>
+                                </a>
+                                @endcan
+                                @can('area_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.areas.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeAreaOfic ? 'active' : '' }}">
+                                    <span>Área</span>
+                                </a>
+                                @endcan
+                                @can('gerencia_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.gerencias.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeGerenciaOfic ? 'active' : '' }}">
+                                    <span>Gerencia</span>
+                                </a>
+                                @endcan
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+                @endcan
+
+                @can('inv-consumibles')
+                <div class="sidebar-item {{ $isInvConsumiblesOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('inv-consumibles')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
                         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
                         <polyline points="14,2 14,8 20,8"/>
@@ -371,211 +508,92 @@
                         <line x1="16" y1="17" x2="8" y2="17"/>
                         <polyline points="10,9 9,9 8,9"/>
                     </svg>
-                    <span>Carga Previa</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-bienes-arrow" style="{{ $isCargaPreviaBienesOpen ? 'transform: rotate(180deg);' : '' }}">
+                    <span>Inv Consumibles</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="inv-consumibles-arrow" style="{{ $isInvConsumiblesOpen ? 'transform: rotate(180deg);' : '' }}">
                         <polyline points="6,9 12,15 18,9"/>
                     </svg>
                 </div>
-                <div class="submenu ml-4 {{ $isCargaPreviaBienesOpen ? 'bg-blue-700' : 'hidden' }}" id="carga-previa-bienes-submenu">
-                    @can('unidad_adminis_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.unidad_administrativa.index') }}" class="sidebar-item {{ $activeUnidadAdmin ? 'active' : '' }}">
-                        <span>Unidad Administrativa</span>
-                    </a>
-                    @endcan
-                    @can('usuario_de_uso_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.usuario_de_uso.index') }}" class="sidebar-item {{ $activeUsuarioUso ? 'active' : '' }}">
-                        <span>Usuarios de Uso</span>
-                    </a>
-                    @endcan
-                    @can('usuario_administrativo_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.usuario_administrativo.index') }}" class="sidebar-item {{ $activeUsuarioAdmin ? 'active' : '' }}">
-                        <span>Usuarios Administrativo</span>
-                    </a>
-                    @endcan
-                    @can('forma_adquisicion_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.forma_adquisicion.index') }}" class="sidebar-item {{ $activeFormaAdq ? 'active' : '' }}">
-                        <span>Forma de Adquisición</span>
-                    </a>
-                    @endcan
-                    @can('estado_uso_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.estado_del_uso.index') }}" class="sidebar-item {{ $activeEstadoUso ? 'active' : '' }}">
-                        <span>Estado del Uso</span>
-                    </a>
-                    @endcan
-                    @can('color_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.colors.index') }}" class="sidebar-item {{ $activeColors ? 'active' : '' }}">
-                        <span>Color</span>
-                    </a>
-                    @endcan
-                    @can('condicion_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.condicion_fisica.index') }}" class="sidebar-item {{ $activeCondicion ? 'active' : '' }}">
-                        <span>Condición Física</span>
-                    </a>
-                    @endcan
+                <div class="submenu ml-4 {{ $isInvConsumiblesOpen ? 'bg-blue-700' : 'hidden' }}" id="inv-consumibles-submenu">
+                    <div class="submenu-inner">
+                        @can('almacen_inv_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.almacenamiento_impresoras.index') }}" class="sidebar-item {{ $activeAlmacenConsumibles ? 'active' : '' }}">
+                            <span>Almacenamiento de Consumibles</span>
+                        </a>
+                        @endcan
+                        @can('dist_almac_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.distribucion_almacenamiento_impresoras.index') }}" class="sidebar-item {{ $activeDistribucionConsumibles ? 'active' : '' }}">
+                            <span>Distribución de Consumibles</span>
+                        </a>
+                        @endcan
+                        @can('salidaimpre_index')
+                        <a href="{{ $moduleUrl('admin', 'administracion.salida_almacen.index') }}" class="sidebar-item {{ $activeSalidaConsumibles ? 'active' : '' }}">
+                            <span>Salida de Consumibles</span>
+                        </a>
+                        @endcan
+                        @if($isAdminUser || $user->can('cartucho_index') || $user->can('colores_index') || $user->can('impresora_index') || $user->can('fabricante_index') || $user->can('proveedor_index') || $user->can('area_index') || $user->can('gerencia_index'))
+                        <div class="sidebar-item {{ $isCargaPreviaConsumiblesOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('carga-previa')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="16" y1="13" x2="8" y2="13"/>
+                                <line x1="16" y1="17" x2="8" y2="17"/>
+                                <polyline points="10,9 9,9 8,9"/>
+                            </svg>
+                            <span>Carga Previa</span>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-arrow" style="{{ $isCargaPreviaConsumiblesOpen ? 'transform: rotate(180deg);' : '' }}">
+                                <polyline points="6,9 12,15 18,9"/>
+                            </svg>
+                        </div>
+                        <div class="submenu ml-4 {{ $isCargaPreviaConsumiblesOpen ? 'bg-blue-700' : 'hidden' }}" id="carga-previa-submenu">
+                            <div class="submenu-inner">
+                                @can('cartucho_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.consumibles.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeConsumiblesItem ? 'active' : '' }}">
+                                    <span>Consumibles</span>
+                                </a>
+                                @endcan
+                                @can('colores_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.tipo_consumibles.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeTipoConsumibles ? 'active' : '' }}">
+                                    <span>Tipo Consumibles</span>
+                                </a>
+                                @endcan
+                                @can('impresora_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.impresoras.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeImpresoras ? 'active' : '' }}">
+                                    <span>Impresoras</span>
+                                </a>
+                                @endcan
+                                @can('fabricante_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.tipo_impresoras.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeTipoImpresoras ? 'active' : '' }}">
+                                    <span>Tipo Impresoras</span>
+                                </a>
+                                @endcan
+                                @can('proveedor_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.proveedores.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeProveedorConsumibles ? 'active' : '' }}">
+                                    <span>Proveedores</span>
+                                </a>
+                                @endcan
+                                @can('area_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.areas.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeAreaConsumibles ? 'active' : '' }}">
+                                    <span>Área</span>
+                                </a>
+                                @endcan
+                                @can('gerencia_index')
+                                <a href="{{ $moduleUrl('admin', 'administracion.gerencias.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeGerenciaConsumibles ? 'active' : '' }}">
+                                    <span>Gerencia</span>
+                                </a>
+                                @endcan
+                            </div>
+                        </div>
+                        @endif
+                    </div>
                 </div>
-                @endif
-            </div>
-            @endcan
+                @endcan
 
-            @can('inv-oficina')
-            <div class="sidebar-item {{ $isInvOficinaOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('inv-oficina')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                    <polyline points="7.5,4.27 16.5,9.27"/>
-                    <polyline points="3.29,7 12,12 20.71,7"/>
-                    <line x1="12" y1="22.5" x2="12" y2="12"/>
-                </svg>
-                <span>Inv Oficina</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="inv-oficina-arrow" style="{{ $isInvOficinaOpen ? 'transform: rotate(180deg);' : '' }}">
-                    <polyline points="6,9 12,15 18,9"/>
-                </svg>
+                @can('inventarioimpre_index')
+                <a href="{{ $moduleUrl('admin', 'administracion.reportes.index') }}" class="sidebar-item {{ $activeReportes ? 'active' : '' }}">
+                    <span>Reportes</span>
+                </a>
+                @endcan
             </div>
-            <div class="submenu ml-4 {{ $isInvOficinaOpen ? 'bg-blue-700' : 'hidden' }}" id="inv-oficina-submenu">
-                @can('inventarioofic_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.inventario_oficinas.index') }}" class="sidebar-item {{ $activeIngresoOfic ? 'active' : '' }}">
-                    <span>Ingresos de Oficina</span>
-                </a>
-                @endcan
-                @can('salidaofic_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.salida_oficina.index') }}" class="sidebar-item {{ $activeSalidaOfic ? 'active' : '' }}">
-                    <span>Salida de Oficina</span>
-                </a>
-                @endcan
-                @if($isAdminUser || $user->can('articulo_index') || $user->can('proveedor_index') || $user->can('unidad_medida_index') || $user->can('area_index') || $user->can('gerencia_index'))
-                <div class="sidebar-item {{ $isCargaPreviaOficinaOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('carga-previa-oficina')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14,2 14,8 20,8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10,9 9,9 8,9"/>
-                    </svg>
-                    <span>Carga Previa</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-oficina-arrow" style="{{ $isCargaPreviaOficinaOpen ? 'transform: rotate(180deg);' : '' }}">
-                        <polyline points="6,9 12,15 18,9"/>
-                    </svg>
-                </div>
-                <div class="submenu ml-4 {{ $isCargaPreviaOficinaOpen ? 'bg-blue-700' : 'hidden' }}" id="carga-previa-oficina-submenu">
-                    @can('articulo_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.articulos.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeArticuloOfic ? 'active' : '' }}">
-                        <span>Artículos</span>
-                    </a>
-                    @endcan
-                    @can('proveedor_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.proveedores.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeProveedorOfic ? 'active' : '' }}">
-                        <span>Proveedores</span>
-                    </a>
-                    @endcan
-                    @can('unidad_medida_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.unidad_medidas.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeUnidadMedidaOfic ? 'active' : '' }}">
-                        <span>Unidad de Medida</span>
-                    </a>
-                    @endcan
-                    @can('area_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.areas.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeAreaOfic ? 'active' : '' }}">
-                        <span>Área</span>
-                    </a>
-                    @endcan
-                    @can('gerencia_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.gerencias.index', ['from' => 'oficina']) }}" class="sidebar-item {{ $activeGerenciaOfic ? 'active' : '' }}">
-                        <span>Gerencia</span>
-                    </a>
-                    @endcan
-                </div>
-                @endif
-            </div>
-            @endcan
-
-            @can('inv-consumibles')
-            <div class="sidebar-item {{ $isInvConsumiblesOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('inv-consumibles')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                    <line x1="16" y1="13" x2="8" y2="13"/>
-                    <line x1="16" y1="17" x2="8" y2="17"/>
-                    <polyline points="10,9 9,9 8,9"/>
-                </svg>
-                <span>Inv Consumibles</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="inv-consumibles-arrow" style="{{ $isInvConsumiblesOpen ? 'transform: rotate(180deg);' : '' }}">
-                    <polyline points="6,9 12,15 18,9"/>
-                </svg>
-            </div>
-            <div class="submenu ml-4 {{ $isInvConsumiblesOpen ? 'bg-blue-700' : 'hidden' }}" id="inv-consumibles-submenu">
-                @can('almacen_inv_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.almacenamiento_impresoras.index') }}" class="sidebar-item {{ $activeAlmacenConsumibles ? 'active' : '' }}">
-                    <span>Almacenamiento de Consumibles</span>
-                </a>
-                @endcan
-                @can('dist_almac_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.distribucion_almacenamiento_impresoras.index') }}" class="sidebar-item {{ $activeDistribucionConsumibles ? 'active' : '' }}">
-                    <span>Distribución de Consumibles</span>
-                </a>
-                @endcan
-                @can('salidaimpre_index')
-                <a href="{{ $moduleUrl('admin', 'administracion.salida_almacen.index') }}" class="sidebar-item {{ $activeSalidaConsumibles ? 'active' : '' }}">
-                    <span>Salida de Consumibles</span>
-                </a>
-                @endcan
-                @if($isAdminUser || $user->can('cartucho_index') || $user->can('colores_index') || $user->can('impresora_index') || $user->can('fabricante_index') || $user->can('proveedor_index') || $user->can('area_index') || $user->can('gerencia_index'))
-                <div class="sidebar-item {{ $isCargaPreviaConsumiblesOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('carga-previa')">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                        <polyline points="14,2 14,8 20,8"/>
-                        <line x1="16" y1="13" x2="8" y2="13"/>
-                        <line x1="16" y1="17" x2="8" y2="17"/>
-                        <polyline points="10,9 9,9 8,9"/>
-                    </svg>
-                    <span>Carga Previa</span>
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="carga-previa-arrow" style="{{ $isCargaPreviaConsumiblesOpen ? 'transform: rotate(180deg);' : '' }}">
-                        <polyline points="6,9 12,15 18,9"/>
-                    </svg>
-                </div>
-                <div class="submenu ml-4 {{ $isCargaPreviaConsumiblesOpen ? 'bg-blue-700' : 'hidden' }}" id="carga-previa-submenu">
-                    @can('cartucho_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.consumibles.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeConsumiblesItem ? 'active' : '' }}">
-                        <span>Consumibles</span>
-                    </a>
-                    @endcan
-                    @can('colores_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.tipo_consumibles.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeTipoConsumibles ? 'active' : '' }}">
-                        <span>Tipo Consumibles</span>
-                    </a>
-                    @endcan
-                    @can('impresora_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.impresoras.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeImpresoras ? 'active' : '' }}">
-                        <span>Impresoras</span>
-                    </a>
-                    @endcan
-                    @can('fabricante_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.tipo_impresoras.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeTipoImpresoras ? 'active' : '' }}">
-                        <span>Tipo Impresoras</span>
-                    </a>
-                    @endcan
-                    @can('proveedor_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.proveedores.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeProveedorConsumibles ? 'active' : '' }}">
-                        <span>Proveedores</span>
-                    </a>
-                    @endcan
-                    @can('area_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.areas.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeAreaConsumibles ? 'active' : '' }}">
-                        <span>Área</span>
-                    </a>
-                    @endcan
-                    @can('gerencia_index')
-                    <a href="{{ $moduleUrl('admin', 'administracion.gerencias.index', ['from' => 'consumibles']) }}" class="sidebar-item {{ $activeGerenciaConsumibles ? 'active' : '' }}">
-                        <span>Gerencia</span>
-                    </a>
-                    @endcan
-                </div>
-                @endif
-            </div>
-            @endcan
-
-            @can('inventarioimpre_index')
-            <a href="{{ $moduleUrl('admin', 'administracion.reportes.index') }}" class="sidebar-item {{ $activeReportes ? 'active' : '' }}">
-                <span>Reportes</span>
-            </a>
-            @endcan
         </div>
         @endcan
         @endif
@@ -596,35 +614,39 @@
             </svg>
         </div>
         <div class="submenu ml-4 {{ $isOghOpen ? 'bg-blue-700' : 'hidden' }}" id="ogh-submenu">
-            @can('documentos')
-            <div class="sidebar-item {{ $isOghDocOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('ogh-documentos')">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                    <polyline points="14,2 14,8 20,8"/>
-                </svg>
-                <span>Dig de Documentos</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="ogh-documentos-arrow" style="{{ $isOghDocOpen ? 'transform: rotate(180deg);' : '' }}">
-                    <polyline points="6,9 12,15 18,9"/>
-                </svg>
+            <div class="submenu-inner">
+                @can('documentos')
+                <div class="sidebar-item {{ $isOghDocOpen ? 'bg-blue-900/30 font-medium' : '' }}" onclick="toggleSubmenu('ogh-documentos')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                        <polyline points="14,2 14,8 20,8"/>
+                    </svg>
+                    <span>Dig de Documentos</span>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" class="ml-auto transition-transform" id="ogh-documentos-arrow" style="{{ $isOghDocOpen ? 'transform: rotate(180deg);' : '' }}">
+                        <polyline points="6,9 12,15 18,9"/>
+                    </svg>
+                </div>
+                <div class="submenu ml-4 {{ $isOghDocOpen ? 'bg-blue-700' : 'hidden' }}" id="ogh-documentos-submenu">
+                    <div class="submenu-inner">
+                        @can('documentos_index')
+                        <a href="{{ $moduleUrl('gh', 'gestion-humana.digitalizacion_documentos.index') }}" class="sidebar-item {{ $activeDocOGH ? 'active' : '' }}">
+                            <span>Documentos</span>
+                        </a>
+                        @endcan
+                        @can('area_adscrita_index')
+                        <a href="{{ $moduleUrl('gh', 'gestion-humana.area_adscrita.index') }}" class="sidebar-item {{ $activeAreaAdscrita ? 'active' : '' }}">
+                            <span>Area Adscrita</span>
+                        </a>
+                        @endcan
+                        @can('tipo_documento_index')
+                        <a href="{{ $moduleUrl('gh', 'gestion-humana.tipo_documentos.index') }}" class="sidebar-item {{ $activeTipoDoc ? 'active' : '' }}">
+                            <span>Tipo de Documento</span>
+                        </a>
+                        @endcan
+                    </div>
+                </div>
+                @endcan
             </div>
-            <div class="submenu ml-4 {{ $isOghDocOpen ? 'bg-blue-700' : 'hidden' }}" id="ogh-documentos-submenu">
-                @can('documentos_index')
-                <a href="{{ $moduleUrl('gh', 'gestion-humana.digitalizacion_documentos.index') }}" class="sidebar-item {{ $activeDocOGH ? 'active' : '' }}">
-                    <span>Documentos</span>
-                </a>
-                @endcan
-                @can('area_adscrita_index')
-                <a href="{{ $moduleUrl('gh', 'gestion-humana.area_adscrita.index') }}" class="sidebar-item {{ $activeAreaAdscrita ? 'active' : '' }}">
-                    <span>Area Adscrita</span>
-                </a>
-                @endcan
-                @can('tipo_documento_index')
-                <a href="{{ $moduleUrl('gh', 'gestion-humana.tipo_documentos.index') }}" class="sidebar-item {{ $activeTipoDoc ? 'active' : '' }}">
-                    <span>Tipo de Documento</span>
-                </a>
-                @endcan
-            </div>
-            @endcan
         </div>
         @endcan
         @endif

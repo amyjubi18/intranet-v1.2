@@ -28,6 +28,18 @@ function SearchableSelect({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    // Elevar el contenedor padre inmediato para que el dropdown flote por encima de los demás campos y fechas
+    useEffect(() => {
+        if (containerRef.current && containerRef.current.parentElement) {
+            if (isOpen) {
+                containerRef.current.parentElement.style.zIndex = '99';
+                containerRef.current.parentElement.style.position = 'relative';
+            } else {
+                containerRef.current.parentElement.style.zIndex = '';
+            }
+        }
+    }, [isOpen]);
+
     const filtered = useMemo(() => {
         if (!search.trim()) return options;
         const q = search.toLowerCase();
@@ -40,7 +52,7 @@ function SearchableSelect({
     const selectedOption = options.find(opt => String(opt.id) === String(value));
 
     return (
-        <div className={`relative w-full ${isOpen ? 'z-50' : 'z-10'}`} ref={containerRef}>
+        <div className={`relative w-full ${isOpen ? 'z-[99]' : 'z-20'}`} ref={containerRef}>
             {label && (
                 <label className="block text-xs font-semibold text-blue-900 mb-1">
                     {label}
@@ -75,7 +87,7 @@ function SearchableSelect({
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 left-0 mt-1 w-full min-w-[220px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-fadeIn ring-1 ring-black/5">
+                <div className="absolute z-[100] left-0 mt-1 w-full min-w-[240px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-fadeIn ring-1 ring-black/5">
                     <div className="relative mb-2">
                         <input
                             type="text"
@@ -879,9 +891,9 @@ export default function InventarioOficinas() {
                         >
                             <div className={`${showAdvancedFilters ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300`}>
                                 <div className="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 relative z-20 overflow-visible">
                                         {/* Proveedor */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-75 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="🏢 Proveedor"
                                                 options={proveedoresOptions}
@@ -894,7 +906,7 @@ export default function InventarioOficinas() {
                                         </div>
 
                                         {/* Artículo */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-100 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="📦 Artículo"
                                                 options={articulosOptions}
@@ -907,7 +919,7 @@ export default function InventarioOficinas() {
                                         </div>
 
                                         {/* Unidad de Medida */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-150 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="📏 Unidad de Medida"
                                                 options={unidadMedidasOptions}
@@ -920,7 +932,7 @@ export default function InventarioOficinas() {
                                         </div>
 
                                         {/* Factura */}
-                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-200 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                        <div className={showAdvancedFilters ? 'relative transition-opacity duration-300 opacity-100' : 'opacity-0 pointer-events-none'}>
                                             <SearchableSelect
                                                 label="🧾 Número de Factura"
                                                 options={facturasOptions}
@@ -934,7 +946,7 @@ export default function InventarioOficinas() {
                                     </div>
 
                                     {/* Sección de Fechas con Presets */}
-                                    <div className={`mt-5 pt-4 border-t border-blue-100 transition-all duration-500 delay-250 ${showAdvancedFilters ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-2'}`}>
+                                    <div className={`mt-5 pt-4 border-t border-blue-100 relative z-10 transition-opacity duration-300 ${showAdvancedFilters ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
                                         <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
                                             <div className="flex items-center gap-3">
                                                 <span className="text-xs font-bold text-blue-950">📅 Filtrar por Rango de Fechas:</span>
