@@ -260,7 +260,25 @@ submitBtn.disabled = true;
 
 // Inicialización
 document.addEventListener('DOMContentLoaded', function() {
-createNetworkBackground();
+    createNetworkBackground();
+});
+
+// Evitar error 419 (Página caducada): si se navega hacia atrás desde el historial o caché bfcache
+window.addEventListener('pageshow', function (event) {
+    if (event.persisted) {
+        window.location.reload();
+    }
+});
+
+// Si la pestaña de inicio de sesión queda abierta e inactiva por más de 15 minutos, refrescar al volver para renovar el token CSRF
+let pageLoadTime = Date.now();
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+        const minutesInactive = (Date.now() - pageLoadTime) / (1000 * 60);
+        if (minutesInactive >= 15) {
+            window.location.reload();
+        }
+    }
 });
 </script>
 </body>

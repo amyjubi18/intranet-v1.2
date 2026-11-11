@@ -41,8 +41,47 @@ class InventarioOficController extends Controller
             });
         }
 
-        // Aplicar filtros según el tipo seleccionado
-        if ($request->filled('filterType')) {
+        // Filtros combinados específicos
+        if ($request->filled('proveedore_id')) {
+            $query->where('proveedore_id', $request->proveedore_id);
+        }
+
+        if ($request->filled('articulo_id')) {
+            $query->where('articulo_id', $request->articulo_id);
+        }
+
+        if ($request->filled('unidad_medida_id')) {
+            $query->where('unidad_medida_id', $request->unidad_medida_id);
+        }
+
+        if ($request->filled('n_factura')) {
+            $query->where('n_factura', 'like', '%' . $request->n_factura . '%');
+        }
+
+        // Filtro por rango de fechas (fecha_ingreso o created_at)
+        $dateColumn = ($request->input('tipo_fecha') === 'fecha_creacion' || $request->input('tipo_fecha') === 'created_at') ? 'created_at' : 'fecha_ingreso';
+        if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+            if ($dateColumn === 'created_at') {
+                $query->whereBetween('created_at', [$request->fecha_desde . ' 00:00:00', $request->fecha_hasta . ' 23:59:59']);
+            } else {
+                $query->whereBetween('fecha_ingreso', [$request->fecha_desde, $request->fecha_hasta]);
+            }
+        } elseif ($request->filled('fecha_desde')) {
+            if ($dateColumn === 'created_at') {
+                $query->where('created_at', '>=', $request->fecha_desde . ' 00:00:00');
+            } else {
+                $query->where('fecha_ingreso', '>=', $request->fecha_desde);
+            }
+        } elseif ($request->filled('fecha_hasta')) {
+            if ($dateColumn === 'created_at') {
+                $query->where('created_at', '<=', $request->fecha_hasta . ' 23:59:59');
+            } else {
+                $query->where('fecha_ingreso', '<=', $request->fecha_hasta);
+            }
+        }
+
+        // Aplicar filtros según el tipo seleccionado (compatibilidad heredada)
+        if ($request->filled('filterType') && !$request->filled('proveedore_id') && !$request->filled('articulo_id') && !$request->filled('unidad_medida_id')) {
             switch ($request->filterType) {
                 case 'fecha':
                     if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
@@ -114,7 +153,7 @@ case 'busqueda':
         $inventario_oficinas_paginated = $query->paginate(15);
 
         // Determinar si estamos filtrando por artículo específico (para mostrar todos los registros individuales)
-        $mostrarTodosRegistros = $request->filled('filterType') && $request->filterType === 'articulo_id' && $request->filled('secondFilter');
+        $mostrarTodosRegistros = ($request->filled('filterType') && $request->filterType === 'articulo_id' && $request->filled('secondFilter')) || $request->filled('articulo_id');
 
         // Calcular totales por artículo ANTES de cualquier agrupación
         $totalesPorArticulo = [];
@@ -452,7 +491,46 @@ case 'busqueda':
             });
         }
 
-        if ($request->filled('filterType')) {
+        // Filtros combinados específicos
+        if ($request->filled('proveedore_id')) {
+            $query->where('proveedore_id', $request->proveedore_id);
+        }
+
+        if ($request->filled('articulo_id')) {
+            $query->where('articulo_id', $request->articulo_id);
+        }
+
+        if ($request->filled('unidad_medida_id')) {
+            $query->where('unidad_medida_id', $request->unidad_medida_id);
+        }
+
+        if ($request->filled('n_factura')) {
+            $query->where('n_factura', 'like', '%' . $request->n_factura . '%');
+        }
+
+        // Filtro por rango de fechas (fecha_ingreso o created_at)
+        $dateColumn = ($request->input('tipo_fecha') === 'fecha_creacion' || $request->input('tipo_fecha') === 'created_at') ? 'created_at' : 'fecha_ingreso';
+        if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+            if ($dateColumn === 'created_at') {
+                $query->whereBetween('created_at', [$request->fecha_desde . ' 00:00:00', $request->fecha_hasta . ' 23:59:59']);
+            } else {
+                $query->whereBetween('fecha_ingreso', [$request->fecha_desde, $request->fecha_hasta]);
+            }
+        } elseif ($request->filled('fecha_desde')) {
+            if ($dateColumn === 'created_at') {
+                $query->where('created_at', '>=', $request->fecha_desde . ' 00:00:00');
+            } else {
+                $query->where('fecha_ingreso', '>=', $request->fecha_desde);
+            }
+        } elseif ($request->filled('fecha_hasta')) {
+            if ($dateColumn === 'created_at') {
+                $query->where('created_at', '<=', $request->fecha_hasta . ' 23:59:59');
+            } else {
+                $query->where('fecha_ingreso', '<=', $request->fecha_hasta);
+            }
+        }
+
+        if ($request->filled('filterType') && !$request->filled('proveedore_id') && !$request->filled('articulo_id') && !$request->filled('unidad_medida_id')) {
             switch ($request->filterType) {
                 case 'fecha':
                     if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {

@@ -1,6 +1,192 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Swal from 'sweetalert2';
 import { downloadWithProgress } from '../../utils/downloadWithProgress';
+
+/**
+ * Selector buscable interactivo con autocompletado y diseño Tailwind
+ */
+function SearchableSelect({
+    label,
+    options = [],
+    value,
+    onChange,
+    placeholder = 'Seleccionar...',
+    allLabel = 'Todos',
+    icon = '📋'
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (containerRef.current && !containerRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return options;
+        const q = search.toLowerCase();
+        return options.filter(opt => {
+            const labelStr = (opt.label || opt.name || opt.text || String(opt.id || '')).toLowerCase();
+            return labelStr.includes(q);
+        });
+    }, [options, search]);
+
+    const selectedOption = options.find(opt => String(opt.id) === String(value));
+
+    return (
+        <div className="relative w-full" ref={containerRef}>
+            {label && (
+                <label className="block text-xs font-semibold text-blue-900 mb-1">
+                    {label}
+                </label>
+            )}
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-blue-100/70 hover:bg-blue-100 text-slate-800 text-xs font-semibold rounded-xl border border-white/20 transition-all text-left shadow-2xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+            >
+                <div className="flex items-center gap-1.5 truncate">
+                    <span className="text-xs opacity-70">{icon}</span>
+                    <span className="truncate">
+                        {selectedOption ? selectedOption.label : placeholder}
+                    </span>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {value ? (
+                        <span
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onChange('');
+                            }}
+                            className="text-slate-400 hover:text-red-600 p-0.5 cursor-pointer font-bold text-xs"
+                            title="Quitar filtro"
+                        >
+                            ✕
+                        </span>
+                    ) : null}
+                    <span className="text-[10px] text-slate-500">▼</span>
+                </div>
+            </button>
+
+            {isOpen && (
+                <div className="absolute z-50 left-0 mt-1 w-full min-w-[220px] bg-white border border-slate-200 rounded-2xl shadow-xl p-2 animate-fadeIn">
+                    <div className="relative mb-2">
+                        <input
+                            type="text"
+                            autoFocus
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Buscar en la lista..."
+                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-slate-50 rounded-lg border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none"
+                        />
+                        <span className="absolute left-2 top-1.5 text-xs text-slate-400">🔍</span>
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto space-y-0.5 text-xs">
+                        <div
+                            onClick={() => {
+                                onChange('');
+                                setIsOpen(false);
+                                setSearch('');
+                            }}
+                            className={`px-3 py-2 rounded-lg cursor-pointer font-medium transition-colors ${
+                                !value ? 'bg-blue-900 text-white font-bold' : 'text-slate-600 hover:bg-blue-50'
+                            }`}
+                        >
+                            {allLabel}
+                        </div>
+
+                        {filtered.length === 0 ? (
+                            <div className="px-3 py-2 text-center text-xs text-slate-400 font-medium">
+                                Sin coincidencias
+                            </div>
+                        ) : (
+                            filtered.map((opt) => {
+                                const isSelected = String(opt.id) === String(value);
+                                return (
+                                    <div
+                                        key={opt.id}
+                                        onClick={() => {
+                                            onChange(opt.id);
+                                            setIsOpen(false);
+                                            setSearch('');
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg cursor-pointer transition-colors truncate flex items-center justify-between ${
+                                            isSelected
+                                                ? 'bg-blue-900 text-white font-bold'
+                                                : 'text-slate-700 hover:bg-blue-50 hover:text-blue-900'
+                                        }`}
+                                    >
+                                        <span className="truncate">{opt.label}</span>
+                                        {isSelected && <span className="ml-1 text-xs">✓</span>}
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+/**
+ * Calcula el estado de stock y color según las reglas:
+ * - 41% a 100%: Verde
+ * - Menor o igual a 40%: Amarillo
+ * - Límite de stock mínimo o sin stock (0): Rojo
+ */
+function getStockStatus(unidadesDisponibles, unidadesTotales, stockMin) {
+    const disp = Number(unidadesDisponibles) || 0;
+    const total = Number(unidadesTotales) || 0;
+    const min = Number(stockMin) || 0;
+    const percent = total > 0 ? Math.min(100, Math.max(0, Math.round((disp / total) * 100))) : 0;
+
+    // Condición roja: sin stock (disp <= 0) o cuando ya esté al límite o por debajo del stock mínimo
+    const isAtLimitOrEmpty = disp <= 0 || (min > 0 ? disp <= min : disp <= 5);
+
+    if (isAtLimitOrEmpty) {
+        return {
+            color: 'red',
+            textClass: 'text-red-600',
+            bgClass: 'bg-red-500',
+            borderClass: 'border-red-300',
+            badgeBg: 'bg-red-50 text-red-700 border-red-200',
+            label: disp <= 0 ? 'Sin Stock' : 'Stock Mínimo',
+            percent
+        };
+    }
+
+    // Condición amarilla: menor o igual al 40% (cuando esté bajo de 40%)
+    if (percent <= 40) {
+        return {
+            color: 'yellow',
+            textClass: 'text-amber-500',
+            bgClass: 'bg-amber-400',
+            borderClass: 'border-amber-300',
+            badgeBg: 'bg-amber-50 text-amber-700 border-amber-200',
+            label: 'Stock Bajo',
+            percent
+        };
+    }
+
+    // Condición verde: de 41% a 100%
+    return {
+        color: 'green',
+        textClass: 'text-emerald-600',
+        bgClass: 'bg-emerald-500',
+        borderClass: 'border-emerald-300',
+        badgeBg: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+        label: 'Stock Óptimo',
+        percent
+    };
+}
 
 export default function InventarioOficinas() {
     const [inventario, setInventario] = useState([]);
@@ -36,16 +222,55 @@ export default function InventarioOficinas() {
         can_export: false
     });
 
-    // Filtros
+    // Filtros combinados simultáneos
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-    const [filterType, setFilterType] = useState('');
-    const [secondFilter, setSecondFilter] = useState('');
     const [busqueda, setBusqueda] = useState('');
+    const [filterProveedor, setFilterProveedor] = useState('');
+    const [filterArticulo, setFilterArticulo] = useState('');
+    const [filterUnidadMedida, setFilterUnidadMedida] = useState('');
+    const [filterFactura, setFilterFactura] = useState('');
+    const [tipoFecha, setTipoFecha] = useState('fecha_ingreso'); // 'fecha_ingreso' | 'fecha_creacion'
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
 
     // Selección múltiple
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // Opciones formateadas para los SearchableSelect
+    const proveedoresOptions = useMemo(() => {
+        return (catalogs.proveedores || []).map(p => ({
+            id: p.id,
+            label: p.proveedor
+        }));
+    }, [catalogs.proveedores]);
+
+    const articulosOptions = useMemo(() => {
+        return (catalogs.articulos || []).map(a => ({
+            id: a.id,
+            label: `${String(a.id).padStart(4, '0')} - ${a.articulo}`
+        }));
+    }, [catalogs.articulos]);
+
+    const unidadMedidasOptions = useMemo(() => {
+        return (catalogs.unidad_medidas || []).map(u => ({
+            id: u.id,
+            label: u.unidad_medida
+        }));
+    }, [catalogs.unidad_medidas]);
+
+    const facturasOptions = useMemo(() => {
+        return (catalogs.facturas || []).map(f => ({
+            id: f,
+            label: `Factura #${f}`
+        }));
+    }, [catalogs.facturas]);
+
+    // Conteo de filtros activos
+    const activeFiltersCount = (filterProveedor ? 1 : 0) +
+        (filterArticulo ? 1 : 0) +
+        (filterUnidadMedida ? 1 : 0) +
+        (filterFactura ? 1 : 0) +
+        (fechaDesde || fechaHasta ? 1 : 0);
 
     // Cargar datos desde la API
     const fetchInventario = useCallback(async (page = 1) => {
@@ -53,18 +278,14 @@ export default function InventarioOficinas() {
         setError(null);
         try {
             const params = new URLSearchParams({ page });
-            if (busqueda.trim()) {
-                params.append('busqueda', busqueda.trim());
-            }
-            if (filterType) {
-                params.append('filterType', filterType);
-                if (filterType === 'fecha' || filterType === 'fecha_creacion') {
-                    if (fechaDesde) params.append('fecha_desde', fechaDesde);
-                    if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-                } else if (secondFilter) {
-                    params.append('secondFilter', secondFilter);
-                }
-            }
+            if (busqueda.trim()) params.append('busqueda', busqueda.trim());
+            if (filterProveedor) params.append('proveedore_id', filterProveedor);
+            if (filterArticulo) params.append('articulo_id', filterArticulo);
+            if (filterUnidadMedida) params.append('unidad_medida_id', filterUnidadMedida);
+            if (filterFactura) params.append('n_factura', filterFactura);
+            if (tipoFecha) params.append('tipo_fecha', tipoFecha);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
 
             const response = await fetch(`/api/administracion/inventario_oficinas?${params.toString()}`, {
                 headers: {
@@ -119,25 +340,58 @@ export default function InventarioOficinas() {
         } finally {
             setLoading(false);
         }
-    }, [filterType, secondFilter, busqueda, fechaDesde, fechaHasta]);
+    }, [busqueda, filterProveedor, filterArticulo, filterUnidadMedida, filterFactura, tipoFecha, fechaDesde, fechaHasta]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchInventario(1);
-        }, 350);
+        }, 300);
         return () => clearTimeout(timer);
-    }, [filterType, secondFilter, busqueda, fechaDesde, fechaHasta, fetchBienesDependencies(fetchInventario)]);
-
-    function fetchBienesDependencies(fn) {
-        return fn;
-    }
+    }, [fetchInventario]);
 
     const handleClearFilters = () => {
-        setFilterType('');
-        setSecondFilter('');
         setBusqueda('');
+        setFilterProveedor('');
+        setFilterArticulo('');
+        setFilterUnidadMedida('');
+        setFilterFactura('');
         setFechaDesde('');
         setFechaHasta('');
+    };
+
+    // Presets rápidos de fechas
+    const applyDatePreset = (preset) => {
+        const today = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const formatYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+        if (preset === 'today') {
+            const str = formatYMD(today);
+            setFechaDesde(str);
+            setFechaHasta(str);
+        } else if (preset === 'week') {
+            const dayOfWeek = today.getDay();
+            const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + diff);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            setFechaDesde(formatYMD(monday));
+            setFechaHasta(formatYMD(sunday));
+        } else if (preset === 'month') {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            setFechaDesde(formatYMD(firstDay));
+            setFechaHasta(formatYMD(lastDay));
+        } else if (preset === 'year') {
+            const firstDay = new Date(today.getFullYear(), 0, 1);
+            const lastDay = new Date(today.getFullYear(), 11, 31);
+            setFechaDesde(formatYMD(firstDay));
+            setFechaHasta(formatYMD(lastDay));
+        } else if (preset === 'clear') {
+            setFechaDesde('');
+            setFechaHasta('');
+        }
     };
 
     const toggleSelect = (id) => {
@@ -160,21 +414,25 @@ export default function InventarioOficinas() {
 
         try {
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            const res = await fetch(`/api/administracion/inventario_oficinas/${item.id}`, {
+            const res = await fetch(`/administracion/inventario_oficinas/${item.id}`, {
                 method: 'DELETE',
                 headers: {
+                    'Content-Type': 'application/json',
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': token || '',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
 
-            if (!res.ok) throw new Error('Error al eliminar');
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(json.message || 'Error al eliminar el registro');
+            }
 
             Swal.fire({
                 icon: 'success',
                 title: 'Eliminado',
-                text: 'El registro fue eliminado correctamente.',
+                text: json.message || 'Registro eliminado correctamente.',
                 timer: 2000,
                 showConfirmButton: false
             });
@@ -189,10 +447,7 @@ export default function InventarioOficinas() {
     };
 
     const handleDeleteSelected = async () => {
-        if (selectedIds.length === 0) {
-            Swal.fire('Selección', 'Debe seleccionar al menos un registro para eliminar.', 'info');
-            return;
-        }
+        if (selectedIds.length === 0) return;
 
         const { value: password } = await Swal.fire({
             title: '¿Estás seguro?',
@@ -327,18 +582,14 @@ export default function InventarioOficinas() {
             : '/administracion/inventario_oficinas/export/pdf';
 
         const params = new URLSearchParams();
-        if (busqueda.trim()) {
-            params.append('busqueda', busqueda.trim());
-        }
-        if (filterType) {
-            params.append('filterType', filterType);
-            if (filterType === 'fecha' || filterType === 'fecha_creacion') {
-                if (fechaDesde) params.append('fecha_desde', fechaDesde);
-                if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-            } else if (secondFilter) {
-                params.append('secondFilter', secondFilter);
-            }
-        }
+        if (busqueda.trim()) params.append('busqueda', busqueda.trim());
+        if (filterProveedor) params.append('proveedore_id', filterProveedor);
+        if (filterArticulo) params.append('articulo_id', filterArticulo);
+        if (filterUnidadMedida) params.append('unidad_medida_id', filterUnidadMedida);
+        if (filterFactura) params.append('n_factura', filterFactura);
+        if (tipoFecha) params.append('tipo_fecha', tipoFecha);
+        if (fechaDesde) params.append('fecha_desde', fechaDesde);
+        if (fechaHasta) params.append('fecha_hasta', fechaHasta);
 
         const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
 
@@ -428,14 +679,14 @@ export default function InventarioOficinas() {
                             </span>
                         </div>
                         <p className="text-sm text-blue-900 font-semibold">Artículo Más Registrado</p>
-                        <h3 className="text-xs font-bold rounded-md mt-2 p-2 bg-purple-500/10 text-purple-950 truncate">
+                        <h4 className="text-lg font-bold text-slate-800 mt-1 truncate">
                             {metrics.articuloMasRegistros?.articulos?.articulo || 'N/A'}
-                        </h3>
+                        </h4>
                     </div>
                 </div>
             </div>
 
-            {/* Filtros y Controles (Diseño Original Exacto) */}
+            {/* Barra de Acciones y Filtros */}
             <div className="px-6 mb-6">
                 <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
                     <div className="flex flex-col gap-4">
@@ -515,121 +766,216 @@ export default function InventarioOficinas() {
                             </div>
                         </div>
 
-                        {/* Fila de filtros avanzados */}
-                        <div className="flex flex-wrap items-center gap-4">
-                            <button
-                                type="button"
-                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs"
-                            >
-                                Filtros Avanzados
-                            </button>
-
-                            {showAdvancedFilters && (
-                                <select
-                                    value={filterType}
-                                    onChange={(e) => {
-                                        setFilterType(e.target.value);
-                                        setSecondFilter('');
-                                        setFechaDesde('');
-                                        setFechaHasta('');
-                                    }}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
-                                >
-                                    <option value="">Seleccionar filtro</option>
-                                    <option value="fecha">Fecha de Factura</option>
-                                    <option value="fecha_creacion">Fecha de Ingreso</option>
-                                    <option value="proveedore_id">Proveedor</option>
-                                    <option value="articulo_id">Artículo</option>
-                                    <option value="unidad_medida_id">Unidad de Medida</option>
-                                    <option value="n_factura">Factura</option>
-                                </select>
-                            )}
-
-                            {showAdvancedFilters && filterType === 'proveedore_id' && (
-                                <select
-                                    value={secondFilter}
-                                    onChange={(e) => setSecondFilter(e.target.value)}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
-                                >
-                                    <option value="">Seleccionar Proveedor</option>
-                                    {(catalogs.proveedores || []).map(p => (
-                                        <option key={p.id} value={p.id}>{p.proveedor}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {showAdvancedFilters && filterType === 'articulo_id' && (
-                                <select
-                                    value={secondFilter}
-                                    onChange={(e) => setSecondFilter(e.target.value)}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
-                                >
-                                    <option value="">Seleccionar Artículo</option>
-                                    {(catalogs.articulos || []).map(a => (
-                                        <option key={a.id} value={a.id}>
-                                            {String(a.id).padStart(4, '0')} - {a.articulo}
-                                        </option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {showAdvancedFilters && filterType === 'unidad_medida_id' && (
-                                <select
-                                    value={secondFilter}
-                                    onChange={(e) => setSecondFilter(e.target.value)}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
-                                >
-                                    <option value="">Seleccionar Unidad</option>
-                                    {(catalogs.unidad_medidas || []).map(u => (
-                                        <option key={u.id} value={u.id}>{u.unidad_medida}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {showAdvancedFilters && filterType === 'n_factura' && (
-                                <select
-                                    value={secondFilter}
-                                    onChange={(e) => setSecondFilter(e.target.value)}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm font-medium text-slate-800"
-                                >
-                                    <option value="">Seleccionar Factura</option>
-                                    {(catalogs.facturas || []).map((f, i) => (
-                                        <option key={i} value={f}>{f}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {showAdvancedFilters && (filterType === 'fecha' || filterType === 'fecha_creacion') && (
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="date"
-                                        value={fechaDesde}
-                                        onChange={(e) => setFechaDesde(e.target.value)}
-                                        className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-3 py-2 text-sm font-medium text-slate-800"
-                                        title="Fecha Desde"
-                                    />
-                                    <span className="text-xs text-slate-500 font-semibold">hasta</span>
-                                    <input
-                                        type="date"
-                                        value={fechaHasta}
-                                        onChange={(e) => setFechaHasta(e.target.value)}
-                                        className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-3 py-2 text-sm font-medium text-slate-800"
-                                        title="Fecha Hasta"
-                                    />
-                                </div>
-                            )}
-
-                            {(filterType || secondFilter || busqueda || fechaDesde || fechaHasta) && (
+                        {/* Fila de control: Botón Filtros Avanzados con badge + Botón Limpiar si hay activos */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-3">
                                 <button
                                     type="button"
-                                    onClick={handleClearFilters}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs"
+                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                    className="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-colors"
                                 >
-                                    🗑️ Limpiar
+                                    <span>⚡ Filtros Avanzados</span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">
+                                            {activeFiltersCount}
+                                        </span>
+                                    )}
+                                    <span className="text-xs">{showAdvancedFilters ? '▲' : '▼'}</span>
                                 </button>
-                            )}
+
+                                {activeFiltersCount > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearFilters}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors"
+                                    >
+                                        <span>✕</span>
+                                        <span>Limpiar Filtros ({activeFiltersCount})</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Badges de filtros activos en horizontal */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {filterProveedor && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Proveedor: {proveedoresOptions.find(p => String(p.id) === String(filterProveedor))?.label || filterProveedor}</span>
+                                        <button type="button" onClick={() => setFilterProveedor('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterArticulo && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Artículo: {articulosOptions.find(a => String(a.id) === String(filterArticulo))?.label || filterArticulo}</span>
+                                        <button type="button" onClick={() => setFilterArticulo('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterUnidadMedida && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Unidad: {unidadMedidasOptions.find(u => String(u.id) === String(filterUnidadMedida))?.label || filterUnidadMedida}</span>
+                                        <button type="button" onClick={() => setFilterUnidadMedida('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterFactura && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Factura: #{filterFactura}</span>
+                                        <button type="button" onClick={() => setFilterFactura('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {(fechaDesde || fechaHasta) && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Fechas ({tipoFecha === 'fecha_creacion' ? 'Ingreso' : 'Factura'}): {fechaDesde || '...'} a {fechaHasta || '...'}</span>
+                                        <button type="button" onClick={() => { setFechaDesde(''); setFechaHasta(''); }} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                            </div>
                         </div>
+
+                        {/* Panel desplegable en cuadrícula (grid) */}
+                        {showAdvancedFilters && (
+                            <div className="mt-2 p-5 bg-gradient-to-br from-blue-50/60 to-slate-50/80 rounded-2xl border border-blue-100 shadow-inner">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    {/* Proveedor */}
+                                    <SearchableSelect
+                                        label="🏢 Proveedor"
+                                        options={proveedoresOptions}
+                                        value={filterProveedor}
+                                        onChange={setFilterProveedor}
+                                        placeholder="Todos los proveedores"
+                                        allLabel="Todos los proveedores"
+                                        icon="🏢"
+                                    />
+
+                                    {/* Artículo */}
+                                    <SearchableSelect
+                                        label="📦 Artículo"
+                                        options={articulosOptions}
+                                        value={filterArticulo}
+                                        onChange={setFilterArticulo}
+                                        placeholder="Todos los artículos"
+                                        allLabel="Todos los artículos"
+                                        icon="📦"
+                                    />
+
+                                    {/* Unidad de Medida */}
+                                    <SearchableSelect
+                                        label="📏 Unidad de Medida"
+                                        options={unidadMedidasOptions}
+                                        value={filterUnidadMedida}
+                                        onChange={setFilterUnidadMedida}
+                                        placeholder="Todas las unidades"
+                                        allLabel="Todas las unidades"
+                                        icon="📏"
+                                    />
+
+                                    {/* Factura */}
+                                    <SearchableSelect
+                                        label="🧾 Número de Factura"
+                                        options={facturasOptions}
+                                        value={filterFactura}
+                                        onChange={setFilterFactura}
+                                        placeholder="Todas las facturas"
+                                        allLabel="Todas las facturas"
+                                        icon="🧾"
+                                    />
+                                </div>
+
+                                {/* Sección de Fechas con Presets */}
+                                <div className="mt-5 pt-4 border-t border-blue-100">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
+                                        <div className="flex items-center gap-3">
+                                            <span className="text-xs font-bold text-blue-950">📅 Filtrar por Rango de Fechas:</span>
+                                            <div className="inline-flex rounded-xl p-0.5 bg-blue-100/80 text-xs">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTipoFecha('fecha_ingreso')}
+                                                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                                                        tipoFecha === 'fecha_ingreso'
+                                                            ? 'bg-blue-900 text-white shadow-xs'
+                                                            : 'text-slate-600 hover:text-blue-900'
+                                                    }`}
+                                                >
+                                                    Fecha Factura
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setTipoFecha('fecha_creacion')}
+                                                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                                                        tipoFecha === 'fecha_creacion'
+                                                            ? 'bg-blue-900 text-white shadow-xs'
+                                                            : 'text-slate-600 hover:text-blue-900'
+                                                    }`}
+                                                >
+                                                    Fecha Ingreso Sistema
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {/* Presets Rápidos */}
+                                        <div className="flex items-center gap-1.5 flex-wrap">
+                                            <span className="text-[11px] font-semibold text-slate-500">Accesos rápidos:</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyDatePreset('today')}
+                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                            >
+                                                Hoy
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyDatePreset('week')}
+                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                            >
+                                                Esta Semana
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyDatePreset('month')}
+                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                            >
+                                                Este Mes
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => applyDatePreset('year')}
+                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                            >
+                                                Este Año
+                                            </button>
+                                            {(fechaDesde || fechaHasta) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('clear')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                                >
+                                                    Quitar fechas
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Desde:</label>
+                                            <input
+                                                type="date"
+                                                value={fechaDesde}
+                                                onChange={(e) => setFechaDesde(e.target.value)}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Hasta:</label>
+                                            <input
+                                                type="date"
+                                                value={fechaHasta}
+                                                onChange={(e) => setFechaHasta(e.target.value)}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
@@ -687,9 +1033,15 @@ export default function InventarioOficinas() {
 
                                 {/* Filas / Tarjetas de cada registro dentro del grupo */}
                                 {group.items.map((singleItem) => {
-                                    const percent = singleItem.unidades > 0
-                                        ? Math.min(100, Math.round((singleItem.unidades_disponibles / singleItem.unidades) * 100))
-                                        : 0;
+                                    // Cálculo de estado y color según requerimientos:
+                                    // 41% a 100%: Verde
+                                    // <= 40%: Amarillo
+                                    // Límite de stock min o 0 stock: Rojo
+                                    const status = getStockStatus(
+                                        singleItem.unidades_disponibles,
+                                        singleItem.unidades,
+                                        group.articulo?.stock_min
+                                    );
 
                                     return (
                                         <div
@@ -715,7 +1067,7 @@ export default function InventarioOficinas() {
                                                             {singleItem.fecha_ingreso
                                                                 ? singleItem.fecha_ingreso.split('T')[0].split('-').reverse().join('/')
                                                                 : 'N/A'}
-                                                        </p>
+                        </p>
                                                         <p className="text-xs text-blue-900 font-semibold mt-2">Item #</p>
                                                         <p className="font-mono text-sm font-bold text-blue-950">
                                                             {String(singleItem.articulo_id || 0).padStart(4, '0')}
@@ -741,20 +1093,26 @@ export default function InventarioOficinas() {
                                                     </div>
 
                                                     <div>
+                                                        {/* Progreso de Unidades Registradas con semáforo de colores */}
                                                         <div className="text-left md:text-right">
-                                                            <p className="text-xs text-black font-bold mb-1">Unidades Registradas</p>
+                                                            <div className="flex items-center justify-start md:justify-end gap-2 mb-1">
+                                                                <p className="text-xs text-black font-bold">Unidades Registradas</p>
+                                                                <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md border ${status.badgeBg}`}>
+                                                                    {status.percent}% ({status.label})
+                                                                </span>
+                                                            </div>
                                                             <div className="flex items-center gap-2 justify-start md:justify-end">
-                                                                <span className={`text-2xl font-bold ${singleItem.unidades_disponibles <= 5 ? 'text-red-500' : 'text-green-600'}`}>
+                                                                <span className={`text-2xl font-bold ${status.textClass}`}>
                                                                     {singleItem.unidades_disponibles}
                                                                 </span>
                                                                 <span className="text-xs text-blue-900 font-semibold">
                                                                     de {singleItem.unidades}
                                                                 </span>
                                                             </div>
-                                                            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                                                            <div className="w-full bg-slate-200 rounded-full h-2 mt-2 overflow-hidden">
                                                                 <div
-                                                                    className={`${percent < 25 ? 'bg-red-500' : 'bg-green-500'} h-2 rounded-full`}
-                                                                    style={{ width: `${percent}%` }}
+                                                                    className={`${status.bgClass} h-2 rounded-full transition-all duration-300`}
+                                                                    style={{ width: `${status.percent}%` }}
                                                                 ></div>
                                                             </div>
                                                         </div>

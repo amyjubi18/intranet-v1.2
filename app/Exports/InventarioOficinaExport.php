@@ -39,8 +39,47 @@ class InventarioOficinaExport implements FromCollection, WithHeadings, WithMappi
             });
         }
 
-        // Aplicar filtros
-        if (!empty($this->filters['filterType'])) {
+        // Filtros combinados específicos
+        if (!empty($this->filters['proveedore_id'])) {
+            $query->where('proveedore_id', $this->filters['proveedore_id']);
+        }
+
+        if (!empty($this->filters['articulo_id'])) {
+            $query->where('articulo_id', $this->filters['articulo_id']);
+        }
+
+        if (!empty($this->filters['unidad_medida_id'])) {
+            $query->where('unidad_medida_id', $this->filters['unidad_medida_id']);
+        }
+
+        if (!empty($this->filters['n_factura'])) {
+            $query->where('n_factura', 'like', '%' . $this->filters['n_factura'] . '%');
+        }
+
+        // Filtro por rango de fechas (fecha_ingreso o created_at)
+        $dateColumn = (!empty($this->filters['tipo_fecha']) && ($this->filters['tipo_fecha'] === 'fecha_creacion' || $this->filters['tipo_fecha'] === 'created_at')) ? 'created_at' : 'fecha_ingreso';
+        if (!empty($this->filters['fecha_desde']) && !empty($this->filters['fecha_hasta'])) {
+            if ($dateColumn === 'created_at') {
+                $query->whereBetween('created_at', [$this->filters['fecha_desde'] . ' 00:00:00', $this->filters['fecha_hasta'] . ' 23:59:59']);
+            } else {
+                $query->whereBetween('fecha_ingreso', [$this->filters['fecha_desde'], $this->filters['fecha_hasta']]);
+            }
+        } elseif (!empty($this->filters['fecha_desde'])) {
+            if ($dateColumn === 'created_at') {
+                $query->where('created_at', '>=', $this->filters['fecha_desde'] . ' 00:00:00');
+            } else {
+                $query->where('fecha_ingreso', '>=', $this->filters['fecha_desde']);
+            }
+        } elseif (!empty($this->filters['fecha_hasta'])) {
+            if ($dateColumn === 'created_at') {
+                $query->where('created_at', '<=', $this->filters['fecha_hasta'] . ' 23:59:59');
+            } else {
+                $query->where('fecha_ingreso', '<=', $this->filters['fecha_hasta']);
+            }
+        }
+
+        // Aplicar filtros heredados según el tipo seleccionado
+        if (!empty($this->filters['filterType']) && empty($this->filters['proveedore_id']) && empty($this->filters['articulo_id']) && empty($this->filters['unidad_medida_id'])) {
             switch ($this->filters['filterType']) {
                 case 'fecha':
                     if (!empty($this->filters['fecha_desde']) && !empty($this->filters['fecha_hasta'])) {

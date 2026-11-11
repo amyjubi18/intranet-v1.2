@@ -44,7 +44,21 @@ class Handler extends ExceptionHandler
     public function register(): void
     {
         $this->renderable(function (AuthenticationException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json(['message' => 'No autenticado.'], 401);
+            }
             return redirect()->route('login')->with('message', 'Tu sesión ha expirado. Por favor, inicia sesión nuevamente.');
+        });
+
+        // Manejar expiración de token CSRF (Error 419) y redirigir limpiamente al login
+        $this->renderable(function (\Illuminate\Session\TokenMismatchException $e, $request) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Tu sesión o token de seguridad ha expirado. Por favor, recarga la página e inicia sesión nuevamente.',
+                    'csrf_expired' => true
+                ], 419);
+            }
+            return redirect()->route('login')->with('message', 'Tu sesión ha caducado por inactividad o seguridad. Por favor, inicia sesión nuevamente.');
         });
 
         $this->reportable(function (Throwable $e) {
