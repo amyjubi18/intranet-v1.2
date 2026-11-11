@@ -26,8 +26,56 @@ class BienesExport implements FromCollection, WithHeadings, WithMapping, ShouldA
     {
         $query = Biene::with(['unidad_administrativas', 'usuario_administrativos', 'usuario_de_usos', 'forma_adquisicions', 'estado_del_usos', 'condicions', 'colors']);
 
-        // Aplicar filtros
-        if (!empty($this->filters['filterType'])) {
+        if (!empty($this->filters['selected_ids'])) {
+            $selectedIds = is_array($this->filters['selected_ids']) ? $this->filters['selected_ids'] : explode(',', $this->filters['selected_ids']);
+            $query->whereIn('id', array_filter($selectedIds));
+        }
+
+        if (!empty($this->filters['busqueda'])) {
+            $search = $this->filters['busqueda'];
+            $query->where(function($q) use ($search) {
+                $q->where('descripcion', 'like', '%' . $search . '%')
+                  ->orWhere('n_factura', 'like', '%' . $search . '%')
+                  ->orWhere('n_interno_bien', 'like', '%' . $search . '%')
+                  ->orWhere('marca', 'like', '%' . $search . '%')
+                  ->orWhere('modelo', 'like', '%' . $search . '%')
+                  ->orWhere('serial', 'like', '%' . $search . '%')
+                  ->orWhere('sede', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Filtros combinados específicos
+        if (!empty($this->filters['unidad_administrativa_id'])) {
+            $query->where('unidad_administrativa_id', $this->filters['unidad_administrativa_id']);
+        }
+        if (!empty($this->filters['usuario_administrativo_id'])) {
+            $query->where('usuario_administrativo_id', $this->filters['usuario_administrativo_id']);
+        }
+        if (!empty($this->filters['usuario_de_uso_id'])) {
+            $query->where('usuario_de_uso_id', $this->filters['usuario_de_uso_id']);
+        }
+        if (!empty($this->filters['estado_del_uso_id'])) {
+            $query->where('estado_del_uso_id', $this->filters['estado_del_uso_id']);
+        }
+        if (!empty($this->filters['condicion_id'])) {
+            $query->where('condicion_id', $this->filters['condicion_id']);
+        }
+        if (!empty($this->filters['color_id'])) {
+            $query->where('color_id', $this->filters['color_id']);
+        }
+        if (!empty($this->filters['forma_adquisicion_id'])) {
+            $query->where('forma_adquisicion_id', $this->filters['forma_adquisicion_id']);
+        }
+        if (!empty($this->filters['fecha_desde']) && !empty($this->filters['fecha_hasta'])) {
+            $query->whereBetween('fecha_adquisicion', [$this->filters['fecha_desde'], $this->filters['fecha_hasta']]);
+        } elseif (!empty($this->filters['fecha_desde'])) {
+            $query->where('fecha_adquisicion', '>=', $this->filters['fecha_desde']);
+        } elseif (!empty($this->filters['fecha_hasta'])) {
+            $query->where('fecha_adquisicion', '<=', $this->filters['fecha_hasta']);
+        }
+
+        // Aplicar filtros heredados (compatibilidad)
+        if (!empty($this->filters['filterType']) && empty($this->filters['unidad_administrativa_id']) && empty($this->filters['usuario_de_uso_id'])) {
             switch ($this->filters['filterType']) {
                 case 'fecha':
                     if (!empty($this->filters['fecha_desde']) && !empty($this->filters['fecha_hasta'])) {

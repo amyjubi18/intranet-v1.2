@@ -20,6 +20,11 @@ class SalidaImpresoraExport implements FromCollection, WithHeadings
     {
         $query = SalidaImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes', 'areas', 'gerencias', 'inventario_impresoras');
 
+        if ($this->request->filled('selected_ids')) {
+            $ids = is_array($this->request->selected_ids) ? $this->request->selected_ids : explode(',', $this->request->selected_ids);
+            $query->whereIn('salida_impresoras.id', array_filter($ids));
+        }
+
         // Apply filters similar to controller index
         if ($this->request->filled('fecha_desde') && $this->request->filled('fecha_hasta')) {
             $query->whereBetween('fecha_salida', [$this->request->input('fecha_desde'), $this->request->input('fecha_hasta')]);
@@ -47,6 +52,25 @@ class SalidaImpresoraExport implements FromCollection, WithHeadings
                     $query->where('fabricante_id', $secondFilter);
                     break;
             }
+        }
+
+        if ($this->request->filled('cartucho_id')) {
+            $query->where('cartucho_id', $this->request->cartucho_id);
+        }
+        if ($this->request->filled('colore_id')) {
+            $query->where('colore_id', $this->request->colore_id);
+        }
+        if ($this->request->filled('impresora_id')) {
+            $query->where('impresora_id', $this->request->impresora_id);
+        }
+        if ($this->request->filled('gerencia_id')) {
+            $query->where('gerencia_id', $this->request->gerencia_id);
+        }
+        if ($this->request->filled('area_id')) {
+            $query->where('area_id', $this->request->area_id);
+        }
+        if ($this->request->filled('fabricante_id')) {
+            $query->where('fabricante_id', $this->request->fabricante_id);
         }
         if ($this->request->filled('n_factura')) {
             $query->where('n_factura', 'like', '%' . $this->request->input('n_factura') . '%');

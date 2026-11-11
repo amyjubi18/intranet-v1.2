@@ -358,14 +358,15 @@ export default function PermisosManagement() {
 
             {/* MODAL DE CREAR / EDITAR PERMISO (DISEÑO ORIGINAL EXACTO) */}
             {showModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border-2 border-blue-500/20 my-8">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white/95 backdrop-blur-md rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border-2 border-blue-500/20 my-8 animate-modal-expand">
                         {/* Cabecera con icono original */}
                         <div className="text-center mb-6 relative">
                             <button
                                 type="button"
                                 onClick={() => setShowModal(false)}
-                                className="absolute right-0 top-0 text-slate-400 hover:text-slate-600 font-bold text-xl p-1"
+                                className="modal-close-btn absolute right-0 top-0"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>

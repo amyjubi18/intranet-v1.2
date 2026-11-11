@@ -23,6 +23,11 @@ class AlmacenamientoImpresoraExport implements FromQuery, WithHeadings, WithMapp
     {
         $query = AlmacenamientoImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes', 'proveedores');
 
+        if ($this->request->filled('selected_ids')) {
+            $ids = is_array($this->request->selected_ids) ? $this->request->selected_ids : explode(',', $this->request->selected_ids);
+            $query->whereIn('almacenamiento_impresoras.id', array_filter($ids));
+        }
+
         // Apply the same filters as in index
         if ($this->request->filled('fecha_desde_created_at') && $this->request->filled('fecha_hasta_created_at')) {
             $query->whereBetween('created_at', [$this->request->input('fecha_desde_created_at'), $this->request->input('fecha_hasta_created_at')]);
@@ -50,6 +55,21 @@ class AlmacenamientoImpresoraExport implements FromQuery, WithHeadings, WithMapp
                     $query->where('fabricante_id', $secondFilter);
                     break;
             }
+        }
+        if ($this->request->filled('cartucho_id')) {
+            $query->where('cartucho_id', $this->request->input('cartucho_id'));
+        }
+        if ($this->request->filled('colore_id')) {
+            $query->where('colore_id', $this->request->input('colore_id'));
+        }
+        if ($this->request->filled('impresora_id')) {
+            $query->where('impresora_id', $this->request->input('impresora_id'));
+        }
+        if ($this->request->filled('proveedore_id')) {
+            $query->where('proveedore_id', $this->request->input('proveedore_id'));
+        }
+        if ($this->request->filled('fabricante_id')) {
+            $query->where('fabricante_id', $this->request->input('fabricante_id'));
         }
         if ($this->request->filled('n_factura')) {
             $query->where('n_factura', 'like', '%' . $this->request->input('n_factura') . '%');

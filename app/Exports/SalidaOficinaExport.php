@@ -24,6 +24,11 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
             ->leftJoin('inventario_oficinas', 'salida_oficinas.inventario_oficina_id', '=', 'inventario_oficinas.id')
             ->select('salida_oficinas.*', 'inventario_oficinas.unidades_disponibles');
 
+        if (!empty($this->filters['selected_ids'])) {
+            $ids = is_array($this->filters['selected_ids']) ? $this->filters['selected_ids'] : explode(',', $this->filters['selected_ids']);
+            $query->whereIn('salida_oficinas.id', array_filter($ids));
+        }
+
         // Aplicar filtros igual que en el índice
         if (!empty($this->filters['filterType'])) {
             switch ($this->filters['filterType']) {

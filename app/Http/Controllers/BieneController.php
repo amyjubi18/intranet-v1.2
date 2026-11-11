@@ -86,8 +86,13 @@ class BieneController extends Controller
 
         $query = Biene::with(['unidad_administrativas', 'usuario_administrativos', 'usuario_de_usos', 'forma_adquisicions', 'estado_del_usos', 'condicions', 'colors']);
 
-        if ($request->filled('search')) {
-            $search = $request->search;
+        if ($request->filled('selected_ids')) {
+            $selectedIds = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('id', array_filter($selectedIds));
+        }
+
+        if ($request->filled('busqueda') || $request->filled('search')) {
+            $search = $request->busqueda ?: $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('descripcion', 'like', '%' . $search . '%')
                   ->orWhere('n_factura', 'like', '%' . $search . '%')
@@ -99,7 +104,50 @@ class BieneController extends Controller
             });
         }
 
-        if ($request->filled('filterType')) {
+        // Filtros combinados específicos
+        if ($request->filled('unidad_administrativa_id')) {
+            $query->where('unidad_administrativa_id', $request->unidad_administrativa_id);
+        }
+        if ($request->filled('usuario_administrativo_id')) {
+            $query->where('usuario_administrativo_id', $request->usuario_administrativo_id);
+        }
+        if ($request->filled('usuario_de_uso_id')) {
+            $query->where('usuario_de_uso_id', $request->usuario_de_uso_id);
+        }
+        if ($request->filled('estado_del_uso_id')) {
+            $query->where('estado_del_uso_id', $request->estado_del_uso_id);
+        }
+        if ($request->filled('condicion_id')) {
+            $query->where('condicion_id', $request->condicion_id);
+        }
+        if ($request->filled('color_id')) {
+            $query->where('color_id', $request->color_id);
+        }
+        if ($request->filled('forma_adquisicion_id')) {
+            $query->where('forma_adquisicion_id', $request->forma_adquisicion_id);
+        }
+        if ($request->filled('n_interno_bien')) {
+            $query->where('n_interno_bien', 'like', '%' . $request->n_interno_bien . '%');
+        }
+        if ($request->filled('marca')) {
+            $query->where('marca', 'like', '%' . $request->marca . '%');
+        }
+        if ($request->filled('modelo')) {
+            $query->where('modelo', 'like', '%' . $request->modelo . '%');
+        }
+        if ($request->filled('serial')) {
+            $query->where('serial', 'like', '%' . $request->serial . '%');
+        }
+        if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+            $query->whereBetween('fecha_adquisicion', [$request->fecha_desde, $request->fecha_hasta]);
+        } elseif ($request->filled('fecha_desde')) {
+            $query->where('fecha_adquisicion', '>=', $request->fecha_desde);
+        } elseif ($request->filled('fecha_hasta')) {
+            $query->where('fecha_adquisicion', '<=', $request->fecha_hasta);
+        }
+
+        // Compatibilidad con filtro antiguo
+        if ($request->filled('filterType') && !$request->filled('unidad_administrativa_id') && !$request->filled('usuario_de_uso_id')) {
             switch ($request->filterType) {
                 case 'fecha':
                     if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
@@ -622,8 +670,13 @@ class BieneController extends Controller
 
         $query = Biene::with(['unidad_administrativas', 'usuario_administrativos', 'usuario_de_usos', 'forma_adquisicions', 'estado_del_usos', 'condicions', 'colors']);
 
-        if ($request->filled('busqueda')) {
-            $search = $request->busqueda;
+        if ($request->filled('selected_ids')) {
+            $selectedIds = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('id', array_filter($selectedIds));
+        }
+
+        if ($request->filled('busqueda') || $request->filled('search')) {
+            $search = $request->busqueda ?: $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('descripcion', 'like', '%' . $search . '%')
                   ->orWhere('n_factura', 'like', '%' . $search . '%')
@@ -635,7 +688,49 @@ class BieneController extends Controller
             });
         }
 
-        if ($request->filled('filterType')) {
+        // Filtros combinados específicos
+        if ($request->filled('unidad_administrativa_id')) {
+            $query->where('unidad_administrativa_id', $request->unidad_administrativa_id);
+        }
+        if ($request->filled('usuario_administrativo_id')) {
+            $query->where('usuario_administrativo_id', $request->usuario_administrativo_id);
+        }
+        if ($request->filled('usuario_de_uso_id')) {
+            $query->where('usuario_de_uso_id', $request->usuario_de_uso_id);
+        }
+        if ($request->filled('estado_del_uso_id')) {
+            $query->where('estado_del_uso_id', $request->estado_del_uso_id);
+        }
+        if ($request->filled('condicion_id')) {
+            $query->where('condicion_id', $request->condicion_id);
+        }
+        if ($request->filled('color_id')) {
+            $query->where('color_id', $request->color_id);
+        }
+        if ($request->filled('forma_adquisicion_id')) {
+            $query->where('forma_adquisicion_id', $request->forma_adquisicion_id);
+        }
+        if ($request->filled('n_interno_bien')) {
+            $query->where('n_interno_bien', 'like', '%' . $request->n_interno_bien . '%');
+        }
+        if ($request->filled('marca')) {
+            $query->where('marca', 'like', '%' . $request->marca . '%');
+        }
+        if ($request->filled('modelo')) {
+            $query->where('modelo', 'like', '%' . $request->modelo . '%');
+        }
+        if ($request->filled('serial')) {
+            $query->where('serial', 'like', '%' . $request->serial . '%');
+        }
+        if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
+            $query->whereBetween('fecha_adquisicion', [$request->fecha_desde, $request->fecha_hasta]);
+        } elseif ($request->filled('fecha_desde')) {
+            $query->where('fecha_adquisicion', '>=', $request->fecha_desde);
+        } elseif ($request->filled('fecha_hasta')) {
+            $query->where('fecha_adquisicion', '<=', $request->fecha_hasta);
+        }
+
+        if ($request->filled('filterType') && !$request->filled('unidad_administrativa_id') && !$request->filled('usuario_de_uso_id')) {
             switch ($request->filterType) {
                 case 'fecha':
                     if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {

@@ -27,6 +27,11 @@ class SalidaImpresoraController extends Controller
 
         $query = SalidaImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes', 'areas', 'gerencias', 'inventario_impresoras');
 
+        if ($request->filled('selected_ids')) {
+            $ids = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('salida_impresoras.id', array_filter($ids));
+        }
+
         // Filtro de fecha mejorado para fecha_salida - permite filtrar por fechas individuales o rangos
         if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
             $query->whereBetween('fecha_salida', [$request->input('fecha_desde'), $request->input('fecha_hasta')]);
@@ -78,6 +83,25 @@ class SalidaImpresoraController extends Controller
                     $query->where('fabricante_id', $secondFilter);
                     break;
             }
+        }
+
+        if ($request->filled('cartucho_id')) {
+            $query->where('cartucho_id', $request->cartucho_id);
+        }
+        if ($request->filled('colore_id')) {
+            $query->where('colore_id', $request->colore_id);
+        }
+        if ($request->filled('impresora_id')) {
+            $query->where('impresora_id', $request->impresora_id);
+        }
+        if ($request->filled('gerencia_id')) {
+            $query->where('gerencia_id', $request->gerencia_id);
+        }
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->area_id);
+        }
+        if ($request->filled('fabricante_id')) {
+            $query->where('fabricante_id', $request->fabricante_id);
         }
 
         if ($request->filled('busqueda')) {
@@ -143,6 +167,11 @@ class SalidaImpresoraController extends Controller
 
         $query = SalidaImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes', 'areas', 'gerencias', 'inventario_impresoras');
 
+        if ($request->filled('selected_ids')) {
+            $ids = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('salida_impresoras.id', array_filter($ids));
+        }
+
         // Filtro de fecha mejorado para fecha_salida - permite filtrar por fechas individuales o rangos
         if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
             $query->whereBetween('fecha_salida', [$request->input('fecha_desde'), $request->input('fecha_hasta')]);
@@ -193,6 +222,25 @@ class SalidaImpresoraController extends Controller
                     $query->where('fabricante_id', $secondFilter);
                     break;
             }
+        }
+
+        if ($request->filled('cartucho_id')) {
+            $query->where('cartucho_id', $request->cartucho_id);
+        }
+        if ($request->filled('colore_id')) {
+            $query->where('colore_id', $request->colore_id);
+        }
+        if ($request->filled('impresora_id')) {
+            $query->where('impresora_id', $request->impresora_id);
+        }
+        if ($request->filled('gerencia_id')) {
+            $query->where('gerencia_id', $request->gerencia_id);
+        }
+        if ($request->filled('area_id')) {
+            $query->where('area_id', $request->area_id);
+        }
+        if ($request->filled('fabricante_id')) {
+            $query->where('fabricante_id', $request->fabricante_id);
         }
 
         if ($request->filled('busqueda')) {

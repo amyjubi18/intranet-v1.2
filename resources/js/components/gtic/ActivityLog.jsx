@@ -301,15 +301,15 @@ export default function ActivityLog() {
 
             {/* MODAL DETALLES DE ACTIVIDAD (DISEÑO EXACTO A show.blade.php) */}
             {detailModalOpen && selectedActivity && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full p-6 border border-gray-200 my-8 max-h-[90vh] overflow-y-auto">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white rounded-2xl shadow-xl max-w-4xl w-full p-6 border border-gray-200 my-8 max-h-[90vh] overflow-y-auto animate-modal-expand">
                         {/* Cabecera del Modal */}
                         <div className="flex justify-between items-center mb-6">
                             <h1 className="text-2xl font-bold">Detalles de Actividad</h1>
                             <button
                                 type="button"
                                 onClick={() => setDetailModalOpen(false)}
-                                className="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600 text-sm"
+                                className="bg-gray-500 text-white px-4 py-2 rounded-xl hover:bg-gray-600 text-sm transition-all shadow-sm"
                             >
                                 ← Volver
                             </button>

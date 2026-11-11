@@ -1073,8 +1073,8 @@ export default function DocumentosManagement() {
 
             {/* MODAL CREAR DOCUMENTO (REPLICANDO create.blade.php) */}
             {createModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-slate-200 my-8 max-h-[92vh] overflow-y-auto transition-all animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-slate-200 my-8 max-h-[92vh] overflow-y-auto transition-all animate-modal-expand">
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
                             <div>
                                 <h3 className="text-2xl font-bold text-slate-800">Cargar Documento</h3>
@@ -1084,9 +1084,10 @@ export default function DocumentosManagement() {
                                 type="button"
                                 onClick={() => setCreateModalOpen(false)}
                                 disabled={submitting}
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
@@ -1353,8 +1354,8 @@ export default function DocumentosManagement() {
 
             {/* MODAL EDITAR DOCUMENTO (REPLICANDO edit.blade.php) */}
             {editModalOpen && selectedDocumento && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-slate-200 my-8 max-h-[92vh] overflow-y-auto transition-all animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-slate-200 my-8 max-h-[92vh] overflow-y-auto transition-all animate-modal-expand">
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
                             <div>
                                 <h3 className="text-2xl font-bold text-slate-800">Editar Documento</h3>
@@ -1364,9 +1365,10 @@ export default function DocumentosManagement() {
                                 type="button"
                                 onClick={() => setEditModalOpen(false)}
                                 disabled={submitting}
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>
@@ -1618,8 +1620,8 @@ export default function DocumentosManagement() {
 
             {/* SUB-MODAL RÁPIDO PARA CREAR NUEVA CATEGORÍA (Z-INDEX SUPERIOR Z-[70]) */}
             {quickCatModalOpen && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 transition-all animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 transition-all animate-modal-expand">
                         {/* Cabecera del sub-modal */}
                         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
                             <div>
@@ -1635,7 +1637,8 @@ export default function DocumentosManagement() {
                                 type="button"
                                 onClick={() => setQuickCatModalOpen(false)}
                                 disabled={quickCatSubmitting}
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -1710,8 +1713,8 @@ export default function DocumentosManagement() {
 
             {/* MODAL PARA VISUALIZAR PDF CON CONTROLES ZOOM (DISEÑO EXACTO) */}
             {pdfViewerOpen && viewingPdf && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-hidden">
-                    <div className="relative w-full max-w-6xl overflow-hidden bg-white shadow-2xl rounded-2xl flex flex-col" style={{ maxHeight: '92vh' }}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 overflow-hidden animate-modal-backdrop">
+                    <div className="relative w-full max-w-6xl overflow-hidden bg-white shadow-2xl rounded-2xl flex flex-col animate-modal-expand" style={{ maxHeight: '92vh' }}>
                         {/* Header del Modal */}
                         <div className="flex items-center justify-between px-5 py-3.5 bg-blue-900 text-white">
                             <h3 className="text-base font-bold truncate max-w-lg" title={viewingPdf.nombre_archivo}>

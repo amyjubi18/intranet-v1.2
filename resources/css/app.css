@@ -570,3 +570,272 @@ background-color: #ffffffbc;
 .btn-save:active {
     transform: translateY(0);
 }
+
+/* ==========================================================================
+   ANIMACIÓN EXPANDIBLE DE MODALES (INSPIRADA EN MIKAEL AINALEM EXPANDING CARD)
+   Curva: cubic-bezier(0.4, 0.0, 0.2, 1) - Expansión fluida, suave y elástica
+   ========================================================================== */
+
+@keyframes modalBackdropFadeIn {
+  0% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+@keyframes modalExpandIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.65) translateY(24px);
+    border-radius: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  }
+  65% {
+    opacity: 0.98;
+    transform: scale(1.018) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    border-radius: 1rem;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35), 0 10px 24px -6px rgba(15, 23, 42, 0.2);
+  }
+}
+
+@keyframes modalContentStagger {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Clases utilitarias de Backdrop y Expansión */
+.modal-backdrop-animate,
+.animate-modal-backdrop {
+  animation: modalBackdropFadeIn 320ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+}
+
+.modal-expand,
+.animate-modal-expand {
+  animation: modalExpandIn 350ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+  transform-origin: center center;
+  will-change: transform, opacity, border-radius, box-shadow;
+}
+
+/* Aplicación automática a modales Blade estándar (.modal-overlay / .modal-content) */
+.modal-overlay.show,
+.modal-overlay:not(.hidden):not([style*="display: none"]):not([style*="display:none"]) {
+  display: flex !important;
+  animation: modalBackdropFadeIn 320ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+}
+
+.modal-overlay.show .modal-content,
+.modal-overlay:not(.hidden):not([style*="display: none"]):not([style*="display:none"]) .modal-content {
+  animation: modalExpandIn 350ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+  transform-origin: center center;
+  will-change: transform, opacity, border-radius, box-shadow;
+}
+
+/* Modal de Almacenamiento e Inventario de Impresoras (Blade #addModal) */
+#addModal:not(.hidden) {
+  animation: modalBackdropFadeIn 320ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+}
+#addModal:not(.hidden) > div {
+  animation: modalExpandIn 350ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+  transform-origin: center center;
+  will-change: transform, opacity, border-radius;
+}
+
+/* ==========================================================================
+   SWEETALERT2: ANIMACIÓN EXPANDIBLE CUBIC-BEZIER (MIKAEL AINALEM)
+   ========================================================================== */
+
+/* Anulación de keyframes nativos swal2-show y swal2-hide */
+@keyframes swal2-show {
+  0% {
+    opacity: 0;
+    transform: scale(0.65) translateY(24px);
+    border-radius: 2rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+  }
+  65% {
+    opacity: 0.98;
+    transform: scale(1.018) translateY(-2px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    border-radius: 1.25rem;
+    box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35), 0 10px 24px -6px rgba(15, 23, 42, 0.2);
+  }
+}
+
+@keyframes swal2-hide {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    border-radius: 1.25rem;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.65) translateY(18px);
+    border-radius: 2rem;
+  }
+}
+
+@keyframes modalBackdropFadeOut {
+  0% {
+    opacity: 1;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+  100% {
+    opacity: 0;
+    backdrop-filter: blur(0px);
+    -webkit-backdrop-filter: blur(0px);
+  }
+}
+
+@keyframes modalContractOut {
+  0% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    border-radius: 1.25rem;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.65) translateY(18px);
+    border-radius: 2rem;
+  }
+}
+
+.modal-contract,
+.animate-modal-contract {
+  animation: modalContractOut 220ms cubic-bezier(0.4, 0.0, 1, 1) forwards !important;
+}
+
+.modal-backdrop-out,
+.animate-modal-backdrop-out {
+  animation: modalBackdropFadeOut 220ms cubic-bezier(0.4, 0.0, 1, 1) forwards !important;
+}
+
+/* Reglas de máxima especificidad para el contenedor backdrop de SweetAlert2 */
+html body.swal2-shown .swal2-container,
+div.swal2-container {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+}
+
+div.swal2-container.swal2-backdrop-show,
+.swal2-container.swal2-backdrop-show {
+  animation: modalBackdropFadeIn 320ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+}
+
+div.swal2-container.swal2-backdrop-hide,
+.swal2-container.swal2-backdrop-hide {
+  animation: modalBackdropFadeOut 220ms cubic-bezier(0.4, 0.0, 1, 1) forwards !important;
+}
+
+/* Reglas de máxima especificidad para el popup de SweetAlert2 */
+html body.swal2-shown .swal2-popup,
+div.swal2-popup {
+  border-radius: 1.25rem !important;
+  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35), 0 10px 24px -6px rgba(15, 23, 42, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  transform-origin: center center !important;
+  will-change: transform, opacity, border-radius, box-shadow;
+}
+
+div.swal2-popup.swal2-show,
+.swal2-popup.swal2-show,
+.swal2-show {
+  animation: modalExpandIn 350ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+}
+
+div.swal2-popup.swal2-hide,
+.swal2-popup.swal2-hide,
+.swal2-hide {
+  animation: modalContractOut 220ms cubic-bezier(0.4, 0.0, 1, 1) forwards !important;
+}
+
+/* Revelación fluida del contenido interno de SweetAlert2 */
+.swal2-popup .swal2-title {
+  font-weight: 700 !important;
+  color: #0f172a !important;
+  animation: modalContentStagger 300ms cubic-bezier(0.4, 0.0, 0.2, 1) backwards !important;
+}
+
+.swal2-popup .swal2-html-container {
+  color: #475569 !important;
+  animation: modalContentStagger 330ms cubic-bezier(0.4, 0.0, 0.2, 1) backwards !important;
+}
+
+.swal2-popup .swal2-actions {
+  animation: modalContentStagger 360ms cubic-bezier(0.4, 0.0, 0.2, 1) backwards !important;
+}
+
+.swal2-popup .swal2-icon {
+  transform-origin: center center !important;
+  animation: modalExpandIn 380ms cubic-bezier(0.4, 0.0, 0.2, 1) backwards !important;
+}
+
+/* Botón cerrar de SweetAlert2 estilo x-touch */
+.swal2-close {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  border-radius: 9999px !important;
+  background-color: rgba(241, 245, 249, 0.85) !important;
+  color: #64748b !important;
+  transition: all 260ms cubic-bezier(0.4, 0.0, 0.2, 1) !important;
+  font-family: inherit !important;
+  line-height: 2.25rem !important;
+  margin-top: 0.5rem !important;
+  margin-right: 0.5rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+}
+.swal2-close:hover {
+  background-color: #fee2e2 !important;
+  color: #ef4444 !important;
+  transform: rotate(90deg) scale(1.08) !important;
+}
+
+/* Notificaciones Toast en Blade */
+#toast:not(.hidden) {
+  animation: modalExpandIn 320ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
+  transform-origin: bottom right !important;
+}
+
+/* Botón interactivo de cerrar modal (estilo x-touch animado con rotación suave) */
+.modal-close-btn,
+.x-touch-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 9999px;
+  background-color: rgba(241, 245, 249, 0.85);
+  color: #64748b;
+  cursor: pointer;
+  border: 1px solid rgba(226, 232, 240, 0.85);
+  transition: all 280ms cubic-bezier(0.4, 0.0, 0.2, 1);
+}
+.modal-close-btn:hover,
+.x-touch-btn:hover {
+  background-color: #fee2e2;
+  color: #ef4444;
+  border-color: #fca5a5;
+  transform: rotate(90deg) scale(1.08);
+}
+

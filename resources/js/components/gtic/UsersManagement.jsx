@@ -790,8 +790,8 @@ export default function UsersManagement() {
 
             {/* MODAL REGISTRO DE USUARIO (CON DISEÑO ORIGINAL Y BOTONES EXACTOS) */}
             {showCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-white/40 my-8 max-h-[92vh] overflow-y-auto">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-white/40 my-8 max-h-[92vh] overflow-y-auto animate-modal-expand">
                         <div className="flex items-center justify-between pb-3 mb-6 border-b border-gray-200">
                             <div>
                                 <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
@@ -807,7 +807,8 @@ export default function UsersManagement() {
                             <button
                                 type="button"
                                 onClick={() => setShowCreateModal(false)}
-                                className="text-slate-400 hover:text-slate-600 font-bold text-xl p-1"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>
@@ -1193,8 +1194,8 @@ export default function UsersManagement() {
 
             {/* MODAL EDITAR USUARIO (CON EL MISMO DISEÑO Y BOTONES ORIGINALES) */}
             {showEditModal && selectedUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto">
-                    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-white/40 my-8 max-h-[92vh] overflow-y-auto">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white/95 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full p-6 sm:p-8 border border-white/40 my-8 max-h-[92vh] overflow-y-auto animate-modal-expand">
                         <div className="flex items-center justify-between pb-3 mb-6 border-b border-gray-200">
                             <div>
                                 <h2 className="text-xl font-bold text-blue-900 flex items-center gap-2">
@@ -1209,7 +1210,8 @@ export default function UsersManagement() {
                             <button
                                 type="button"
                                 onClick={() => setShowEditModal(false)}
-                                className="text-slate-400 hover:text-slate-600 font-bold text-xl p-1"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>
@@ -1572,14 +1574,15 @@ export default function UsersManagement() {
 
             {/* MODAL VER DETALLES (REACT) */}
             {showDetailModal && selectedUser && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-modal-backdrop">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 animate-modal-expand">
                         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
                             <h3 className="text-base font-bold text-blue-950">Perfil de Usuario</h3>
                             <button
                                 type="button"
                                 onClick={() => setShowDetailModal(false)}
-                                className="text-slate-400 hover:text-slate-600 font-bold"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>

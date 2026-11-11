@@ -407,8 +407,8 @@ export default function DigitalizacionDocumentos() {
 
             {/* MODAL VISOR DE PDF INTERACTIVO ORIGINAL (REACT) */}
             {pdfModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
-                    <div className="relative w-full max-w-5xl overflow-hidden bg-white shadow-2xl rounded-2xl max-h-[92vh] flex flex-col">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 animate-modal-backdrop">
+                    <div className="relative w-full max-w-5xl overflow-hidden bg-white shadow-2xl rounded-2xl max-h-[92vh] flex flex-col animate-modal-expand">
                         {/* Cabecera del Visor */}
                         <div className="flex items-center justify-between px-5 py-3.5 bg-blue-900 text-white">
                             <h3 className="text-sm font-bold truncate max-w-lg">{currentPdfTitle || 'Vista Previa del Documento'}</h3>

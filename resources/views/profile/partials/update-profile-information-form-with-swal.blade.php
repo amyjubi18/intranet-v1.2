@@ -276,8 +276,8 @@
     </form>
 
     <!-- Modal de Permisos -->
-    <div id="permissionsModal" class="modal-overlay">
-        <div class="modal-content">
+    <div id="permissionsModal" class="modal-overlay animate-modal-backdrop">
+        <div class="modal-content animate-modal-expand">
             <div class="modal-header">
                 <h2 class="modal-title">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -285,7 +285,7 @@
                     </svg>
                     {{ __('Permisos Asignados') }}
                 </h2>
-                <button type="button" class="modal-close" onclick="closePermissionsModal()">
+                <button type="button" class="modal-close-btn" onclick="closePermissionsModal()" title="Cerrar modal">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>

@@ -20,6 +20,45 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        // Configuración Global de Animación Mikael Ainalem para SweetAlert2
+        (function() {
+            function setupSwalMikael() {
+                if (typeof Swal === 'undefined' || Swal.__mikaelPatched) return;
+                Swal.__mikaelPatched = true;
+
+                const defaultShow = {
+                    popup: 'animate-modal-expand',
+                    backdrop: 'animate-modal-backdrop'
+                };
+                const defaultHide = {
+                    popup: 'animate-modal-contract',
+                    backdrop: 'animate-modal-backdrop-out'
+                };
+
+                const rawFire = Swal.fire.bind(Swal);
+                Swal.fire = function(...args) {
+                    if (args.length === 1 && typeof args[0] === 'object' && args[0] !== null) {
+                        const opts = Object.assign({}, args[0]);
+                        if (!opts.showClass) opts.showClass = defaultShow;
+                        if (!opts.hideClass) opts.hideClass = defaultHide;
+                        return rawFire(opts);
+                    } else if (args.length > 0 && typeof args[0] === 'string') {
+                        return rawFire({
+                            title: args[0],
+                            html: args[1] || '',
+                            icon: args[2] || undefined,
+                            showClass: defaultShow,
+                            hideClass: defaultHide
+                        });
+                    }
+                    return rawFire(...args);
+                };
+            }
+            setupSwalMikael();
+            document.addEventListener('DOMContentLoaded', setupSwalMikael);
+        })();
+    </script>
     <!-- Fuente Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
@@ -296,13 +335,14 @@
         }
 
 
-        /* Estilos del modal de notificaciones */
+        /* Estilos del modal de notificaciones con animación Mikael Ainalem */
         .notification-modal {
             position: fixed;
             top: 70px;
             right: 20px;
             width: 380px;
-            animation: slideDown 0.2s ease-out;
+            animation: notificationExpand 320ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards;
+            transform-origin: top right;
             z-index: 9999 !important;
         }
 
@@ -321,14 +361,16 @@
             border-bottom: 8px solid #3b82f6;
         }
 
-        @keyframes slideDown {
-            from {
+        @keyframes notificationExpand {
+            0% {
                 opacity: 0;
-                transform: translateY(-10px);
+                transform: scale(0.7) translateY(-14px);
+                border-radius: 2rem;
             }
-            to {
+            100% {
                 opacity: 1;
-                transform: translateY(0);
+                transform: scale(1) translateY(0);
+                border-radius: 0.75rem;
             }
         }
 
@@ -1163,9 +1205,9 @@
                 if (!modal) {
                     modal = document.createElement('div');
                     modal.id = 'inactivityWarningModal';
-                    modal.className = 'fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 backdrop-blur-sm';
+                    modal.className = 'fixed inset-0 z-[999999] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-modal-backdrop';
                     modal.innerHTML = `
-                        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center border border-amber-200">
+                        <div class="bg-white rounded-2xl shadow-2xl p-6 max-w-sm w-full mx-4 text-center border border-amber-200 animate-modal-expand">
                             <div class="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
                                 ⏳
                             </div>

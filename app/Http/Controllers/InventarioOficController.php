@@ -25,6 +25,11 @@ class InventarioOficController extends Controller
         // Filtros
         $query = InventarioOficina::with(['proveedores', 'articulos', 'unidad_medidas'])->orderBy('id', 'desc');
 
+        if ($request->filled('selected_ids')) {
+            $selectedIds = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('id', array_filter($selectedIds));
+        }
+
         if ($request->filled('busqueda')) {
             $search = $request->busqueda;
             $query->where(function($q) use ($search) {
@@ -474,6 +479,11 @@ case 'busqueda':
         ini_set('max_execution_time', 300);
 
         $query = InventarioOficina::with(['proveedores', 'articulos', 'unidad_medidas'])->orderBy('id', 'desc');
+
+        if ($request->filled('selected_ids')) {
+            $selectedIds = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('id', array_filter($selectedIds));
+        }
 
         if ($request->filled('busqueda')) {
             $search = $request->busqueda;

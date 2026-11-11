@@ -498,6 +498,11 @@ class SalidaOficController extends Controller
             ->leftJoin('inventario_oficinas', 'salida_oficinas.inventario_oficina_id', '=', 'inventario_oficinas.id')
             ->select('salida_oficinas.*', 'inventario_oficinas.unidades_disponibles');
 
+        if ($request->filled('selected_ids')) {
+            $ids = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('salida_oficinas.id', array_filter($ids));
+        }
+
         if ($request->filled('fecha_desde') && $request->filled('fecha_hasta')) {
             $query->whereBetween('fecha_salida', [$request->fecha_desde, $request->fecha_hasta]);
         } elseif ($request->filled('fecha_desde')) {

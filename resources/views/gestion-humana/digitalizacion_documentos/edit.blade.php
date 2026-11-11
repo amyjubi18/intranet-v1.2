@@ -156,8 +156,8 @@
         </div>
 
     <!-- Modal PDF - Full Screen -->
-    <div id="pdfModal" class="fixed inset-0 z-[9999] hidden bg-black/90" style="position:fixed;top:0;left:0;right:0;bottom:0;">
-        <div style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0;padding:0;">
+    <div id="pdfModal" class="fixed inset-0 z-[9999] hidden bg-black/90 animate-modal-backdrop" style="position:fixed;top:0;left:0;right:0;bottom:0;">
+        <div class="animate-modal-expand" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%;margin:0;padding:0;">
             <div style="position:relative;width:100%;height:100%;background:white;overflow:hidden;margin:0;">
                 <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:#1e3a8a;margin:0;">
                     <h3 class="text-xl font-semibold text-white" id="pdfModalTitle">Documento</h3>

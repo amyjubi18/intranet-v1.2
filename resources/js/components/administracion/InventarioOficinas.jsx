@@ -40,7 +40,7 @@ function SearchableSelect({
     const selectedOption = options.find(opt => String(opt.id) === String(value));
 
     return (
-        <div className="relative w-full" ref={containerRef}>
+        <div className={`relative w-full ${isOpen ? 'z-50' : 'z-10'}`} ref={containerRef}>
             {label && (
                 <label className="block text-xs font-semibold text-blue-900 mb-1">
                     {label}
@@ -75,7 +75,7 @@ function SearchableSelect({
             </button>
 
             {isOpen && (
-                <div className="absolute z-50 left-0 mt-1 w-full min-w-[220px] bg-white border border-slate-200 rounded-2xl shadow-xl p-2 animate-fadeIn">
+                <div className="absolute z-50 left-0 mt-1 w-full min-w-[220px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-fadeIn ring-1 ring-black/5">
                     <div className="relative mb-2">
                         <input
                             type="text"
@@ -571,32 +571,51 @@ export default function InventarioOficinas() {
         }
     };
 
-    // Función de exportación con modal de progreso en tiempo real y filtros activos
-    const handleExport = (format) => {
+    // Función de exportación con modal de progreso en tiempo real y soporte para Todos o Seleccionados
+    const handleExport = (format, scope = 'all') => {
         if (!format) return;
 
+        const isSelected = scope === 'selected';
+        if (isSelected && selectedIds.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin selección',
+                text: 'Por favor, selecciona al menos un registro mediante la casilla de verificación antes de exportar.',
+                confirmButtonColor: '#1e3a8a'
+            });
+            return;
+        }
+
         const isExcel = format === 'excel';
-        const filename = isExcel ? 'inventario_oficinas.xlsx' : 'inventario_oficinas.pdf';
+        const filename = isExcel
+            ? (isSelected ? `inventario_oficinas_seleccionados_${selectedIds.length}.xlsx` : 'inventario_oficinas.xlsx')
+            : (isSelected ? `inventario_oficinas_seleccionados_${selectedIds.length}.pdf` : 'inventario_oficinas.pdf');
         const url = isExcel
             ? '/administracion/inventario_oficinas/export/excel'
             : '/administracion/inventario_oficinas/export/pdf';
 
         const params = new URLSearchParams();
-        if (busqueda.trim()) params.append('busqueda', busqueda.trim());
-        if (filterProveedor) params.append('proveedore_id', filterProveedor);
-        if (filterArticulo) params.append('articulo_id', filterArticulo);
-        if (filterUnidadMedida) params.append('unidad_medida_id', filterUnidadMedida);
-        if (filterFactura) params.append('n_factura', filterFactura);
-        if (tipoFecha) params.append('tipo_fecha', tipoFecha);
-        if (fechaDesde) params.append('fecha_desde', fechaDesde);
-        if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+        if (isSelected) {
+            params.append('selected_ids', selectedIds.join(','));
+        } else {
+            if (busqueda.trim()) params.append('busqueda', busqueda.trim());
+            if (filterProveedor) params.append('proveedore_id', filterProveedor);
+            if (filterArticulo) params.append('articulo_id', filterArticulo);
+            if (filterUnidadMedida) params.append('unidad_medida_id', filterUnidadMedida);
+            if (filterFactura) params.append('n_factura', filterFactura);
+            if (tipoFecha) params.append('tipo_fecha', tipoFecha);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+        }
 
         const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
 
         downloadWithProgress(fullUrl, {
             filename,
             type: isExcel ? 'excel' : 'pdf',
-            title: isExcel ? 'Exportando Inventario a Excel' : 'Exportando Inventario a PDF'
+            title: isSelected
+                ? `Exportando ${selectedIds.length} Registro(s) Seleccionado(s)`
+                : (isExcel ? 'Exportando Inventario a Excel' : 'Exportando Inventario a PDF')
         });
     };
 
@@ -687,8 +706,8 @@ export default function InventarioOficinas() {
             </div>
 
             {/* Barra de Acciones y Filtros */}
-            <div className="px-6 mb-6">
-                <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
+            <div className="px-6 mb-6 relative z-30">
+                <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm relative z-30 overflow-visible">
                     <div className="flex flex-col gap-4">
                         {/* Fila superior: Buscador a la izquierda + Exportar y Acciones a la derecha */}
                         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
@@ -716,19 +735,32 @@ export default function InventarioOficinas() {
                                 )}
                             </div>
 
-                            {/* Exportar, Eliminar Seleccionados, Eliminar Todo y Nuevo Registro */}
+                            {/* Exportar (Todos o Seleccionados), Eliminar Seleccionados, Eliminar Todo y Nuevo Registro */}
                             <div className="flex flex-wrap items-center gap-3">
                                 <select
                                     value=""
                                     onChange={(e) => {
                                         e.preventDefault();
-                                        if (e.target.value) handleExport(e.target.value);
+                                        if (e.target.value) {
+                                            const [fmt, scp] = e.target.value.split(':');
+                                            handleExport(fmt, scp);
+                                        }
                                     }}
                                     className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs"
                                 >
-                                    <option value="" disabled>📤 Exportar</option>
-                                    <option value="excel">📊 Exportar a Excel</option>
-                                    <option value="pdf">📄 Exportar a PDF</option>
+                                    <option value="" disabled>📤 Exportar...</option>
+                                    <optgroup label="Exportar Todos (con filtros actuales)">
+                                        <option value="excel:all">📊 Excel - Todos los registros</option>
+                                        <option value="pdf:all">📄 PDF - Todos los registros</option>
+                                    </optgroup>
+                                    <optgroup label={`Exportar Seleccionados (${selectedIds.length})`}>
+                                        <option value="excel:selected" disabled={selectedIds.length === 0}>
+                                            📊 Excel - Solo seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : '(0)'}
+                                        </option>
+                                        <option value="pdf:selected" disabled={selectedIds.length === 0}>
+                                            📄 PDF - Solo seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : '(0)'}
+                                        </option>
+                                    </optgroup>
                                 </select>
 
                                 {permissions.can_destroy && (
@@ -772,15 +804,22 @@ export default function InventarioOficinas() {
                                 <button
                                     type="button"
                                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                    className="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-colors"
+                                    className="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-all duration-300"
                                 >
                                     <span>⚡ Filtros Avanzados</span>
                                     {activeFiltersCount > 0 && (
-                                        <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center">
+                                        <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
                                             {activeFiltersCount}
                                         </span>
                                     )}
-                                    <span className="text-xs">{showAdvancedFilters ? '▲' : '▼'}</span>
+                                    <svg
+                                        className={`w-3.5 h-3.5 transition-transform duration-300 transform ${showAdvancedFilters ? 'rotate-180' : 'rotate-0'}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                    </svg>
                                 </button>
 
                                 {activeFiltersCount > 0 && (
@@ -830,158 +869,174 @@ export default function InventarioOficinas() {
                             </div>
                         </div>
 
-                        {/* Panel desplegable en cuadrícula (grid) */}
-                        {showAdvancedFilters && (
-                            <div className="mt-2 p-5 bg-gradient-to-br from-blue-50/60 to-slate-50/80 rounded-2xl border border-blue-100 shadow-inner">
-                                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                                    {/* Proveedor */}
-                                    <SearchableSelect
-                                        label="🏢 Proveedor"
-                                        options={proveedoresOptions}
-                                        value={filterProveedor}
-                                        onChange={setFilterProveedor}
-                                        placeholder="Todos los proveedores"
-                                        allLabel="Todos los proveedores"
-                                        icon="🏢"
-                                    />
-
-                                    {/* Artículo */}
-                                    <SearchableSelect
-                                        label="📦 Artículo"
-                                        options={articulosOptions}
-                                        value={filterArticulo}
-                                        onChange={setFilterArticulo}
-                                        placeholder="Todos los artículos"
-                                        allLabel="Todos los artículos"
-                                        icon="📦"
-                                    />
-
-                                    {/* Unidad de Medida */}
-                                    <SearchableSelect
-                                        label="📏 Unidad de Medida"
-                                        options={unidadMedidasOptions}
-                                        value={filterUnidadMedida}
-                                        onChange={setFilterUnidadMedida}
-                                        placeholder="Todas las unidades"
-                                        allLabel="Todas las unidades"
-                                        icon="📏"
-                                    />
-
-                                    {/* Factura */}
-                                    <SearchableSelect
-                                        label="🧾 Número de Factura"
-                                        options={facturasOptions}
-                                        value={filterFactura}
-                                        onChange={setFilterFactura}
-                                        placeholder="Todas las facturas"
-                                        allLabel="Todas las facturas"
-                                        icon="🧾"
-                                    />
-                                </div>
-
-                                {/* Sección de Fechas con Presets */}
-                                <div className="mt-5 pt-4 border-t border-blue-100">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
-                                        <div className="flex items-center gap-3">
-                                            <span className="text-xs font-bold text-blue-950">📅 Filtrar por Rango de Fechas:</span>
-                                            <div className="inline-flex rounded-xl p-0.5 bg-blue-100/80 text-xs">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setTipoFecha('fecha_ingreso')}
-                                                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
-                                                        tipoFecha === 'fecha_ingreso'
-                                                            ? 'bg-blue-900 text-white shadow-xs'
-                                                            : 'text-slate-600 hover:text-blue-900'
-                                                    }`}
-                                                >
-                                                    Fecha Factura
-                                                </button>
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setTipoFecha('fecha_creacion')}
-                                                    className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
-                                                        tipoFecha === 'fecha_creacion'
-                                                            ? 'bg-blue-900 text-white shadow-xs'
-                                                            : 'text-slate-600 hover:text-blue-900'
-                                                    }`}
-                                                >
-                                                    Fecha Ingreso Sistema
-                                                </button>
-                                            </div>
+                        {/* Panel desplegable animado tipo acordeón con CSS Grid auto-height */}
+                        <div
+                            className={`grid transition-all duration-500 ease-in-out ${
+                                showAdvancedFilters
+                                    ? 'grid-rows-[1fr] opacity-100 mt-3 visible'
+                                    : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none'
+                            }`}
+                        >
+                            <div className={`${showAdvancedFilters ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300`}>
+                                <div className="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {/* Proveedor */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-75 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="🏢 Proveedor"
+                                                options={proveedoresOptions}
+                                                value={filterProveedor}
+                                                onChange={setFilterProveedor}
+                                                placeholder="Todos los proveedores"
+                                                allLabel="Todos los proveedores"
+                                                icon="🏢"
+                                            />
                                         </div>
 
-                                        {/* Presets Rápidos */}
-                                        <div className="flex items-center gap-1.5 flex-wrap">
-                                            <span className="text-[11px] font-semibold text-slate-500">Accesos rápidos:</span>
-                                            <button
-                                                type="button"
-                                                onClick={() => applyDatePreset('today')}
-                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
-                                            >
-                                                Hoy
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => applyDatePreset('week')}
-                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
-                                            >
-                                                Esta Semana
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => applyDatePreset('month')}
-                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
-                                            >
-                                                Este Mes
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={() => applyDatePreset('year')}
-                                                className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
-                                            >
-                                                Este Año
-                                            </button>
-                                            {(fechaDesde || fechaHasta) && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => applyDatePreset('clear')}
-                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
-                                                >
-                                                    Quitar fechas
-                                                </button>
-                                            )}
+                                        {/* Artículo */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-100 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="📦 Artículo"
+                                                options={articulosOptions}
+                                                value={filterArticulo}
+                                                onChange={setFilterArticulo}
+                                                placeholder="Todos los artículos"
+                                                allLabel="Todos los artículos"
+                                                icon="📦"
+                                            />
+                                        </div>
+
+                                        {/* Unidad de Medida */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-150 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="📏 Unidad de Medida"
+                                                options={unidadMedidasOptions}
+                                                value={filterUnidadMedida}
+                                                onChange={setFilterUnidadMedida}
+                                                placeholder="Todas las unidades"
+                                                allLabel="Todas las unidades"
+                                                icon="📏"
+                                            />
+                                        </div>
+
+                                        {/* Factura */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-200 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="🧾 Número de Factura"
+                                                options={facturasOptions}
+                                                value={filterFactura}
+                                                onChange={setFilterFactura}
+                                                placeholder="Todas las facturas"
+                                                allLabel="Todas las facturas"
+                                                icon="🧾"
+                                            />
                                         </div>
                                     </div>
 
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Desde:</label>
-                                            <input
-                                                type="date"
-                                                value={fechaDesde}
-                                                onChange={(e) => setFechaDesde(e.target.value)}
-                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                                            />
+                                    {/* Sección de Fechas con Presets */}
+                                    <div className={`mt-5 pt-4 border-t border-blue-100 transition-all duration-500 delay-250 ${showAdvancedFilters ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-2'}`}>
+                                        <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
+                                            <div className="flex items-center gap-3">
+                                                <span className="text-xs font-bold text-blue-950">📅 Filtrar por Rango de Fechas:</span>
+                                                <div className="inline-flex rounded-xl p-0.5 bg-blue-100/80 text-xs">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTipoFecha('fecha_ingreso')}
+                                                        className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                                                            tipoFecha === 'fecha_ingreso'
+                                                                ? 'bg-blue-900 text-white shadow-xs'
+                                                                : 'text-slate-600 hover:text-blue-900'
+                                                        }`}
+                                                    >
+                                                        Fecha Factura
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setTipoFecha('fecha_creacion')}
+                                                        className={`px-2.5 py-1 rounded-lg font-semibold transition-all ${
+                                                            tipoFecha === 'fecha_creacion'
+                                                                ? 'bg-blue-900 text-white shadow-xs'
+                                                                : 'text-slate-600 hover:text-blue-900'
+                                                        }`}
+                                                    >
+                                                        Fecha Ingreso Sistema
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Presets Rápidos */}
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="text-[11px] font-semibold text-slate-500">Accesos rápidos:</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('today')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                                >
+                                                    Hoy
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('week')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                                >
+                                                    Esta Semana
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('month')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                                >
+                                                    Este Mes
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('year')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                                >
+                                                    Este Año
+                                                </button>
+                                                {(fechaDesde || fechaHasta) && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => applyDatePreset('clear')}
+                                                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                                    >
+                                                        Quitar fechas
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div>
-                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Hasta:</label>
-                                            <input
-                                                type="date"
-                                                value={fechaHasta}
-                                                onChange={(e) => setFechaHasta(e.target.value)}
-                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
-                                            />
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Desde:</label>
+                                                <input
+                                                    type="date"
+                                                    value={fechaDesde}
+                                                    onChange={(e) => setFechaDesde(e.target.value)}
+                                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Hasta:</label>
+                                                <input
+                                                    type="date"
+                                                    value={fechaHasta}
+                                                    onChange={(e) => setFechaHasta(e.target.value)}
+                                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                                />
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        )}
+                        </div>
                     </div>
                 </div>
             </div>
 
             {/* Listado de Inventario Agrupado (Diseño Original Exacto) */}
-            <div className="px-6 mb-8">
+            <div className="px-6 mb-8 relative z-10">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-16 bg-white/60 backdrop-blur-md rounded-2xl border border-blue-100">
                         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>

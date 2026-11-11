@@ -98,8 +98,8 @@ function EstanteriaDetailModal({ estanteria, onClose, onViewDocuments }) {
     if (!estanteria) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={onClose}>
-            <div className="w-full max-w-lg overflow-hidden bg-white shadow-2xl rounded-2xl animate-slideIn" onClick={(e) => e.stopPropagation()}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-modal-backdrop" onClick={onClose}>
+            <div className="w-full max-w-lg overflow-hidden bg-white shadow-2xl rounded-2xl animate-modal-expand" onClick={(e) => e.stopPropagation()}>
                 <div className="p-6 text-white" style={{ backgroundColor: estanteria.color || '#1e3a8a' }}>
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-4">

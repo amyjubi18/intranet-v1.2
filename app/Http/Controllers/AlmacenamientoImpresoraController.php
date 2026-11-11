@@ -73,6 +73,23 @@ class AlmacenamientoImpresoraController extends Controller
                     break;
             }
         }
+
+        // Direct filters
+        if ($request->filled('cartucho_id')) {
+            $query->where('cartucho_id', $request->input('cartucho_id'));
+        }
+        if ($request->filled('colore_id')) {
+            $query->where('colore_id', $request->input('colore_id'));
+        }
+        if ($request->filled('impresora_id')) {
+            $query->where('impresora_id', $request->input('impresora_id'));
+        }
+        if ($request->filled('proveedore_id')) {
+            $query->where('proveedore_id', $request->input('proveedore_id'));
+        }
+        if ($request->filled('fabricante_id')) {
+            $query->where('fabricante_id', $request->input('fabricante_id'));
+        }
         if ($request->filled('busqueda')) {
             $busqueda = $request->input('busqueda');
             $query->where(function ($q) use ($busqueda) {
@@ -308,6 +325,11 @@ class AlmacenamientoImpresoraController extends Controller
         abort_if(Gate::denies('inventarioimpre_index'), 403);
 
         $query = AlmacenamientoImpresora::with('cartuchos', 'colores', 'impresoras', 'fabricantes', 'proveedores', 'users');
+
+        if ($request->filled('selected_ids')) {
+            $ids = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('almacenamiento_impresoras.id', array_filter($ids));
+        }
 
         // Apply the same filters as in index
         $filterType = $request->input('filterType', 'fecha_ingreso');

@@ -119,206 +119,291 @@
         </div>
     </div>
 
-    <!-- Filtros y controles -->
-    <form method="GET" action="{{ route('administracion.almacenamiento_impresoras.index') }}" id="filterForm">
-    <div class="px-6 mb-6">
-        <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
-            <div class="flex flex-wrap items-center justify-between gap-4">
-                <!-- Filtros en el lado izquierdo -->
-                <div class="flex flex-wrap items-center gap-4">
-                    <!-- Botón para mostrar filtros avanzados -->
-                    <button type="button" onclick="toggleAdvancedFilters()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                        Filtros Avanzados
-                    </button>
+    @php
+        $activeFiltersCount = 0;
+        if(request('busqueda')) $activeFiltersCount++;
+        if(request('cartucho_id')) $activeFiltersCount++;
+        if(request('colore_id')) $activeFiltersCount++;
+        if(request('impresora_id')) $activeFiltersCount++;
+        if(request('proveedore_id')) $activeFiltersCount++;
+        if(request('fabricante_id')) $activeFiltersCount++;
+        if(request('fecha_desde') || request('fecha_hasta')) $activeFiltersCount++;
+        if(request('fecha_desde_created_at') || request('fecha_hasta_created_at')) $activeFiltersCount++;
+    @endphp
 
-                        <!-- Filtro principal - Tipo de campo (oculto por defecto) -->
-                    <select id="filterType" name="filterType" onchange="updateSecondFilter()" class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('filterType') ? 'bg-blue-100 border-blue-500' : '' }}" style="display:none;">
-                        <option value="">Seleccionar filtro</option>
-                        <option value="fecha_ingreso" {{ request('filterType') == 'fecha_ingreso' ? 'selected' : '' }}>Fecha de Factura</option>
-                        <option value="cartucho_id" {{ request('filterType') == 'cartucho_id' ? 'selected' : '' }}>Consumible</option>
-                        <option value="colore_id" {{ request('filterType') == 'colore_id' ? 'selected' : '' }}>Tipo de Consumible</option>
-                        <option value="impresora_id" {{ request('filterType') == 'impresora_id' ? 'selected' : '' }}>Impresora</option>
-                        <option value="fabricante_id" {{ request('filterType') == 'fabricante_id' ? 'selected' : '' }}>Tipo de Impresora</option>
-                        <option value="proveedore_id" {{ request('filterType') == 'proveedore_id' ? 'selected' : '' }}>Proveedor</option>
+    <!-- Panel de Búsqueda y Filtros Avanzados Animados -->
+    <div class="px-6 mb-6 relative z-30 overflow-visible" x-data="{ openFilters: {{ $activeFiltersCount > 0 ? 'true' : 'false' }} }">
+        <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
+            <div class="flex flex-col gap-4">
+                <!-- Fila Superior: Buscador Rápido + Acciones (Exportar, Nuevo) -->
+                <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                    <!-- Buscador general -->
+                    <form method="GET" action="{{ route('administracion.almacenamiento_impresoras.index') }}" class="flex-1 max-w-xl">
+                        @if(request('cartucho_id')) <input type="hidden" name="cartucho_id" value="{{ request('cartucho_id') }}"> @endif
+                        @if(request('colore_id')) <input type="hidden" name="colore_id" value="{{ request('colore_id') }}"> @endif
+                        @if(request('impresora_id')) <input type="hidden" name="impresora_id" value="{{ request('impresora_id') }}"> @endif
+                        @if(request('proveedore_id')) <input type="hidden" name="proveedore_id" value="{{ request('proveedore_id') }}"> @endif
+                        @if(request('fabricante_id')) <input type="hidden" name="fabricante_id" value="{{ request('fabricante_id') }}"> @endif
+                        @if(request('fecha_desde')) <input type="hidden" name="fecha_desde" value="{{ request('fecha_desde') }}"> @endif
+                        @if(request('fecha_hasta')) <input type="hidden" name="fecha_hasta" value="{{ request('fecha_hasta') }}"> @endif
+                        @if(request('fecha_desde_created_at')) <input type="hidden" name="fecha_desde_created_at" value="{{ request('fecha_desde_created_at') }}"> @endif
+                        @if(request('fecha_hasta_created_at')) <input type="hidden" name="fecha_hasta_created_at" value="{{ request('fecha_hasta_created_at') }}"> @endif
 
-                        <option value="created_at" {{ request('filterType') == 'created_at' ? 'selected' : '' }}>Fecha de Ingreso</option>
+                        <div class="relative">
+                            <input
+                                type="text"
+                                name="busqueda"
+                                value="{{ request('busqueda') }}"
+                                placeholder="🔍 Buscar por factura, consumible, impresora, tipo o proveedor (Enter)..."
+                                class="w-full bg-blue-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-inner"
+                            />
+                            <span class="absolute left-3.5 top-3 text-slate-400 text-sm">🔍</span>
+                        </div>
+                    </form>
 
-                    </select>
-
-                    <!-- Filtro secundario - Dinámico según selección -->
-                    <div id="secondFilterContainer" class="relative z-50">
-                        <select id="secondFilter" name="secondFilter" class="bg-white border border-white/20 backdrop-blur-md rounded-xl active:border-2 active:border-blue-900/50 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('secondFilter') ? 'bg-blue-100 border-blue-500' : '' }}" {{ request('filterType') ? '' : 'disabled' }}>
-                            <option value="">-----</option>
-                            @if(request('filterType') == 'cartucho_id')
-                                @foreach($cartuchos as $cartucho)
-                                    <option value="{{ $cartucho->id }}" {{ request('secondFilter') == $cartucho->id ? 'selected' : '' }}>{{ $cartucho->cartucho }}</option>
-                                @endforeach
-                            @elseif(request('filterType') == 'colore_id')
-                                @foreach($colores as $color)
-                                    <option value="{{ $color->id }}" {{ request('secondFilter') == $color->id ? 'selected' : '' }}>{{ $color->colore }}</option>
-                                @endforeach
-                            @elseif(request('filterType') == 'impresora_id')
-                                @foreach($impresoras as $impresora)
-                                    <option value="{{ $impresora->id }}" {{ request('secondFilter') == $impresora->id ? 'selected' : '' }}>{{ str_pad($impresora->id, 4, '0', STR_PAD_LEFT) }} - {{ $impresora->impresora }}</option>
-                                @endforeach
-                            @elseif(request('filterType') == 'proveedore_id')
-                                @foreach($proveedores as $proveedor)
-                                    <option value="{{ $proveedor->id }}" {{ request('secondFilter') == $proveedor->id ? 'selected' : '' }}>{{ $proveedor->proveedor }}</option>
-                                @endforeach
-
-                            @elseif(request('filterType') == 'fabricante_id')
-                                @foreach($fabricantes as $fabricante)
-                                    <option value="{{ $fabricante->id }}" {{ request('secondFilter') == $fabricante->id ? 'selected' : '' }}>{{ $fabricante->fabricante }}</option>
-                                @endforeach
-                            @endif
-
+                    <!-- Acciones -->
+                    <div class="flex flex-wrap items-center justify-end gap-3">
+                        <select id="exportSelectAlmacen" onchange="handleAlmacenExport(this)" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs">
+                            <option value="">📤 Exportar</option>
+                            <optgroup label="Exportar Todos">
+                                <option value="excel:all">📊 Excel - Todos los registros</option>
+                                <option value="pdf:all">📄 PDF - Todos los registros</option>
+                            </optgroup>
+                            <optgroup label="Exportar Seleccionados" id="almacenExportSelectedGroup">
+                                <option value="excel:selected" id="almacenOptExcelSelected" disabled>📊 Excel - Solo seleccionados (0)</option>
+                                <option value="pdf:selected" id="almacenOptPdfSelected" disabled>📄 PDF - Solo seleccionados (0)</option>
+                            </optgroup>
                         </select>
 
-                    <!-- Input de fecha (oculto por defecto) -->
-                    <div id="dateRangeFilter" style="{{ (request('filterType') == 'fecha_ingreso' || request('filterType') == 'created_at') ? '' : 'display:none;' }}">
-                        <input type="text" style="margin-top= -10px;" id="dateRangePicker" name="fecha_rango" class="bg-blue-100 text-black border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ ((request('fecha_desde') && request('fecha_hasta')) || (request('fecha_desde_created_at') && request('fecha_hasta_created_at'))) ? 'bg-blue-100 border-blue-500' : '' }}" value="{{ (request('fecha_desde') && request('fecha_hasta')) ? request('fecha_desde') . ' - ' . request('fecha_hasta') : ((request('fecha_desde_created_at') && request('fecha_hasta_created_at')) ? request('fecha_desde_created_at') . ' - ' . request('fecha_hasta_created_at') : '') }}" placeholder="Seleccionar rango de fechas">
-                        <input type="hidden" name="fecha_desde" id="fecha_desde" value="{{ request('fecha_desde') }}">
-                        <input type="hidden" name="fecha_hasta" id="fecha_hasta" value="{{ request('fecha_hasta') }}">
-                        <input type="hidden" name="fecha_desde_created_at" id="fecha_desde_created_at" value="{{ request('fecha_desde_created_at') }}">
-                        <input type="hidden" name="fecha_hasta_created_at" id="fecha_hasta_created_at" value="{{ request('fecha_hasta_created_at') }}">
+                        @can('almacen_inv_create')
+                        <a href="/administracion/almacenamiento_impresoras/create" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs">
+                            <span>➕</span>
+                            <span>Nuevo</span>
+                        </a>
+                        @endcan
+                    </div>
+                </div>
+
+                <!-- Fila de Control: Botón Filtros Avanzados + Badges de Filtros Activos -->
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <button
+                            type="button"
+                            @click="openFilters = !openFilters"
+                            class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-all duration-300 cursor-pointer"
+                        >
+                            <span>⚡ Filtros Avanzados</span>
+                            @if($activeFiltersCount > 0)
+                                <span class="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                                    {{ $activeFiltersCount }}
+                                </span>
+                            @endif
+                            <svg
+                                class="w-3.5 h-3.5 transition-transform duration-300 transform"
+                                :class="openFilters ? 'rotate-180' : 'rotate-0'"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
+
+                        @if($activeFiltersCount > 0)
+                            <a
+                                href="{{ route('administracion.almacenamiento_impresoras.index') }}"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors"
+                            >
+                                <span>✕</span>
+                                <span>Limpiar Filtros ({{ $activeFiltersCount }})</span>
+                            </a>
+                        @endif
                     </div>
 
-                    <!-- Input de texto para búsqueda (oculto por defecto) -->
-                    <input type="text" id="textFilter" name="n_factura" placeholder="Buscar..." class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('n_factura') ? 'bg-blue-100 border-blue-500' : '' }}" value="{{ request('n_factura') }}" style="{{ request('filterType') == 'n_factura' ? '' : 'display:none;' }}">
+                    <!-- Badges de filtros activos -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        @if(request('cartucho_id'))
+                            @php $cAct = $cartuchos->where('id', request('cartucho_id'))->first(); @endphp
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Consumible: {{ $cAct->cartucho ?? request('cartucho_id') }}</span>
+                                <button type="button" onclick="clearSpecificFilter('cartucho_id')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('colore_id'))
+                            @php $colAct = $colores->where('id', request('colore_id'))->first(); @endphp
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Color: {{ $colAct->colore ?? request('colore_id') }}</span>
+                                <button type="button" onclick="clearSpecificFilter('colore_id')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('impresora_id'))
+                            @php $impAct = $impresoras->where('id', request('impresora_id'))->first(); @endphp
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Impresora: {{ $impAct->impresora ?? request('impresora_id') }}</span>
+                                <button type="button" onclick="clearSpecificFilter('impresora_id')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('fabricante_id'))
+                            @php $fabAct = $fabricantes->where('id', request('fabricante_id'))->first(); @endphp
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Tipo Impresora: {{ $fabAct->fabricante ?? request('fabricante_id') }}</span>
+                                <button type="button" onclick="clearSpecificFilter('fabricante_id')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('proveedore_id'))
+                            @php $provAct = $proveedores->where('id', request('proveedore_id'))->first(); @endphp
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Proveedor: {{ $provAct->proveedor ?? request('proveedore_id') }}</span>
+                                <button type="button" onclick="clearSpecificFilter('proveedore_id')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('busqueda'))
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Búsqueda: "{{ request('busqueda') }}"</span>
+                                <button type="button" onclick="clearSpecificFilter('busqueda')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('fecha_desde') || request('fecha_hasta'))
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Factura: {{ request('fecha_desde') ?: '...' }} a {{ request('fecha_hasta') ?: '...' }}</span>
+                                <button type="button" onclick="clearSpecificFilter('fecha_desde'); clearSpecificFilter('fecha_hasta');" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('fecha_desde_created_at') || request('fecha_hasta_created_at'))
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Ingreso: {{ request('fecha_desde_created_at') ?: '...' }} a {{ request('fecha_hasta_created_at') ?: '...' }}</span>
+                                <button type="button" onclick="clearSpecificFilter('fecha_desde_created_at'); clearSpecificFilter('fecha_hasta_created_at');" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                    </div>
+                </div>
 
+                <!-- Acordeón Animado con CSS Grid auto-height -->
+                <div
+                    class="grid transition-all duration-500 ease-in-out"
+                    :class="openFilters ? 'grid-rows-[1fr] opacity-100 mt-3 visible' : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none'"
+                >
+                    <div :class="openFilters ? 'overflow-visible' : 'overflow-hidden'" class="transition-all duration-300">
+                        <form method="GET" action="{{ route('administracion.almacenamiento_impresoras.index') }}">
+                            @if(request('busqueda')) <input type="hidden" name="busqueda" value="{{ request('busqueda') }}"> @endif
+                            <div class="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <!-- Consumible -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-blue-900 mb-1.5">🖨️ Consumible</label>
+                                        <select name="cartucho_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                            <option value="">Todos los consumibles</option>
+                                            @foreach($cartuchos as $cartucho)
+                                                <option value="{{ $cartucho->id }}" {{ request('cartucho_id') == $cartucho->id ? 'selected' : '' }}>
+                                                    {{ $cartucho->cartucho }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
 
+                                    <!-- Tipo de Consumible / Color -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-blue-900 mb-1.5">🎨 Tipo de Consumible</label>
+                                        <select name="colore_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                            <option value="">Todos los colores</option>
+                                            @foreach($colores as $color)
+                                                <option value="{{ $color->id }}" {{ request('colore_id') == $color->id ? 'selected' : '' }}>
+                                                    {{ $color->colore }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
 
-                    <!-- Botón para limpiar filtros -->
-                    <a href="{{ route('administracion.almacenamiento_impresoras.index') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
-                        🗑️ Limpiar
-                    </a>
+                                    <!-- Impresora -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-blue-900 mb-1.5">🖨️ Impresora</label>
+                                        <select name="impresora_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                            <option value="">Todas las impresoras</option>
+                                            @foreach($impresoras as $impresora)
+                                                <option value="{{ $impresora->id }}" {{ request('impresora_id') == $impresora->id ? 'selected' : '' }}>
+                                                    {{ str_pad($impresora->id, 4, '0', STR_PAD_LEFT) }} - {{ $impresora->impresora }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <!-- Tipo de Impresora (Fabricante) -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-blue-900 mb-1.5">🏷️ Tipo de Impresora</label>
+                                        <select name="fabricante_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                            <option value="">Todos los fabricantes</option>
+                                            @foreach($fabricantes as $fab)
+                                                <option value="{{ $fab->id }}" {{ request('fabricante_id') == $fab->id ? 'selected' : '' }}>
+                                                    {{ $fab->fabricante }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <!-- Proveedor -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-blue-900 mb-1.5">🏢 Proveedor</label>
+                                        <select name="proveedore_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                            <option value="">Todos los proveedores</option>
+                                            @foreach($proveedores as $prov)
+                                                <option value="{{ $prov->id }}" {{ request('proveedore_id') == $prov->id ? 'selected' : '' }}>
+                                                    {{ $prov->proveedor }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Rango de fechas con presets -->
+                                <div class="pt-3 border-t border-blue-100/70">
+                                    <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+                                        <label class="block text-xs font-semibold text-blue-900">📅 Rango de Fechas (Factura)</label>
+                                        <div class="flex items-center gap-1.5">
+                                            <button type="button" onclick="setAlmacenDatePreset('today')" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Hoy</button>
+                                            <button type="button" onclick="setAlmacenDatePreset('week')" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Esta Semana</button>
+                                            <button type="button" onclick="setAlmacenDatePreset('month')" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Este Mes</button>
+                                            <button type="button" onclick="setAlmacenDatePreset('year')" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Este Año</button>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                        <div>
+                                            <span class="block text-2xs font-medium text-slate-500 mb-1">Fecha Factura Desde</span>
+                                            <input type="date" name="fecha_desde" id="almacen_fecha_desde" value="{{ request('fecha_desde') }}" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <span class="block text-2xs font-medium text-slate-500 mb-1">Fecha Factura Hasta</span>
+                                            <input type="date" name="fecha_hasta" id="almacen_fecha_hasta" value="{{ request('fecha_hasta') }}" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <span class="block text-2xs font-medium text-slate-500 mb-1">Fecha Ingreso Desde</span>
+                                            <input type="date" name="fecha_desde_created_at" value="{{ request('fecha_desde_created_at') }}" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <span class="block text-2xs font-medium text-slate-500 mb-1">Fecha Ingreso Hasta</span>
+                                            <input type="date" name="fecha_hasta_created_at" value="{{ request('fecha_hasta_created_at') }}" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-3 pt-2">
+                                    <a href="{{ route('administracion.almacenamiento_impresoras.index') }}" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors">
+                                        Limpiar Todo
+                                    </a>
+                                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-blue-900 text-white hover:bg-blue-800 shadow-sm transition-all cursor-pointer">
+                                        <span>🔍</span>
+                                        <span>Aplicar Filtros</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
                 </div>
             </div>
-                <!-- Botones de exportar y nuevo registro en el lado derecho -->
-                <div class="flex items-center gap-3 ml-auto">
-                    <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
-                        <option value="">📤 Exportar</option>
-                        <option value="{{ route('administracion.almacenamiento_impresoras.export.excel', request()->all()) }}">Exportar a Excel</option>
-                        <option value="{{ route('administracion.almacenamiento_impresoras.export.pdf', request()->all()) }}">Exportar a PDF</option>
-                    </select>
-                    @can('almacen_inv_create')
-                    <a href="/administracion/almacenamiento_impresoras/create" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
-                        <span>➕</span>
-                        Nuevo
-                    </a>
-                    @endcan
-                </div>
-
         </div>
-
-        <!-- Indicador de filtros activos -->
-        @if(request('filterType') || request('secondFilter') || request('n_factura') || request('fecha_desde') || request('fecha_hasta') || request('fecha_desde_created_at') || request('fecha_hasta_created_at'))
-        <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-            <div class="flex items-center gap-2 mb-2">
-                <span class="text-blue-600 font-semibold">🔍 Filtros Activos:</span>
-            </div>
-            <div class="flex flex-wrap gap-2">
-                @if(request('filterType') == 'cartucho_id' && request('secondFilter'))
-                    @php
-                        $cartuchoActivo = $cartuchos->where('id', request('secondFilter'))->first();
-                    @endphp
-                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                        Consumible: {{ $cartuchoActivo->cartucho ?? 'N/A' }}
-                        <button onclick="clearSpecificFilter('cartucho_id')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                    </span>
-                @endif
-
-                @if(request('filterType') == 'colore_id' && request('secondFilter'))
-                    @php
-                        $colorActivo = $colores->where('id', request('secondFilter'))->first();
-                    @endphp
-                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                        Tipo: {{ $colorActivo->colore ?? 'N/A' }}
-                        <button onclick="clearSpecificFilter('colore_id')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                    </span>
-                @endif
-
-                @if(request('filterType') == 'impresora_id' && request('secondFilter'))
-                    @php
-                        $impresoraActiva = $impresoras->where('id', request('secondFilter'))->first();
-                    @endphp
-                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                        Impresora: {{ $impresoraActiva->impresora ?? 'N/A' }}
-                        <button onclick="clearSpecificFilter('impresora_id')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                    </span>
-                @endif
-
-                @if(request('filterType') == 'proveedore_id' && request('secondFilter'))
-                    @php
-                        $proveedorActivo = $proveedores->where('id', request('secondFilter'))->first();
-                    @endphp
-                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                        Proveedor: {{ $proveedorActivo->proveedor ?? 'N/A' }}
-                        <button onclick="clearSpecificFilter('proveedore_id')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                    </span>
-                @endif
-
-                @if(request('filterType') == 'fabricante_id' && request('secondFilter'))
-                    @php
-                        $fabricanteActivo = $fabricantes->where('id', request('secondFilter'))->first();
-                    @endphp
-                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                        Tipo: {{ $fabricanteActivo->fabricante ?? 'N/A' }}
-                        <button onclick="clearSpecificFilter('fabricante_id')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                    </span>
-                @endif
-
-                @if(request('n_factura'))
-                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                        Factura: "{{ request('n_factura') }}"
-                        <button onclick="clearSpecificFilter('n_factura')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                    </span>
-                @endif
-
-
-
-                @if(request('fecha_desde') || request('fecha_hasta') || request('fecha_desde_created_at') || request('fecha_hasta_created_at'))
-                    @php
-                        $fechaDesde = request('fecha_desde');
-                        $fechaHasta = request('fecha_hasta');
-                        $fechaDesdeCreatedAt = request('fecha_desde_created_at');
-                        $fechaHastaCreatedAt = request('fecha_hasta_created_at');
-                        $rangoTexto = '';
-                        $tipoFecha = '';
-
-                        if($fechaDesde && $fechaHasta) {
-                            $rangoTexto = "Desde {$fechaDesde} hasta {$fechaHasta}";
-                            $tipoFecha = "fecha_factura";
-                        } elseif($fechaDesde) {
-                            $rangoTexto = "Desde {$fechaDesde}";
-                            $tipoFecha = "fecha_factura";
-                        } elseif($fechaHasta) {
-                            $rangoTexto = "Hasta {$fechaHasta}";
-                            $tipoFecha = "fecha_factura";
-                        } elseif($fechaDesdeCreatedAt && $fechaHastaCreatedAt) {
-                            $rangoTexto = "Ingreso desde {$fechaDesdeCreatedAt} hasta {$fechaHastaCreatedAt}";
-                            $tipoFecha = "fecha_ingreso";
-                        } elseif($fechaDesdeCreatedAt) {
-                            $rangoTexto = "Ingreso desde {$fechaDesdeCreatedAt}";
-                            $tipoFecha = "fecha_ingreso";
-                        } elseif($fechaHastaCreatedAt) {
-                            $rangoTexto = "Ingreso hasta {$fechaHastaCreatedAt}";
-                            $tipoFecha = "fecha_ingreso";
-                        }
-                    @endphp
-                    <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                        {{ $rangoTexto }}
-                        <button onclick="clearDateFilter('{{ $tipoFecha }}')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                    </span>
-                @endif
-            </div>
-        </div>
-        @endif
     </div>
-    </form>
 
     <!-- Historial de inventario -->
-    <div class="px-6 mb-8">
+    <div class="px-6 mb-8 relative z-10">
         <div class="space-y-6">
             @php
                 $groupedItems = $almacenamiento_impresoras->groupBy('impresora_id');
@@ -360,6 +445,9 @@
                     <!-- Registro -->
                     <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
                         <div class="flex flex-col md:flex-row items-start gap-4 md:gap-6">
+                            <div class="flex-shrink-0 pt-2">
+                                <input type="checkbox" class="record-checkbox w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" value="{{ $item->id }}" onchange="updateAlmacenSelection()">
+                            </div>
                             <!-- Información principal -->
                             <div class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div>
@@ -471,12 +559,12 @@
     </div>
 
     <!-- Modal para agregar nuevo registro -->
-    <div id="addModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div id="addModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 animate-modal-backdrop">
+        <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-modal-expand">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold">Nuevo Registro de Almacenamiento</h2>
-                <button onclick="hideAddModal()" class="text-blue-900 font-semibold hover:text-slate-200">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button onclick="hideAddModal()" class="modal-close-btn" title="Cerrar modal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"/>
                         <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
@@ -703,6 +791,79 @@
                 menu.classList.add('hidden');
             }
         });
+
+        function updateAlmacenSelection() {
+            const ck = document.querySelectorAll('.record-checkbox:checked');
+            const count = ck.length;
+
+            const optExcel = document.getElementById('almacenOptExcelSelected');
+            const optPdf = document.getElementById('almacenOptPdfSelected');
+            if (optExcel) {
+                optExcel.disabled = count === 0;
+                optExcel.textContent = `📊 Excel - Solo seleccionados ${count > 0 ? `(${count})` : '(0)'}`;
+            }
+            if (optPdf) {
+                optPdf.disabled = count === 0;
+                optPdf.textContent = `📄 PDF - Solo seleccionados ${count > 0 ? `(${count})` : '(0)'}`;
+            }
+        }
+
+        function handleAlmacenExport(select) {
+            const val = select.value;
+            if (!val) return;
+            const [format, scope] = val.split(':');
+            const currentParams = new URLSearchParams(window.location.search);
+
+            if (scope === 'selected') {
+                const ck = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+                if (ck.length === 0) {
+                    Swal.fire('Atención', 'No has seleccionado ningún registro para exportar.', 'info');
+                    select.value = '';
+                    return;
+                }
+                currentParams.set('selected_ids', ck.join(','));
+            } else {
+                currentParams.delete('selected_ids');
+            }
+
+            const baseUrl = format === 'excel'
+                ? '{{ route("administracion.almacenamiento_impresoras.export.excel") }}'
+                : '{{ route("administracion.almacenamiento_impresoras.export.pdf") }}';
+
+            window.location.href = baseUrl + (currentParams.toString() ? '?' + currentParams.toString() : '');
+            select.value = '';
+        }
+
+        function setAlmacenDatePreset(preset) {
+            const desdeInput = document.getElementById('almacen_fecha_desde');
+            const hastaInput = document.getElementById('almacen_fecha_hasta');
+            const now = new Date();
+            const formatDate = (d) => {
+                const y = d.getFullYear();
+                const m = String(d.getMonth() + 1).padStart(2, '0');
+                const day = String(d.getDate()).padStart(2, '0');
+                return `${y}-${m}-${day}`;
+            };
+
+            if (preset === 'today') {
+                const todayStr = formatDate(now);
+                if (desdeInput) desdeInput.value = todayStr;
+                if (hastaInput) hastaInput.value = todayStr;
+            } else if (preset === 'week') {
+                const start = new Date(now);
+                start.setDate(now.getDate() - 7);
+                if (desdeInput) desdeInput.value = formatDate(start);
+                if (hastaInput) hastaInput.value = formatDate(now);
+            } else if (preset === 'month') {
+                const start = new Date(now.getFullYear(), now.getMonth(), 1);
+                if (desdeInput) desdeInput.value = formatDate(start);
+                if (hastaInput) hastaInput.value = formatDate(now);
+            } else if (preset === 'year') {
+                const start = new Date(now.getFullYear(), 0, 1);
+                if (desdeInput) desdeInput.value = formatDate(start);
+                if (hastaInput) hastaInput.value = formatDate(now);
+            }
+        }
 
         // Funciones para limpiar filtros específicos
         function clearSpecificFilter(filterType) {

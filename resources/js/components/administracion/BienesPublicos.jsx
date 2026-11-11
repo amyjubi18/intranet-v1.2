@@ -1,7 +1,155 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Swal from 'sweetalert2';
 import JsBarcode from 'jsbarcode';
 import { downloadWithProgress } from '../../utils/downloadWithProgress';
+
+/**
+ * Selector buscable interactivo con autocompletado y diseño Tailwind
+ */
+function SearchableSelect({
+    label,
+    options = [],
+    value,
+    onChange,
+    placeholder = 'Seleccionar...',
+    allLabel = 'Todos',
+    icon = '📋'
+}) {
+    const [isOpen, setIsOpen] = useState(false);
+    const [search, setSearch] = useState('');
+    const containerRef = useRef(null);
+
+    useEffect(() => {
+        function handleClickOutside(event) {
+            if (containerRef.current && !containerRef.current.contains(event.target)) {
+                setIsOpen(false);
+            }
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filtered = useMemo(() => {
+        if (!search.trim()) return options;
+        const q = search.toLowerCase();
+        return options.filter(opt => {
+            const labelStr = (opt.label || opt.name || opt.text || String(opt.id || '')).toLowerCase();
+            return labelStr.includes(q);
+        });
+    }, [options, search]);
+
+    const selectedOption = options.find(opt => String(opt.id) === String(value));
+
+    return (
+        <div className={`relative w-full ${isOpen ? 'z-50' : 'z-10'}`} ref={containerRef}>
+            {label && (
+                <label className="block text-xs font-semibold text-blue-900 mb-1">
+                    {label}
+                </label>
+            )}
+            <button
+                type="button"
+                onClick={() => setIsOpen(!isOpen)}
+                className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-blue-100/70 hover:bg-blue-100 text-slate-800 text-xs font-semibold rounded-xl border border-white/20 transition-all text-left shadow-2xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+            >
+                <div className="flex items-center gap-1.5 truncate">
+                    <span className="text-xs opacity-70">{icon}</span>
+                    {selectedOption?.colorHex && (
+                        <span
+                            className="w-3 h-3 rounded-full border border-black/20 flex-shrink-0 shadow-inner"
+                            style={{ backgroundColor: selectedOption.colorHex }}
+                        />
+                    )}
+                    <span className="truncate">
+                        {selectedOption ? selectedOption.label : placeholder}
+                    </span>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0">
+                    {value ? (
+                        <span
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                onChange('');
+                            }}
+                            className="text-slate-400 hover:text-red-600 p-0.5 cursor-pointer font-bold text-xs"
+                            title="Quitar filtro"
+                        >
+                            ✕
+                        </span>
+                    ) : null}
+                    <span className="text-[10px] text-slate-500">▼</span>
+                </div>
+            </button>
+
+            {isOpen && (
+                <div className="absolute z-50 left-0 mt-1 w-full min-w-[220px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-fadeIn ring-1 ring-black/5">
+                    <div className="relative mb-2">
+                        <input
+                            type="text"
+                            autoFocus
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            placeholder="Buscar en la lista..."
+                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-slate-50 rounded-lg border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none"
+                        />
+                        <span className="absolute left-2 top-1.5 text-xs text-slate-400">🔍</span>
+                    </div>
+
+                    <div className="max-h-48 overflow-y-auto space-y-0.5 text-xs">
+                        <div
+                            onClick={() => {
+                                onChange('');
+                                setIsOpen(false);
+                                setSearch('');
+                            }}
+                            className={`px-3 py-2 rounded-lg cursor-pointer font-medium transition-colors ${
+                                !value ? 'bg-blue-900 text-white font-bold' : 'text-slate-600 hover:bg-blue-50'
+                            }`}
+                        >
+                            {allLabel}
+                        </div>
+
+                        {filtered.length === 0 ? (
+                            <div className="px-3 py-2 text-center text-xs text-slate-400">
+                                Sin coincidencias
+                            </div>
+                        ) : (
+                            filtered.map((opt) => {
+                                const isSelected = String(opt.id) === String(value);
+                                return (
+                                    <div
+                                        key={opt.id}
+                                        onClick={() => {
+                                            onChange(opt.id);
+                                            setIsOpen(false);
+                                            setSearch('');
+                                        }}
+                                        className={`px-3 py-1.5 rounded-lg cursor-pointer transition-colors truncate flex items-center justify-between ${
+                                            isSelected
+                                                ? 'bg-blue-900 text-white font-bold'
+                                                : 'text-slate-700 hover:bg-blue-50 hover:text-blue-900'
+                                        }`}
+                                    >
+                                        <div className="flex items-center gap-1.5 truncate">
+                                            {opt.colorHex && (
+                                                <span
+                                                    className="w-3 h-3 rounded-full border border-black/20 flex-shrink-0 shadow-inner"
+                                                    style={{ backgroundColor: opt.colorHex }}
+                                                />
+                                            )}
+                                            <span className="truncate">{opt.label}</span>
+                                        </div>
+                                        {isSelected && <span className="ml-1 text-xs">✓</span>}
+                                    </div>
+                                );
+                            })
+                        )}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
 
 const PRESET_COLORS = [
     { name: 'NEGRO', hex: '#000000' },
@@ -56,15 +204,33 @@ export default function BienesPublicos() {
         can_export: true
     });
 
-    // Filtros originales
+    // Filtros combinados simultáneos
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-    const [filterType, setFilterType] = useState('');
-    const [filterUnidadId, setFilterUnidadId] = useState('');
-    const [secondFilter, setSecondFilter] = useState('');
     const [busqueda, setBusqueda] = useState('');
-    const [textFilter, setTextFilter] = useState('');
+    const [filterUnidadId, setFilterUnidadId] = useState('');
+    const [filterUsuarioAdminId, setFilterUsuarioAdminId] = useState('');
+    const [filterUsuarioUsoId, setFilterUsuarioUsoId] = useState('');
+    const [filterEstadoUsoId, setFilterEstadoUsoId] = useState('');
+    const [filterCondicionId, setFilterCondicionId] = useState('');
+    const [filterColorId, setFilterColorId] = useState('');
+    const [filterFormaAdquisicionId, setFilterFormaAdquisicionId] = useState('');
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
+
+    // Selección múltiple para exportar seleccionados
+    const [selectedIds, setSelectedIds] = useState([]);
+
+    const toggleSelect = (id) => {
+        setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === bienes.length && bienes.length > 0) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(bienes.map(b => b.id));
+        }
+    };
 
     // Modal de Código QR / Barras
     const [selectedQrBien, setSelectedQrBien] = useState(null);
@@ -116,6 +282,115 @@ export default function BienesPublicos() {
 
     const [formData, setFormData] = useState(initialFormData);
 
+    // Listas filtradas dependientes de la unidad seleccionada
+    const filteredUsuariosAdministrativos = useMemo(() => {
+        if (!filterUnidadId) return catalogs.usuarios_administrativos || [];
+        return (catalogs.usuarios_administrativos || []).filter(u =>
+            String(u.unidad_administrativa_id) === String(filterUnidadId)
+        );
+    }, [catalogs.usuarios_administrativos, filterUnidadId]);
+
+    const filteredUsuariosDeUso = useMemo(() => {
+        if (!filterUnidadId) return catalogs.usuarios_de_uso || [];
+        return (catalogs.usuarios_de_uso || []).filter(u =>
+            String(u.unidad_administrativa_id) === String(filterUnidadId)
+        );
+    }, [catalogs.usuarios_de_uso, filterUnidadId]);
+
+    // Opciones formateadas para los SearchableSelect
+    const unidadesOptions = useMemo(() => {
+        return (catalogs.unidad_administrativas || []).map(u => ({
+            id: u.id,
+            label: u.name || u.unidad_administrativa
+        }));
+    }, [catalogs.unidad_administrativas]);
+
+    const usuariosAdminOptions = useMemo(() => {
+        return filteredUsuariosAdministrativos.map(u => ({
+            id: u.id,
+            label: u.usuario_administrativo || u.name
+        }));
+    }, [filteredUsuariosAdministrativos]);
+
+    const usuariosUsoOptions = useMemo(() => {
+        return filteredUsuariosDeUso.map(u => ({
+            id: u.id,
+            label: u.usuario_de_uso || u.name
+        }));
+    }, [filteredUsuariosDeUso]);
+
+    const estadosUsoOptions = useMemo(() => {
+        return (catalogs.estado_del_usos || []).map(e => ({
+            id: e.id,
+            label: e.estado_del_uso || e.nombre
+        }));
+    }, [catalogs.estado_del_usos]);
+
+    const condicionesOptions = useMemo(() => {
+        return (catalogs.condiciones || []).map(c => ({
+            id: c.id,
+            label: c.condicion || c.nombre
+        }));
+    }, [catalogs.condiciones]);
+
+    const colorsOptions = useMemo(() => {
+        return (catalogs.colors || []).map(c => ({
+            id: c.id,
+            label: c.color || c.nombre,
+            colorHex: c.codigo_hex
+        }));
+    }, [catalogs.colors]);
+
+    const formasAdquisicionOptions = useMemo(() => {
+        return (catalogs.forma_adquisiciones || []).map(f => ({
+            id: f.id,
+            label: f.forma_adquisicion || f.nombre
+        }));
+    }, [catalogs.forma_adquisiciones]);
+
+    const activeFiltersCount = (filterUnidadId ? 1 : 0) +
+        (filterUsuarioAdminId ? 1 : 0) +
+        (filterUsuarioUsoId ? 1 : 0) +
+        (filterEstadoUsoId ? 1 : 0) +
+        (filterCondicionId ? 1 : 0) +
+        (filterColorId ? 1 : 0) +
+        (filterFormaAdquisicionId ? 1 : 0) +
+        (fechaDesde || fechaHasta ? 1 : 0);
+
+    const applyDatePreset = (preset) => {
+        const today = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const formatYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
+        if (preset === 'today') {
+            const str = formatYMD(today);
+            setFechaDesde(str);
+            setFechaHasta(str);
+        } else if (preset === 'week') {
+            const dayOfWeek = today.getDay();
+            const diff = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+            const monday = new Date(today);
+            monday.setDate(today.getDate() + diff);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            setFechaDesde(formatYMD(monday));
+            setFechaHasta(formatYMD(sunday));
+        } else if (preset === 'month') {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+            setFechaDesde(formatYMD(firstDay));
+            setFechaHasta(formatYMD(lastDay));
+        } else if (preset === 'year') {
+            const firstDay = new Date(today.getFullYear(), 0, 1);
+            const lastDay = new Date(today.getFullYear(), 11, 31);
+            setFechaDesde(formatYMD(firstDay));
+            setFechaHasta(formatYMD(lastDay));
+        } else if (preset === 'clear') {
+            setFechaDesde('');
+            setFechaHasta('');
+        }
+    };
+
     // Cargar datos
     const fetchBienes = useCallback(async (page = 1) => {
         setLoading(true);
@@ -123,23 +398,16 @@ export default function BienesPublicos() {
         try {
             const params = new URLSearchParams({ page });
 
-            if (busqueda.trim()) {
-                params.append('busqueda', busqueda.trim());
-            }
-
-            if (filterType) {
-                params.append('filterType', filterType);
-                if (filterType === 'fecha') {
-                    if (fechaDesde) params.append('fecha_desde', fechaDesde);
-                    if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-                } else if (filterType === 'serial' || filterType === 'codigo_qr') {
-                    if (textFilter.trim()) params.append('secondFilter', textFilter.trim());
-                } else if (secondFilter) {
-                    params.append('secondFilter', secondFilter);
-                } else if ((filterType === 'usuario_de_uso_id' || filterType === 'usuario_administrativo_id') && filterUnidadId) {
-                    params.append('unidad_administrativa_id', filterUnidadId);
-                }
-            }
+            if (busqueda.trim()) params.append('busqueda', busqueda.trim());
+            if (filterUnidadId) params.append('unidad_administrativa_id', filterUnidadId);
+            if (filterUsuarioAdminId) params.append('usuario_administrativo_id', filterUsuarioAdminId);
+            if (filterUsuarioUsoId) params.append('usuario_de_uso_id', filterUsuarioUsoId);
+            if (filterEstadoUsoId) params.append('estado_del_uso_id', filterEstadoUsoId);
+            if (filterCondicionId) params.append('condicion_id', filterCondicionId);
+            if (filterColorId) params.append('color_id', filterColorId);
+            if (filterFormaAdquisicionId) params.append('forma_adquisicion_id', filterFormaAdquisicionId);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
 
             const response = await fetch(`/api/administracion/bienes_publicos?${params.toString()}`, {
                 headers: {
@@ -183,22 +451,25 @@ export default function BienesPublicos() {
         } finally {
             setLoading(false);
         }
-    }, [filterType, filterUnidadId, secondFilter, busqueda, textFilter, fechaDesde, fechaHasta]);
+    }, [busqueda, filterUnidadId, filterUsuarioAdminId, filterUsuarioUsoId, filterEstadoUsoId, filterCondicionId, filterColorId, filterFormaAdquisicionId, fechaDesde, fechaHasta]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchBienes(1);
-        }, 350);
+        }, 300);
         return () => clearTimeout(timer);
-    }, [filterType, filterUnidadId, secondFilter, busqueda, textFilter, fechaDesde, fechaHasta, fetchBienes]);
+    }, [fetchBienes]);
 
     // Limpiar filtros
     const handleClearFilters = () => {
-        setFilterType('');
-        setFilterUnidadId('');
-        setSecondFilter('');
         setBusqueda('');
-        setTextFilter('');
+        setFilterUnidadId('');
+        setFilterUsuarioAdminId('');
+        setFilterUsuarioUsoId('');
+        setFilterEstadoUsoId('');
+        setFilterCondicionId('');
+        setFilterColorId('');
+        setFilterFormaAdquisicionId('');
         setFechaDesde('');
         setFechaHasta('');
         setShowAdvancedFilters(false);
@@ -533,20 +804,6 @@ export default function BienesPublicos() {
         return catalogs.modelos || [];
     }, [formData.marca, catalogs.marcas_modelos, catalogs.modelos]);
 
-    // Filtrar Usuarios de Uso según la Unidad Administrativa seleccionada en filtros
-    const filteredUsuariosDeUso = useMemo(() => {
-        const list = catalogs.usuarios_de_uso || [];
-        if (!filterUnidadId) return list;
-        return list.filter(u => String(u.unidad_administrativa_id) === String(filterUnidadId));
-    }, [catalogs.usuarios_de_uso, filterUnidadId]);
-
-    // Filtrar Usuarios Administrativos según la Unidad Administrativa seleccionada en filtros
-    const filteredUsuariosAdministrativos = useMemo(() => {
-        const list = catalogs.usuarios_administrativos || [];
-        if (!filterUnidadId) return list;
-        return list.filter(u => String(u.unidad_administrativa_id) === String(filterUnidadId));
-    }, [catalogs.usuarios_administrativos, filterUnidadId]);
-
     // Abrir sub-modal para crear un nuevo color rápido
     const handleOpenQuickColorModal = () => {
         setQuickColorName('');
@@ -633,32 +890,53 @@ export default function BienesPublicos() {
         setFormErrors({});
     };
 
-    // Función de exportación con modal de progreso en tiempo real
-    const handleExport = (format) => {
+    // Función de exportación con modal de progreso en tiempo real y soporte para Todos o Seleccionados
+    const handleExport = (format, scope = 'all') => {
         if (!format) return;
 
+        const isSelected = scope === 'selected';
+        if (isSelected && selectedIds.length === 0) {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Sin selección',
+                text: 'Por favor, selecciona al menos un bien público mediante la casilla de verificación antes de exportar.',
+                confirmButtonColor: '#1e3a8a'
+            });
+            return;
+        }
+
         const isExcel = format === 'excel';
-        const filename = isExcel ? 'bienes_publicos.xlsx' : 'bienes_publicos.pdf';
+        const filename = isExcel
+            ? (isSelected ? `bienes_publicos_seleccionados_${selectedIds.length}.xlsx` : 'bienes_publicos.xlsx')
+            : (isSelected ? `bienes_publicos_seleccionados_${selectedIds.length}.pdf` : 'bienes_publicos.pdf');
         const url = isExcel
             ? '/administracion/bienes_publicos/export/excel'
             : '/administracion/bienes_publicos/export/pdf';
 
-        // Armar parámetros con los filtros aplicados actualmente
         const params = new URLSearchParams();
-        if (busqueda.trim()) params.append('busqueda', busqueda.trim());
-        if (filterType) {
-            params.append('filterType', filterType);
-            if (filterType === 'fecha') {
-                if (fechaDesde) params.append('fecha_desde', fechaDesde);
-                if (fechaHasta) params.append('fecha_hasta', fechaHasta);
-            } else if (secondFilter) {
-                params.append('secondFilter', secondFilter);
-            } else if ((filterType === 'usuario_de_uso_id' || filterType === 'usuario_administrativo_id') && filterUnidadId) {
-                params.append('unidad_administrativa_id', filterUnidadId);
-            }
+        if (isSelected) {
+            params.append('selected_ids', selectedIds.join(','));
+        } else {
+            if (busqueda.trim()) params.append('busqueda', busqueda.trim());
+            if (filterUnidadId) params.append('unidad_administrativa_id', filterUnidadId);
+            if (filterUsuarioAdminId) params.append('usuario_administrativo_id', filterUsuarioAdminId);
+            if (filterUsuarioUsoId) params.append('usuario_de_uso_id', filterUsuarioUsoId);
+            if (filterEstadoUsoId) params.append('estado_del_uso_id', filterEstadoUsoId);
+            if (filterCondicionId) params.append('condicion_id', filterCondicionId);
+            if (filterColorId) params.append('color_id', filterColorId);
+            if (filterFormaAdquisicionId) params.append('forma_adquisicion_id', filterFormaAdquisicionId);
+            if (fechaDesde) params.append('fecha_desde', fechaDesde);
+            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
         }
+
         const fullUrl = params.toString() ? `${url}?${params.toString()}` : url;
-        downloadWithProgress(fullUrl, { filename, type: isExcel ? 'excel' : 'pdf' });
+        downloadWithProgress(fullUrl, {
+            filename,
+            type: isExcel ? 'excel' : 'pdf',
+            title: isSelected
+                ? `Exportando ${selectedIds.length} Bien(es) Seleccionado(s)`
+                : (isExcel ? 'Exportando Bienes Públicos a Excel' : 'Exportando Bienes Públicos a PDF')
+        });
     };
 
     // Alternar entre QR y Código de Barras en el modal
@@ -898,8 +1176,8 @@ export default function BienesPublicos() {
             </div>
 
             {/* Filtros y controles (Diseño Original Exacto) */}
-            <div className="px-6 mb-6">
-                <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
+            <div className="px-6 mb-6 relative z-30">
+                <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 relative z-30 overflow-visible">
                     <div className="flex flex-col gap-4">
                         {/* Fila superior: Buscar, Exportar, Nuevo */}
                         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
@@ -934,13 +1212,27 @@ export default function BienesPublicos() {
                                 <select
                                     value=""
                                     onChange={(e) => {
-                                        if (e.target.value) handleExport(e.target.value);
+                                        e.preventDefault();
+                                        if (e.target.value) {
+                                            const [fmt, scp] = e.target.value.split(':');
+                                            handleExport(fmt, scp);
+                                        }
                                     }}
                                     className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs"
                                 >
-                                    <option value="" disabled>📤 Exportar</option>
-                                    <option value="excel">📊 Excel (.xlsx)</option>
-                                    <option value="pdf">📄 PDF (.pdf)</option>
+                                    <option value="" disabled>📤 Exportar...</option>
+                                    <optgroup label="Exportar Todos (con filtros actuales)">
+                                        <option value="excel:all">📊 Excel - Todos los bienes</option>
+                                        <option value="pdf:all">📄 PDF - Todos los bienes</option>
+                                    </optgroup>
+                                    <optgroup label={`Exportar Seleccionados (${selectedIds.length})`}>
+                                        <option value="excel:selected" disabled={selectedIds.length === 0}>
+                                            📊 Excel - Solo seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : '(0)'}
+                                        </option>
+                                        <option value="pdf:selected" disabled={selectedIds.length === 0}>
+                                            📄 PDF - Solo seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : '(0)'}
+                                        </option>
+                                    </optgroup>
                                 </select>
 
                                 {permissions.can_create && (
@@ -956,181 +1248,306 @@ export default function BienesPublicos() {
                             </div>
                         </div>
 
-                        {/* Fila de filtros */}
-                        <div className="flex flex-wrap items-center gap-4">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    Swal.fire({
-                                        title: 'Escanear QR o Código de Barras',
-                                        text: 'Apunta la cámara o pistola lectora al código QR o código de barras del bien para buscarlo directamente.',
-                                        icon: 'info',
-                                        confirmButtonColor: '#1e3a8a'
-                                    });
-                                }}
-                                className="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50"
-                            >
-                                📷 Escanear QR / Barras
-                            </button>
-
-                            <button
-                                type="button"
-                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-                            >
-                                Filtros Avanzados
-                            </button>
-
-                            {showAdvancedFilters && (
-                                <select
-                                    value={filterType}
-                                    onChange={(e) => {
-                                        setFilterType(e.target.value);
-                                        setFilterUnidadId('');
-                                        setSecondFilter('');
-                                        setTextFilter('');
-                                        setFechaDesde('');
-                                        setFechaHasta('');
-                                    }}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-800"
-                                >
-                                    <option value="">Seleccionar filtro</option>
-                                    <option value="n_interno_bien">N° Interno</option>
-                                    <option value="descripcion">Descripción</option>
-                                    <option value="unidad_administrativa_id">Unidad Administrativa</option>
-                                    <option value="usuario_de_uso_id">Usuario de Uso</option>
-                                    <option value="usuario_administrativo_id">Usuario Administrativo</option>
-                                    <option value="estado_del_uso_id">Estado del Uso</option>
-                                    <option value="forma_adquisicion_id">Forma de Adquisición</option>
-                                    <option value="marca">Marca</option>
-                                    <option value="modelo">Modelo</option>
-                                    <option value="condicion_id">Condición</option>
-                                    <option value="color_id">Color</option>
-                                    <option value="serial">Serial</option>
-                                    <option value="codigo_qr">Código QR / Barras</option>
-                                    <option value="fecha">Fecha de Adquisición</option>
-                                    <option value="busqueda">Búsqueda General</option>
-                                </select>
-                            )}
-
-                            {/* Selector de Unidad Administrativa dependiente si se filtra por Usuario de Uso o Usuario Administrativo */}
-                            {showAdvancedFilters && (filterType === 'usuario_de_uso_id' || filterType === 'usuario_administrativo_id') && (
-                                <select
-                                    value={filterUnidadId}
-                                    onChange={(e) => {
-                                        setFilterUnidadId(e.target.value);
-                                        setSecondFilter('');
-                                    }}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-800 font-medium"
-                                    title="Filtrar por Unidad Administrativa"
-                                >
-                                    <option value="">Todas las Unidades Administrativas</option>
-                                    {(catalogs.unidad_administrativas || []).map(u => (
-                                        <option key={u.id} value={u.id}>🏢 {u.name || u.unidad_administrativa}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {/* Segundo filtro dinámico según tipo */}
-                            {showAdvancedFilters && filterType && filterType !== 'fecha' && filterType !== 'busqueda' && filterType !== 'serial' && filterType !== 'codigo_qr' && (
-                                <select
-                                    value={secondFilter}
-                                    onChange={(e) => setSecondFilter(e.target.value)}
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-800 font-medium"
-                                >
-                                    <option value="">
-                                        {filterType === 'usuario_de_uso_id'
-                                            ? (filterUnidadId ? 'Seleccione Usuario de Uso de esta Unidad...' : 'Todos los Usuarios de Uso')
-                                            : filterType === 'usuario_administrativo_id'
-                                                ? (filterUnidadId ? 'Seleccione Usuario Administrativo de esta Unidad...' : 'Todos los Usuarios Administrativos')
-                                                : '-----'}
-                                    </option>
-                                    {filterType === 'n_interno_bien' && (catalogs.n_internos || []).map((n, i) => (
-                                        <option key={i} value={n}>{n}</option>
-                                    ))}
-                                    {filterType === 'descripcion' && (catalogs.descripciones || []).map((d, i) => (
-                                        <option key={i} value={d}>{d}</option>
-                                    ))}
-                                    {filterType === 'unidad_administrativa_id' && (catalogs.unidad_administrativas || []).map(u => (
-                                        <option key={u.id} value={u.id}>{u.name || u.unidad_administrativa}</option>
-                                    ))}
-                                    {filterType === 'usuario_de_uso_id' && (
-                                        (filterUnidadId ? filteredUsuariosDeUso : catalogs.usuarios_de_uso || []).map(u => (
-                                            <option key={u.id} value={u.id}>{u.usuario_de_uso || u.name}</option>
-                                        ))
-                                    )}
-                                    {filterType === 'usuario_administrativo_id' && (
-                                        (filterUnidadId ? filteredUsuariosAdministrativos : catalogs.usuarios_administrativos || []).map(u => (
-                                            <option key={u.id} value={u.id}>{u.usuario_administrativo || u.name}</option>
-                                        ))
-                                    )}
-                                    {filterType === 'estado_del_uso_id' && (catalogs.estado_del_usos || []).map(e => (
-                                        <option key={e.id} value={e.id}>{e.estado_del_uso || e.nombre}</option>
-                                    ))}
-                                    {filterType === 'forma_adquisicion_id' && (catalogs.forma_adquisiciones || []).map(f => (
-                                        <option key={f.id} value={f.id}>{f.forma_adquisicion || f.nombre}</option>
-                                    ))}
-                                    {filterType === 'marca' && (catalogs.marcas || []).map((m, i) => (
-                                        <option key={i} value={m}>{m}</option>
-                                    ))}
-                                    {filterType === 'modelo' && (catalogs.modelos || []).map((m, i) => (
-                                        <option key={i} value={m}>{m}</option>
-                                    ))}
-                                    {filterType === 'condicion_id' && (catalogs.condiciones || []).map(c => (
-                                        <option key={c.id} value={c.id}>{c.condicion || c.nombre}</option>
-                                    ))}
-                                    {filterType === 'color_id' && (catalogs.colors || []).map(c => (
-                                        <option key={c.id} value={c.id}>{c.color || c.nombre}</option>
-                                    ))}
-                                </select>
-                            )}
-
-                            {/* Rango de fechas */}
-                            {showAdvancedFilters && filterType === 'fecha' && (
-                                <div className="flex items-center gap-2">
-                                    <input
-                                        type="date"
-                                        value={fechaDesde}
-                                        onChange={(e) => setFechaDesde(e.target.value)}
-                                        className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm"
-                                    />
-                                    <input
-                                        type="date"
-                                        value={fechaHasta}
-                                        onChange={(e) => setFechaHasta(e.target.value)}
-                                        className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm"
-                                    />
-                                </div>
-                            )}
-
-                            {/* Input de texto para Serial o Código QR */}
-                            {showAdvancedFilters && (filterType === 'serial' || filterType === 'codigo_qr') && (
-                                <input
-                                    type="text"
-                                    value={textFilter}
-                                    onChange={(e) => setTextFilter(e.target.value)}
-                                    placeholder="Ingresa el valor..."
-                                    className="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm text-slate-800"
-                                />
-                            )}
-
-                            {/* Botón para limpiar filtros */}
-                            {(filterType || filterUnidadId || secondFilter || busqueda || textFilter || fechaDesde || fechaHasta) && (
+                        {/* Fila de controles de filtros */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-3 flex-wrap">
                                 <button
                                     type="button"
-                                    onClick={handleClearFilters}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"
+                                    onClick={() => {
+                                        Swal.fire({
+                                            title: 'Escanear QR o Código de Barras',
+                                            text: 'Apunta la cámara o pistola lectora al código QR o código de barras del bien para buscarlo directamente.',
+                                            icon: 'info',
+                                            confirmButtonColor: '#1e3a8a'
+                                        });
+                                    }}
+                                    className="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 shadow-xs"
                                 >
-                                    🗑️ Limpiar
+                                    📷 Escanear QR / Barras
                                 </button>
-                            )}
+
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                    className="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-all duration-300"
+                                >
+                                    <span>⚡ Filtros Avanzados</span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                                            {activeFiltersCount}
+                                        </span>
+                                    )}
+                                    <svg
+                                        className={`w-3.5 h-3.5 transition-transform duration-300 transform ${showAdvancedFilters ? 'rotate-180' : 'rotate-0'}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                {activeFiltersCount > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearFilters}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors"
+                                    >
+                                        <span>✕</span>
+                                        <span>Limpiar Filtros ({activeFiltersCount})</span>
+                                    </button>
+                                )}
+
+                                {bienes.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={toggleSelectAll}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors"
+                                    >
+                                        <span>{selectedIds.length === bienes.length ? '☑' : '☐'}</span>
+                                        <span>{selectedIds.length === bienes.length ? 'Deseleccionar Todos' : 'Seleccionar Todo'}</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Badges de filtros activos en horizontal */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {filterUnidadId && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Unidad: {unidadesOptions.find(u => String(u.id) === String(filterUnidadId))?.label || filterUnidadId}</span>
+                                        <button type="button" onClick={() => setFilterUnidadId('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterUsuarioAdminId && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>U. Admin: {usuariosAdminOptions.find(u => String(u.id) === String(filterUsuarioAdminId))?.label || filterUsuarioAdminId}</span>
+                                        <button type="button" onClick={() => setFilterUsuarioAdminId('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterUsuarioUsoId && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>U. Uso: {usuariosUsoOptions.find(u => String(u.id) === String(filterUsuarioUsoId))?.label || filterUsuarioUsoId}</span>
+                                        <button type="button" onClick={() => setFilterUsuarioUsoId('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterEstadoUsoId && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Estado: {estadosUsoOptions.find(e => String(e.id) === String(filterEstadoUsoId))?.label || filterEstadoUsoId}</span>
+                                        <button type="button" onClick={() => setFilterEstadoUsoId('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterCondicionId && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Condición: {condicionesOptions.find(c => String(c.id) === String(filterCondicionId))?.label || filterCondicionId}</span>
+                                        <button type="button" onClick={() => setFilterCondicionId('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterColorId && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Color: {colorsOptions.find(c => String(c.id) === String(filterColorId))?.label || filterColorId}</span>
+                                        <button type="button" onClick={() => setFilterColorId('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterFormaAdquisicionId && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Forma: {formasAdquisicionOptions.find(f => String(f.id) === String(filterFormaAdquisicionId))?.label || filterFormaAdquisicionId}</span>
+                                        <button type="button" onClick={() => setFilterFormaAdquisicionId('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {(fechaDesde || fechaHasta) && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Adquisición: {fechaDesde || '...'} a {fechaHasta || '...'}</span>
+                                        <button type="button" onClick={() => { setFechaDesde(''); setFechaHasta(''); }} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Panel desplegable animado tipo acordeón con CSS Grid auto-height */}
+                        <div
+                            className={`grid transition-all duration-500 ease-in-out ${
+                                showAdvancedFilters
+                                    ? 'grid-rows-[1fr] opacity-100 mt-3 visible'
+                                    : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none'
+                            }`}
+                        >
+                            <div className={`${showAdvancedFilters ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300`}>
+                                <div className="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                        {/* Unidad Administrativa */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-75 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="🏢 Unidad Administrativa"
+                                                options={unidadesOptions}
+                                                value={filterUnidadId}
+                                                onChange={(val) => {
+                                                    setFilterUnidadId(val);
+                                                    setFilterUsuarioAdminId('');
+                                                    setFilterUsuarioUsoId('');
+                                                }}
+                                                placeholder="Todas las unidades"
+                                                allLabel="Todas las unidades"
+                                                icon="🏢"
+                                            />
+                                        </div>
+
+                                        {/* Usuario Administrativo (filtrado) */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-100 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="👔 Usuario Administrativo"
+                                                options={usuariosAdminOptions}
+                                                value={filterUsuarioAdminId}
+                                                onChange={setFilterUsuarioAdminId}
+                                                placeholder={filterUnidadId ? "Usuarios de esta unidad..." : "Todos los usuarios admin"}
+                                                allLabel="Todos los usuarios admin"
+                                                icon="👔"
+                                            />
+                                        </div>
+
+                                        {/* Usuario de Uso (filtrado) */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-150 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="👤 Usuario de Uso"
+                                                options={usuariosUsoOptions}
+                                                value={filterUsuarioUsoId}
+                                                onChange={setFilterUsuarioUsoId}
+                                                placeholder={filterUnidadId ? "Usuarios de esta unidad..." : "Todos los usuarios de uso"}
+                                                allLabel="Todos los usuarios de uso"
+                                                icon="👤"
+                                            />
+                                        </div>
+
+                                        {/* Estado de Uso */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-200 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="⚙️ Estado del Uso"
+                                                options={estadosUsoOptions}
+                                                value={filterEstadoUsoId}
+                                                onChange={setFilterEstadoUsoId}
+                                                placeholder="Todos los estados"
+                                                allLabel="Todos los estados"
+                                                icon="⚙️"
+                                            />
+                                        </div>
+
+                                        {/* Condición Física */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-225 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="🔍 Condición Física"
+                                                options={condicionesOptions}
+                                                value={filterCondicionId}
+                                                onChange={setFilterCondicionId}
+                                                placeholder="Todas las condiciones"
+                                                allLabel="Todas las condiciones"
+                                                icon="🔍"
+                                            />
+                                        </div>
+
+                                        {/* Color */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-250 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="🎨 Color del Bien"
+                                                options={colorsOptions}
+                                                value={filterColorId}
+                                                onChange={setFilterColorId}
+                                                placeholder="Todos los colores"
+                                                allLabel="Todos los colores"
+                                                icon="🎨"
+                                            />
+                                        </div>
+
+                                        {/* Forma de Adquisición */}
+                                        <div className={showAdvancedFilters ? 'transition-all duration-500 delay-275 transform translate-y-0 opacity-100' : 'transform -translate-y-2 opacity-0'}>
+                                            <SearchableSelect
+                                                label="📑 Forma de Adquisición"
+                                                options={formasAdquisicionOptions}
+                                                value={filterFormaAdquisicionId}
+                                                onChange={setFilterFormaAdquisicionId}
+                                                placeholder="Todas las formas"
+                                                allLabel="Todas las formas"
+                                                icon="📑"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Sección de Fechas de Adquisición con Presets */}
+                                    <div className={`mt-5 pt-4 border-t border-blue-100 transition-all duration-500 delay-300 ${showAdvancedFilters ? 'opacity-100 transform translate-y-0' : 'opacity-0 transform -translate-y-2'}`}>
+                                        <div className="flex flex-wrap items-center justify-between gap-3 mb-2.5">
+                                            <span className="text-xs font-bold text-blue-950">📅 Filtrar por Fecha de Adquisición:</span>
+
+                                            {/* Presets Rápidos */}
+                                            <div className="flex items-center gap-1.5 flex-wrap">
+                                                <span className="text-[11px] font-semibold text-slate-500">Accesos rápidos:</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('today')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                                >
+                                                    Hoy
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('week')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                                >
+                                                    Esta Semana
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('month')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                                >
+                                                    Este Mes
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => applyDatePreset('year')}
+                                                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-blue-50 hover:text-blue-900 shadow-2xs"
+                                                >
+                                                    Este Año
+                                                </button>
+                                                {(fechaDesde || fechaHasta) && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => applyDatePreset('clear')}
+                                                        className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-red-50 text-red-600 border border-red-200 hover:bg-red-100"
+                                                    >
+                                                        Quitar fechas
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 max-w-md">
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Desde:</label>
+                                                <input
+                                                    type="date"
+                                                    value={fechaDesde}
+                                                    onChange={(e) => setFechaDesde(e.target.value)}
+                                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Hasta:</label>
+                                                <input
+                                                    type="date"
+                                                    value={fechaHasta}
+                                                    onChange={(e) => setFechaHasta(e.target.value)}
+                                                    className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
             {/* Listado de bienes (Diseño Original Exacto) */}
-            <div className="px-6 mb-8 sm:justify-center">
+            <div className="px-6 mb-8 sm:justify-center relative z-10">
                 {loading ? (
                     <div className="flex flex-col items-center justify-center py-16 bg-white border border-white/20 backdrop-blur-md rounded-2xl">
                         <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-3"></div>
@@ -1172,9 +1589,20 @@ export default function BienesPublicos() {
                             return (
                                 <div
                                     key={item.id}
-                                    className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 hover:scale-105 transition-transform duration-200"
+                                    className={`bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 hover:scale-105 transition-transform duration-200 ${selectedIds.includes(item.id) ? 'ring-2 ring-blue-500 shadow-md' : ''}`}
                                 >
                                     <div className="flex flex-col md:flex-row items-start gap-4 md:gap-4">
+                                        {/* Checkbox de selección */}
+                                        <div className="flex-shrink-0 pt-2">
+                                            <input
+                                                type="checkbox"
+                                                checked={selectedIds.includes(item.id)}
+                                                onChange={() => toggleSelect(item.id)}
+                                                className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                                title="Seleccionar bien"
+                                            />
+                                        </div>
+
                                         {/* Icono/Imagen del bien con gradiente exacto original */}
                                         <div className="flex items-center justify-center flex-shrink-0 w-20 h-20 rounded-xl bg-gradient-to-br from-blue-500 to-blue-900 text-white shadow-md">
                                             <span className="text-3xl">{getIconForDescription(item.descripcion)}</span>
@@ -1340,8 +1768,8 @@ export default function BienesPublicos() {
 
             {/* Modal de Código QR / Barras Ampliado */}
             {qrModalOpen && selectedQrBien && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-                    <div className={`bg-white rounded-2xl shadow-2xl ${isBarcodeItem(selectedQrBien) ? 'max-w-lg' : 'max-w-sm'} w-full p-6 text-center border border-slate-200 animate-in fade-in zoom-in-95 duration-200`}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-modal-backdrop">
+                    <div className={`bg-white rounded-2xl shadow-2xl ${isBarcodeItem(selectedQrBien) ? 'max-w-lg' : 'max-w-sm'} w-full p-6 text-center border border-slate-200 animate-modal-expand`}>
                         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
                             <h3 className="text-sm font-bold text-blue-950 flex items-center gap-1.5">
                                 <span>{isBarcodeItem(selectedQrBien) ? '🏷️' : '📱'}</span>
@@ -1352,7 +1780,8 @@ export default function BienesPublicos() {
                             <button
                                 type="button"
                                 onClick={() => setQrModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 font-bold"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>
@@ -1391,8 +1820,8 @@ export default function BienesPublicos() {
             )}
             {/* Modal de Crear / Editar Bien Público */}
             {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full my-8 p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full my-8 p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-modal-expand">
                         {/* Cabecera del modal */}
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
                             <div>
@@ -1409,7 +1838,8 @@ export default function BienesPublicos() {
                                 type="button"
                                 onClick={handleCloseModal}
                                 disabled={submitting}
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1.5 transition-colors text-2xl font-bold leading-none"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>
@@ -2086,8 +2516,8 @@ export default function BienesPublicos() {
 
             {/* SUB-MODAL RÁPIDO PARA CREAR NUEVO COLOR (Z-INDEX SUPERIOR Z-[70]) */}
             {quickColorModalOpen && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 transition-all animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 transition-all animate-modal-expand">
                         {/* Cabecera del sub-modal */}
                         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
                             <div>
@@ -2103,7 +2533,8 @@ export default function BienesPublicos() {
                                 type="button"
                                 onClick={() => setQuickColorModalOpen(false)}
                                 disabled={quickColorSubmitting}
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 text-xl font-bold cursor-pointer"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>

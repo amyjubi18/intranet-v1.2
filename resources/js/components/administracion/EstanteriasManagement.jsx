@@ -464,8 +464,8 @@ export default function EstanteriasManagement() {
 
             {/* MODAL CREAR / EDITAR ESTANTERÍA (REPLICANDO EXACTO create.blade.php y edit.blade.php) */}
             {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="glass rounded-2xl p-8 fade-in max-w-2xl w-full my-8 border border-white/20 shadow-2xl transition-all">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="glass rounded-2xl p-8 max-w-2xl w-full my-8 border border-white/20 shadow-2xl transition-all animate-modal-expand">
                         {/* Cabecera del modal */}
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
                             <div>
@@ -480,9 +480,10 @@ export default function EstanteriasManagement() {
                                 type="button"
                                 onClick={handleCloseModal}
                                 disabled={submitting}
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 transition-colors"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
                                 </svg>
                             </button>

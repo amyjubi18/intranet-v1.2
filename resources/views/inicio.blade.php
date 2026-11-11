@@ -131,10 +131,10 @@
         .birthday-card.is-today { border-color: #f59e0b; background: rgba(245, 158, 11, 0.1); }
         .birthday-avatar { width: 48px; height: 48px; background: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; color: white; font-size: 0.875rem; }
 
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: all 0.3s ease; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); display: flex; align-items: center; justify-content: center; z-index: 1000; opacity: 0; visibility: hidden; transition: opacity 300ms cubic-bezier(0.4, 0, 0.2, 1), visibility 300ms cubic-bezier(0.4, 0, 0.2, 1); }
         .modal-overlay.show { opacity: 1; visibility: visible; }
-        .modal-content { background: var(--card-bg); border-radius: 1rem; padding: 1.5rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; transform: scale(0.9); transition: all 0.3s ease; }
-        .modal-overlay.show .modal-content { transform: scale(1); }
+        .modal-content { background: #ffffff; border-radius: 1.5rem; padding: 1.75rem; max-width: 500px; width: 90%; max-height: 90vh; overflow-y: auto; transform: scale(0.68) translateY(20px); border: 1px solid rgba(226, 232, 240, 0.8); box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.35); transition: transform 340ms cubic-bezier(0.4, 0.0, 0.2, 1), border-radius 340ms cubic-bezier(0.4, 0.0, 0.2, 1), box-shadow 340ms cubic-bezier(0.4, 0.0, 0.2, 1); }
+        .modal-overlay.show .modal-content { transform: scale(1) translateY(0); border-radius: 1rem; }
 
         @media (max-width: 640px) {
             .quick-access-card { padding: 1rem; }
@@ -344,7 +344,7 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">🎂 Calendario de Cumpleaños</h2>
-                <button onclick="closeBirthdayModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeBirthdayModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <div class="flex items-center justify-between mb-4">
                 <button onclick="previousBirthdayMonth()" class="btn btn-secondary text-sm p-2">◀</button>
@@ -376,7 +376,7 @@
         <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">📰 Agregar Noticia</h2>
-                <button onclick="closeNewsModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeNewsModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <form id="newsForm" onsubmit="saveNews(event)">
                 <div class="space-y-4">
@@ -425,7 +425,7 @@
         <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 id="newsDetailsTitle" class="text-xl font-bold">📰 Noticia</h2>
-                <button onclick="closeNewsDetailsModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeNewsDetailsModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <div id="newsDetailsContent">
                 <!-- News details will be loaded here -->
@@ -438,7 +438,7 @@
         <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">📞 Directorio Completo</h2>
-                <button onclick="closeDirectoryModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeDirectoryModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <div id="directoryModalList" class="space-y-2 max-h-96 overflow-y-auto">
                 <!-- Directory items will be loaded here -->
@@ -451,7 +451,7 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 id="directoryEditTitle" class="text-xl font-bold">📞 Editar Contacto</h2>
-                <button onclick="closeDirectoryEditModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeDirectoryEditModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <form id="directoryEditForm" onsubmit="saveDirectoryItem(event)">
                 <input type="hidden" id="directoryEditId">
@@ -482,7 +482,7 @@
         <div class="modal-content" style="max-width: 400px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">⚠️ Confirmar Eliminación</h2>
-                <button onclick="closeDirectoryDeleteModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeDirectoryDeleteModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <p class="text-slate-400 mb-6">¿Estás seguro de que deseas eliminar este contacto del directorio?</p>
             <input type="hidden" id="directoryDeleteId">
@@ -498,7 +498,7 @@
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 id="eventModalTitle" class="text-xl font-bold">📅 Agregar Evento</h2>
-                <button onclick="closeEventModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeEventModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <form id="eventForm" onsubmit="saveEvent(event)">
                 <input type="hidden" id="eventId">
@@ -561,7 +561,7 @@
         <div class="modal-content" style="max-width: 450px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">📅 Detalles del Evento</h2>
-                <button onclick="closeEventDetailsModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeEventDetailsModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <div id="eventDetailsContent">
                 <!-- Event details will be loaded here -->
@@ -579,7 +579,7 @@
         <div class="modal-content" style="max-width: 400px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">⚠️ Confirmar Eliminación</h2>
-                <button onclick="closeEventDeleteModal()" class="text-slate-400 hover:text-slate-600 text-2xl">&times;</button>
+                <button onclick="closeEventDeleteModal()" class="modal-close-btn" title="Cerrar">&times;</button>
             </div>
             <p class="text-slate-400 mb-6">¿Estás seguro de que deseas eliminar este evento?</p>
             <input type="hidden" id="eventDeleteId">

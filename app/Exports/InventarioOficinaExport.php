@@ -23,6 +23,11 @@ class InventarioOficinaExport implements FromCollection, WithHeadings, WithMappi
     {
         $query = InventarioOficina::with(['proveedores', 'articulos', 'unidad_medidas']);
 
+        if (!empty($this->filters['selected_ids'])) {
+            $selectedIds = is_array($this->filters['selected_ids']) ? $this->filters['selected_ids'] : explode(',', $this->filters['selected_ids']);
+            $query->whereIn('id', array_filter($selectedIds));
+        }
+
         if (!empty($this->filters['busqueda'])) {
             $search = $this->filters['busqueda'];
             $query->where(function($q) use ($search) {

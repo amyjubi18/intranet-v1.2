@@ -26,6 +26,43 @@ class DistribucionAlmacenamientoImpresoraExport implements FromCollection, WithH
     {
         $query = DistribucionAlmacenamientoImpresora::with('almacenamientoImpresora.cartuchos', 'gerencia.area');
 
+        if ($this->request->filled('selected_ids')) {
+            $ids = is_array($this->request->selected_ids) ? $this->request->selected_ids : explode(',', $this->request->selected_ids);
+            $query->whereIn('distribucion_almacenamiento_impresoras.id', array_filter($ids));
+        }
+
+        if ($this->request->filled('gerencia')) {
+            $query->where('gerencia_id', $this->request->gerencia);
+        }
+        if ($this->request->filled('area')) {
+            $query->whereHas('gerencia', function($q) {
+                $q->where('area_id', $this->request->area);
+            });
+        }
+        if ($this->request->filled('cartucho')) {
+            $query->whereHas('almacenamientoImpresora.cartuchos', function($subQ) {
+                $subQ->where('id', $this->request->cartucho);
+            });
+        }
+        if ($this->request->filled('impresora')) {
+            $query->whereHas('almacenamientoImpresora', function($q) {
+                $q->where('impresora_id', $this->request->impresora);
+            });
+        }
+        if ($this->request->filled('colore')) {
+            $query->whereHas('almacenamientoImpresora.colores', function($subQ) {
+                $subQ->where('id', $this->request->colore);
+            });
+        }
+        if ($this->request->filled('fabricante')) {
+            $query->whereHas('almacenamientoImpresora.fabricantes', function($subQ) {
+                $subQ->where('id', $this->request->fabricante);
+            });
+        }
+        if ($this->request->filled('fecha_desde') && $this->request->filled('fecha_hasta')) {
+            $query->whereBetween('created_at', [$this->request->fecha_desde, $this->request->fecha_hasta]);
+        }
+
         // Apply filters if needed
         if ($this->request->filled('almacenamiento_impresora_id')) {
             $query->where('almacenamiento_impresora_id', $this->request->input('almacenamiento_impresora_id'));

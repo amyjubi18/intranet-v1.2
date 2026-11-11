@@ -387,8 +387,8 @@ export default function Consumibles() {
 
             {/* Modal de Detalle */}
             {detailModalOpen && selectedCartucho && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-fade-in">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-modal-backdrop">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-modal-expand">
                         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                             <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
                                 <span>🖨️</span>
@@ -397,7 +397,8 @@ export default function Consumibles() {
                             <button
                                 type="button"
                                 onClick={() => setDetailModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>

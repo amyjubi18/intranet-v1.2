@@ -708,22 +708,17 @@
       position: fixed;
       inset: 0;
       background: rgba(15, 23, 42, 0.7);
-      backdrop-filter: blur(4px);
+      backdrop-filter: blur(8px);
       z-index: 999;
       display: none;
       align-items: center;
       justify-content: center;
       padding: 2rem;
-      animation: fadeIn 0.3s ease-out;
+      animation: modalBackdropFadeIn 300ms cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .modal-overlay.show {
       display: flex;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
     }
 
     .modal-content {
@@ -734,18 +729,8 @@
       max-height: 85%;
       overflow-y: auto;
       box-shadow: 0 25px 50px rgba(0, 0, 0, 0.3);
-      animation: slideInScale 0.4s ease-out;
+      animation: modalExpandIn 350ms cubic-bezier(0.4, 0.0, 0.2, 1);
     }
-
-    @keyframes slideInScale {
-      from {
-        opacity: 0;
-        transform: scale(0.9) translateY(30px);
-      }
-      to {
-        opacity: 1;
-        transform: scale(1) translateY(0);
-      }
     }
 
     .modal-header {

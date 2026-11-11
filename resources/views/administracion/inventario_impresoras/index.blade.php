@@ -296,12 +296,12 @@
     </div>
 
     <!-- Modal para agregar nuevo registro -->
-    <div id="addModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-        <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+    <div id="addModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 animate-modal-backdrop">
+        <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-modal-expand">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-bold">Nuevo Registro de Consumible</h2>
-                <button onclick="hideAddModal()" class="text-blue-900 font-semibold hover:text-slate-200">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <button onclick="hideAddModal()" class="modal-close-btn" title="Cerrar modal">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <line x1="18" y1="6" x2="6" y2="18"/>
                         <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>

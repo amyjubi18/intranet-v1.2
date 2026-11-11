@@ -115,101 +115,255 @@
         </div>
     </div>
     </div>
-    <!-- Filtros -->
-    <form method="GET" action="{{ route('administracion.salida_oficina.index') }}" id="filterForm">
-        <div class="px-6 mb-6">
-            <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
-                <div class="flex flex-col gap-4">
-                    <!-- Fila de acciones (Exportar, Eliminar Seleccionados, Eliminar Todo, Nuevo) -->
-                    <div class="flex flex-wrap items-center justify-end gap-3 pb-4 border-b border-gray-100">
-                        <select onchange="if(this.value) window.location.href=this.value" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm">
+    @php
+        $activeFiltersCount = 0;
+        if(request('busqueda')) $activeFiltersCount++;
+        if(request('gerencia')) $activeFiltersCount++;
+        if(request('area')) $activeFiltersCount++;
+        if(request('articulo')) $activeFiltersCount++;
+        if(request('fecha_desde') || request('fecha_hasta')) $activeFiltersCount++;
+        if(request('fecha_ingreso_desde') || request('fecha_ingreso_hasta')) $activeFiltersCount++;
+    @endphp
+
+    <!-- Panel de Búsqueda y Filtros Avanzados Animados -->
+    <div class="px-6 mb-6 relative z-30 overflow-visible" x-data="{ openFilters: {{ $activeFiltersCount > 0 ? 'true' : 'false' }} }">
+        <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
+            <div class="flex flex-col gap-4">
+                <!-- Fila Superior: Buscador Rápido + Acciones (Exportar, Eliminar, Nuevo) -->
+                <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                    <!-- Buscador general -->
+                    <form method="GET" action="{{ route('administracion.salida_oficina.index') }}" class="flex-1 max-w-xl">
+                        @if(request('gerencia')) <input type="hidden" name="gerencia" value="{{ request('gerencia') }}"> @endif
+                        @if(request('area')) <input type="hidden" name="area" value="{{ request('area') }}"> @endif
+                        @if(request('articulo')) <input type="hidden" name="articulo" value="{{ request('articulo') }}"> @endif
+                        @if(request('fecha_desde')) <input type="hidden" name="fecha_desde" value="{{ request('fecha_desde') }}"> @endif
+                        @if(request('fecha_hasta')) <input type="hidden" name="fecha_hasta" value="{{ request('fecha_hasta') }}"> @endif
+                        @if(request('fecha_ingreso_desde')) <input type="hidden" name="fecha_ingreso_desde" value="{{ request('fecha_ingreso_desde') }}"> @endif
+                        @if(request('fecha_ingreso_hasta')) <input type="hidden" name="fecha_ingreso_hasta" value="{{ request('fecha_ingreso_hasta') }}"> @endif
+
+                        <div class="relative">
+                            <input
+                                type="text"
+                                name="busqueda"
+                                value="{{ request('busqueda') }}"
+                                placeholder="🔍 Buscar por artículo, gerencia, área o responsable (Enter)..."
+                                class="w-full bg-blue-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-inner"
+                            />
+                            <span class="absolute left-3.5 top-3 text-slate-400 text-sm">🔍</span>
+                        </div>
+                    </form>
+
+                    <!-- Acciones -->
+                    <div class="flex flex-wrap items-center justify-end gap-3">
+                        <select id="exportSelectSalida" onchange="handleSalidaExport(this)" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs">
                             <option value="">📤 Exportar</option>
-                            <option value="{{ route('administracion.salida_oficina.export.excel', request()->all()) }}">Exportar a Excel</option>
-                            <option value="{{ route('administracion.salida_oficina.export.pdf', request()->all()) }}">Exportar a PDF</option>
+                            <optgroup label="Exportar Todos">
+                                <option value="excel:all">📊 Excel - Todos los registros</option>
+                                <option value="pdf:all">📄 PDF - Todos los registros</option>
+                            </optgroup>
+                            <optgroup label="Exportar Seleccionados" id="salidaExportSelectedGroup">
+                                <option value="excel:selected" id="salidaOptExcelSelected" disabled>📊 Excel - Solo seleccionados (0)</option>
+                                <option value="pdf:selected" id="salidaOptPdfSelected" disabled>📄 PDF - Solo seleccionados (0)</option>
+                            </optgroup>
                         </select>
+
                         @can('salidaofic_destroy')
-                        <button type=button onclick="confirmDeleteSelected()" id="deleteSelectedBtn" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm" disabled><span>🗑️</span> Eliminar Seleccionados</button>
-                        <button type=button onclick="confirmDeleteAll()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm"><span>⚠️</span> Eliminar Todo</button>
+                        <button type="button" onclick="confirmDeleteSelected()" id="deleteSelectedBtn" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-xs" disabled>
+                            <span>🗑️</span>
+                            <span id="deleteSelectedBtnText">Eliminar Seleccionados</span>
+                        </button>
+                        <button type="button" onclick="confirmDeleteAll()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm shadow-xs">
+                            <span>⚠️</span>
+                            <span>Eliminar Todo</span>
+                        </button>
                         @endcan
+
                         @can('salidaofic_create')
-                        <a href="{{ route('administracion.salida_oficina.create') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"><span>➕</span> Nuevo</a>
+                        <a href="{{ route('administracion.salida_oficina.create') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs">
+                            <span>➕</span>
+                            <span>Nuevo</span>
+                        </a>
                         @endcan
                     </div>
+                </div>
 
-                    <!-- Fila de filtros -->
-                    <div class="flex flex-wrap items-center gap-4">
-                        <select id="filterType" onchange="updateSecondFilter()" class="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('gerencia') || request('area') || request('articulo') ||  request('busqueda') || request('fecha_desde') || request('fecha_hasta') || request('fecha_ingreso_desde') || request('fecha_ingreso_hasta') ? 'bg-blue-700 border-blue-400' : '' }}">
-                            <option value="">Seleccionar filtro</option>
-                            <option value="gerencia" {{ request('gerencia') ? 'selected' : '' }}>Gerencia</option>
-                            <option value="area" {{ request('area') ? 'selected' : '' }}>Área</option>
-                            <option value="articulo" {{ request('articulo') ? 'selected' : '' }}>Artículo</option>
-                            <option value="busqueda" {{ request('busqueda') ? 'selected' : '' }}>Búsqueda General</option>
-                            <option value="fecha" {{ (request('fecha_desde') || request('fecha_hasta')) ? 'selected' : '' }}>Fecha de Salida</option>
-                            <option value="fecha_ingreso" {{ (request('fecha_ingreso_desde') || request('fecha_ingreso_hasta')) ? 'selected' : '' }}>Fecha de Ingreso</option>
-                        </select>
+                <!-- Fila de Control: Botón Filtros Avanzados + Badges de Filtros Activos -->
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="flex items-center gap-3">
+                        <button
+                            type="button"
+                            @click="openFilters = !openFilters"
+                            class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-all duration-300 cursor-pointer"
+                        >
+                            <span>⚡ Filtros Avanzados</span>
+                            @if($activeFiltersCount > 0)
+                                <span class="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                                    {{ $activeFiltersCount }}
+                                </span>
+                            @endif
+                            <svg
+                                class="w-3.5 h-3.5 transition-transform duration-300 transform"
+                                :class="openFilters ? 'rotate-180' : 'rotate-0'"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                            >
+                                <path stroke-linecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                            </svg>
+                        </button>
 
-                        <!-- Filtro secundario - Dinámico según selección -->
-                        <div id="secondFilterContainer" class="relative" style="z-index: 99999;">
-                            <select id="secondFilter" onchange="applySelectFilter()" class="glass bg-blue-100 rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('gerencia') || request('area') || request('articulo') ? 'bg-blue-200 border-blue-500' : '' }}" {{ request('gerencia') || request('area') || request('articulo') ? '' : 'disabled' }}>
-                                <option value="">Primero selecciona un filtro</option>
-                                @if(request('gerencia'))
-                                    @foreach(->sortBy('gerencia') as )
-                                    <option value="{{ ->id }}" {{ request('gerencia') == ->id ? 'selected' : '' }}>{{ ->gerencia }} ({{ ->area->area ?? "N/A" }})</option>
-                                    @endforeach
-                                @elseif(request('area'))
-                                    @foreach( as )
-                                    <option value="{{ ->id }}" {{ request('area') == ->id ? 'selected' : '' }}>{{ ->area }}</option>
-                                    @endforeach
-                                @elseif(request('articulo'))
-                                    @foreach( as )
-                                    <option value="{{ ->id }}" {{ request('articulo') == ->id ? 'selected' : '' }}>{{ str_pad(->id, 4, '0', STR_PAD_LEFT) }} - {{ ->articulo }}</option>
-                                    @endforeach
-                                @endif
-                            </select>
+                        @if($activeFiltersCount > 0)
+                            <a
+                                href="{{ route('administracion.salida_oficina.index') }}"
+                                class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors"
+                            >
+                                <span>✕</span>
+                                <span>Limpiar Filtros ({{ $activeFiltersCount }})</span>
+                            </a>
+                        @endif
+                    </div>
 
-                            <!-- Filtro con buscador personalizado -->
-                            <div id="searchableFilter" class="searchable-select hidden">
-                                <button type="button" id="searchableFilterButton" class="glass rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 w-full text-left flex items-center justify-between">
-                                    <span id="searchableFilterText">Primero selecciona un filtro</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-400">
-                                        <polyline points="6,9 12,15 18,9"/>
-                                    </svg>
-                                </button>
+                    <!-- Badges de filtros activos -->
+                    <div class="flex flex-wrap items-center gap-2 text-xs">
+                        @if(request('gerencia'))
+                            @php $gAct = $gerencias->where('id', request('gerencia'))->first(); @endphp
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Gerencia: {{ $gAct->gerencia ?? request('gerencia') }}</span>
+                                <button type="button" onclick="clearSpecificFilter('gerencia')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('area'))
+                            @php $aAct = $areas->where('id', request('area'))->first(); @endphp
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Área: {{ $aAct->area ?? request('area') }}</span>
+                                <button type="button" onclick="clearSpecificFilter('area')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('articulo'))
+                            @php $artAct = $articulos->where('id', request('articulo'))->first(); @endphp
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Artículo: {{ $artAct->articulo ?? request('articulo') }}</span>
+                                <button type="button" onclick="clearSpecificFilter('articulo')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('busqueda'))
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Búsqueda: "{{ request('busqueda') }}"</span>
+                                <button type="button" onclick="clearSpecificFilter('busqueda')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('fecha_desde') || request('fecha_hasta'))
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Fecha Salida: {{ request('fecha_desde') ?: '...' }} a {{ request('fecha_hasta') ?: '...' }}</span>
+                                <button type="button" onclick="clearDateFilter('fecha_salida')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                        @if(request('fecha_ingreso_desde') || request('fecha_ingreso_hasta'))
+                            <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                <span>Fecha Factura: {{ request('fecha_ingreso_desde') ?: '...' }} a {{ request('fecha_ingreso_hasta') ?: '...' }}</span>
+                                <button type="button" onclick="clearDateFilter('fecha_ingreso')" class="hover:text-red-600 font-bold ml-1">✕</button>
+                            </span>
+                        @endif
+                    </div>
+                </div>
 
-                                <div id="searchableFilterDropdown" class="searchable-select-dropdown">
-                                    <div class="searchable-select-search">
-                                        <input type="text" id="searchableFilterInput" placeholder="Buscar...">
+                <!-- Acordeón Animado con CSS Grid auto-height -->
+                <div
+                    class="grid transition-all duration-500 ease-in-out"
+                    :class="openFilters ? 'grid-rows-[1fr] opacity-100 mt-3 visible' : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none'"
+                >
+                    <div :class="openFilters ? 'overflow-visible' : 'overflow-hidden'" class="transition-all duration-300">
+                        <form method="GET" action="{{ route('administracion.salida_oficina.index') }}" id="advancedFilterForm">
+                            @if(request('busqueda')) <input type="hidden" name="busqueda" value="{{ request('busqueda') }}"> @endif
+                            <div class="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible space-y-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    <!-- Gerencia -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-blue-900 mb-1.5">🏢 Gerencia</label>
+                                        <select name="gerencia" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                            <option value="">Todas las gerencias</option>
+                                            @foreach($gerencias->sortBy('gerencia') as $g)
+                                                <option value="{{ $g->id }}" {{ request('gerencia') == $g->id ? 'selected' : '' }}>
+                                                    {{ $g->gerencia }} {{ $g->area ? '('.$g->area->area.')' : '' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
                                     </div>
-                                    <div id="searchableFilterOptions" class="searchable-select-options"></div>
+
+                                    <!-- Área -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-blue-900 mb-1.5">📂 Área</label>
+                                        <select name="area" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                            <option value="">Todas las áreas</option>
+                                            @foreach($areas->sortBy('area') as $a)
+                                                <option value="{{ $a->id }}" {{ request('area') == $a->id ? 'selected' : '' }}>
+                                                    {{ $a->area }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+
+                                    <!-- Artículo -->
+                                    <div>
+                                        <label class="block text-xs font-semibold text-blue-900 mb-1.5">📦 Artículo</label>
+                                        <select name="articulo" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                            <option value="">Todos los artículos</option>
+                                            @foreach($articulos->sortBy('articulo') as $art)
+                                                <option value="{{ $art->id }}" {{ request('articulo') == $art->id ? 'selected' : '' }}>
+                                                    {{ str_pad($art->id, 4, '0', STR_PAD_LEFT) }} - {{ $art->articulo }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <!-- Rango de fechas con presets -->
+                                <div class="pt-3 border-t border-blue-100/70">
+                                    <div class="flex flex-wrap items-center justify-between gap-3 mb-2">
+                                        <label class="block text-xs font-semibold text-blue-900">📅 Rango de Fechas (Salida)</label>
+                                        <div class="flex items-center gap-1.5">
+                                            <button type="button" onclick="setSalidaDatePreset('today')" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Hoy</button>
+                                            <button type="button" onclick="setSalidaDatePreset('week')" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Esta Semana</button>
+                                            <button type="button" onclick="setSalidaDatePreset('month')" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Este Mes</button>
+                                            <button type="button" onclick="setSalidaDatePreset('year')" class="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Este Año</button>
+                                        </div>
+                                    </div>
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                        <div>
+                                            <span class="block text-2xs font-medium text-slate-500 mb-1">Fecha Salida Desde</span>
+                                            <input type="date" name="fecha_desde" id="salida_fecha_desde" value="{{ request('fecha_desde') }}" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <span class="block text-2xs font-medium text-slate-500 mb-1">Fecha Salida Hasta</span>
+                                            <input type="date" name="fecha_hasta" id="salida_fecha_hasta" value="{{ request('fecha_hasta') }}" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <span class="block text-2xs font-medium text-slate-500 mb-1">Fecha Factura Desde</span>
+                                            <input type="date" name="fecha_ingreso_desde" value="{{ request('fecha_ingreso_desde') }}" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        </div>
+                                        <div>
+                                            <span class="block text-2xs font-medium text-slate-500 mb-1">Fecha Factura Hasta</span>
+                                            <input type="date" name="fecha_ingreso_hasta" value="{{ request('fecha_ingreso_hasta') }}" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-end gap-3 pt-2">
+                                    <a href="{{ route('administracion.salida_oficina.index') }}" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors">
+                                        Limpiar Todo
+                                    </a>
+                                    <button type="submit" class="inline-flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-blue-900 text-white hover:bg-blue-800 shadow-sm transition-all cursor-pointer">
+                                        <span>🔍</span>
+                                        <span>Aplicar Filtros</span>
+                                    </button>
                                 </div>
                             </div>
-                        </div>
-
-                        <div id="dateRangeFilter" class="hidden">
-                            <input type="text" id="dateRangePicker" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" placeholder="Seleccionar rango de fechas">
-                            <input type="hidden" name="fecha_desde" id="fecha_desde" value="{{ request('fecha_desde') }}">
-                            <input type="hidden" name="fecha_hasta" id="fecha_hasta" value="{{ request('fecha_hasta') }}">
-                        </div>
-
-                        <!-- Input de fecha de ingreso -->
-                        <div id="dateIngresoRangeFilter" class="hidden">
-                            <input type="text" id="dateIngresoRangePicker" class="bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50" placeholder="Seleccionar rango de fechas">
-                            <input type="hidden" name="fecha_ingreso_desde" id="fecha_ingreso_desde" value="{{ request('fecha_ingreso_desde') }}">
-                            <input type="hidden" name="fecha_ingreso_hasta" id="fecha_ingreso_hasta" value="{{ request('fecha_ingreso_hasta') }}">
-                        </div>
-
-                        <!-- Input de texto para búsqueda -->
-                        <input type="text" id="textFilter" placeholder="Presiona Enter para buscar..." value="{{ request('busqueda') }}" class="glass rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 {{ request('busqueda') ? 'bg-blue-200 border-blue-500' : '' }} hidden">
-
-                        <!-- Botón para limpiar filtros -->
-                        <button type="button" onclick="clearFilters()" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm">
-                            🗑️ Limpiar
-                        </button>
+                        </form>
                     </div>
                 </div>
             </div>
         </div>
-    </form>
+    </div>
 
     <!-- Formularios ocultos para eliminación masiva -->
     <form id="deleteMultipleForm" method="POST" action="{{ route('administracion.salida_oficina.destroyMultiple') }}" style="display:none;">
@@ -221,117 +375,9 @@
         @csrf
         <input type="hidden" name="password" id="deleteAllPassword">
     </form>
-{{-- 
-    <div class="inline-flex items-center p-4 pb-2 m-4">
-        @can('salidaofic_create')
-        <a class="inline-flex items-center px-4 py-2 mr-2 shadow-sm shadow-gray-500 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:bg-blue-700 focus:bg-blue-700 active:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700 focus:ring-offset-2" href="{{route('administracion.salida_oficina.create')}}">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" class="mr-1" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);"><path d="M19 11h-6V5h-2v6H5v2h6v6h2v-6h6z"></path></svg>Formulario
-        </a>
-        @endcan
-        <a href="{{route('administracion.salida_oficina.index')}}" class="inline-flex items-center shadow-sm shadow-gray-500 px-4 py-2 mr-2 text-xs font-semibold tracking-widest text-white uppercase transition duration-150 ease-in-out bg-blue-900 border border-transparent rounded-md hover:bg-blue-700">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" style="fill: rgba(255, 255, 255, 1);"><path d="M10 11H7.101l.001-.009a4.956 4.956 0 0 1 .752-1.787 5.054 5.054 0 0 1 2.2-1.811c.302-.128.617-.226.938-.291a5.078 5.078 0 0 1 2.018 0 4.978 4.978 0 0 1 2.525 1.361l1.416-1.412a7.036 7.036 0 0 0-2.224-1.501 6.921 6.921 0 0 0-1.315-.408 7.079 7.079 0 0 0-2.819 0 6.94 6.94 0 0 0-1.316.409 7.04 7.04 0 0 0-3.08 2.534 6.978 6.978 0 0 0-1.054 2.505c-.028.135-.043.273-.063.41H2l4 4 4-4z"></path></svg>Actualizar
-        </a>
-    </div> --}}
-
-
-
-    <!-- Indicador de filtros activos -->
-        @if(request('gerencia') || request('area') || request('articulo') || request('busqueda') || request('fecha_desde') || request('fecha_hasta') || request('fecha_ingreso_desde') || request('fecha_ingreso_hasta'))
-        <div class="px-6 mb-6">
-            <div class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-xl">
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="text-blue-600 font-semibold">🔍 Filtros Activos:</span>
-                </div>
-                <div class="flex flex-wrap gap-2">
-                    @if(request('gerencia'))
-                        @php
-                            $gerenciaActiva = $gerencias->where('id', request('gerencia'))->first();
-                        @endphp
-                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                            Gerencia: {{ $gerenciaActiva->gerencia ?? 'N/A' }}
-                            <button onclick="clearSpecificFilter('gerencia')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                        </span>
-                    @endif
-
-                    @if(request('area'))
-                        @php
-                            $areaActiva = $areas->where('id', request('area'))->first();
-                        @endphp
-                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                            Área: {{ $areaActiva->area ?? 'N/A' }}
-                            <button onclick="clearSpecificFilter('area')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                        </span>
-                    @endif
-
-                    @if(request('articulo'))
-                        @php
-                            $articuloActivo = $articulos->where('id', request('articulo'))->first();
-                        @endphp
-                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                            Consumible: {{ $articuloActivo->articulo ?? 'N/A' }}
-                            <button onclick="clearSpecificFilter('articulo')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                        </span>
-                    @endif
-
-                    
-
-                   
-
-                   
-
-                    @if(request('busqueda'))
-                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                            Búsqueda: "{{ request('busqueda') }}"
-                            <button onclick="clearSpecificFilter('busqueda')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                        </span>
-                    @endif
-
-                    @if(request('fecha_desde') || request('fecha_hasta'))
-                        @php
-                            $fechaDesde = request('fecha_desde');
-                            $fechaHasta = request('fecha_hasta');
-                            $rangoTexto = '';
-
-                            if($fechaDesde && $fechaHasta) {
-                                $rangoTexto = "Salida desde {$fechaDesde} hasta {$fechaHasta}";
-                            } elseif($fechaDesde) {
-                                $rangoTexto = "Salida desde {$fechaDesde}";
-                            } elseif($fechaHasta) {
-                                $rangoTexto = "Salida hasta {$fechaHasta}";
-                            }
-                        @endphp
-                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                            {{ $rangoTexto }}
-                            <button onclick="clearDateFilter('fecha_salida')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                        </span>
-                    @endif
-
-                    @if(request('fecha_ingreso_desde') || request('fecha_ingreso_hasta'))
-                        @php
-                            $fechaIngresoDesde = request('fecha_ingreso_desde');
-                            $fechaIngresoHasta = request('fecha_ingreso_hasta');
-                            $rangoIngresoTexto = '';
-
-                            if($fechaIngresoDesde && $fechaIngresoHasta) {
-                                $rangoIngresoTexto = "Ingreso desde {$fechaIngresoDesde} hasta {$fechaIngresoHasta}";
-                            } elseif($fechaIngresoDesde) {
-                                $rangoIngresoTexto = "Ingreso desde {$fechaIngresoDesde}";
-                            } elseif($fechaIngresoHasta) {
-                                $rangoIngresoTexto = "Ingreso hasta {$fechaIngresoHasta}";
-                            }
-                        @endphp
-                        <span class="inline-flex items-center gap-1 px-3 py-1 bg-blue-600 text-white text-sm rounded-full">
-                            {{ $rangoIngresoTexto }}
-                            <button onclick="clearDateFilter('fecha_ingreso')" class="ml-1 hover:bg-blue-800 rounded-full p-0.5">×</button>
-                        </span>
-                    @endif
-                </div>
-            </div>
-        </div>
-        @endif
 
     <!-- Registros de Salida Agrupados por Artículo -->
-    <div class="px-6 mb-8">
+    <div class="px-6 mb-8 relative z-10">
         @if(isset($salidasAgrupadas) && $salidasAgrupadas->count() > 0)
             @foreach($salidasAgrupadas as $articuloId => $grupoItems)
                 @php
@@ -395,11 +441,9 @@
 
                         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 record-card hover:scale-105 transition-transform duration-200">
                             <div class="flex flex-col lg:flex-row items-start gap-6">
-                                @can('salidaofic_destroy')
                                 <div class="flex-shrink-0 pt-2">
-                                    <input type="checkbox" class="record-checkbox w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" value="{{ $item->id }}" onchange="updateDeleteSelectedBtn()">
+                                    <input type="checkbox" class="record-checkbox w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" value="{{ $item->id }}" onchange="updateSalidaSelection()">
                                 </div>
-                                @endcan
 
                                 <div class="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <div>
@@ -681,10 +725,86 @@
         .then((r) => { if (r.isConfirmed) document.getElementById('delete-form-' + id).submit(); });
     }
 
-    function updateDeleteSelectedBtn() {
+    function updateSalidaSelection() {
         const ck = document.querySelectorAll('.record-checkbox:checked');
+        const count = ck.length;
+
         const btn = document.getElementById('deleteSelectedBtn');
-        if (btn) btn.disabled = ck.length === 0;
+        const btnText = document.getElementById('deleteSelectedBtnText');
+        if (btn) btn.disabled = count === 0;
+        if (btnText) btnText.textContent = `Eliminar Seleccionados ${count > 0 ? `(${count})` : ''}`;
+
+        const optExcel = document.getElementById('salidaOptExcelSelected');
+        const optPdf = document.getElementById('salidaOptPdfSelected');
+        if (optExcel) {
+            optExcel.disabled = count === 0;
+            optExcel.textContent = `📊 Excel - Solo seleccionados ${count > 0 ? `(${count})` : '(0)'}`;
+        }
+        if (optPdf) {
+            optPdf.disabled = count === 0;
+            optPdf.textContent = `📄 PDF - Solo seleccionados ${count > 0 ? `(${count})` : '(0)'}`;
+        }
+    }
+
+    function updateDeleteSelectedBtn() {
+        updateSalidaSelection();
+    }
+
+    function handleSalidaExport(select) {
+        const val = select.value;
+        if (!val) return;
+        const [format, scope] = val.split(':');
+        const currentParams = new URLSearchParams(window.location.search);
+
+        if (scope === 'selected') {
+            const ck = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+            if (ck.length === 0) {
+                Swal.fire('Atención', 'No has seleccionado ningún registro para exportar.', 'info');
+                select.value = '';
+                return;
+            }
+            currentParams.set('selected_ids', ck.join(','));
+        } else {
+            currentParams.delete('selected_ids');
+        }
+
+        const baseUrl = format === 'excel'
+            ? '{{ route("administracion.salida_oficina.export.excel") }}'
+            : '{{ route("administracion.salida_oficina.export.pdf") }}';
+
+        window.location.href = baseUrl + (currentParams.toString() ? '?' + currentParams.toString() : '');
+        select.value = '';
+    }
+
+    function setSalidaDatePreset(preset) {
+        const desdeInput = document.getElementById('salida_fecha_desde');
+        const hastaInput = document.getElementById('salida_fecha_hasta');
+        const now = new Date();
+        const formatDate = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
+        if (preset === 'today') {
+            const todayStr = formatDate(now);
+            if (desdeInput) desdeInput.value = todayStr;
+            if (hastaInput) hastaInput.value = todayStr;
+        } else if (preset === 'week') {
+            const start = new Date(now);
+            start.setDate(now.getDate() - 7);
+            if (desdeInput) desdeInput.value = formatDate(start);
+            if (hastaInput) hastaInput.value = formatDate(now);
+        } else if (preset === 'month') {
+            const start = new Date(now.getFullYear(), now.getMonth(), 1);
+            if (desdeInput) desdeInput.value = formatDate(start);
+            if (hastaInput) hastaInput.value = formatDate(now);
+        } else if (preset === 'year') {
+            const start = new Date(now.getFullYear(), 0, 1);
+            if (desdeInput) desdeInput.value = formatDate(start);
+            if (hastaInput) hastaInput.value = formatDate(now);
+        }
     }
 
     function confirmDeleteSelected() {

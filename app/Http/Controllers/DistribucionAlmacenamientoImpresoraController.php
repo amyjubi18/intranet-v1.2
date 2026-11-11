@@ -409,6 +409,11 @@ class DistribucionAlmacenamientoImpresoraController extends Controller
     {
         $query = DistribucionAlmacenamientoImpresora::with("almacenamientoImpresora.cartuchos", "gerencia.area");
 
+        if ($request->filled('selected_ids')) {
+            $ids = is_array($request->selected_ids) ? $request->selected_ids : explode(',', $request->selected_ids);
+            $query->whereIn('distribucion_almacenamiento_impresoras.id', array_filter($ids));
+        }
+
         // Aplicar los mismos filtros que en index
         if ($request->has('gerencia') && $request->gerencia) {
             $query->where('gerencia_id', $request->gerencia);

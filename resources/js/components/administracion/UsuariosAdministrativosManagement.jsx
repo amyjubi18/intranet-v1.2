@@ -435,8 +435,8 @@ export default function UsuariosAdministrativosManagement() {
 
             {/* Modal Crear / Editar */}
             {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-slate-200 my-8 animate-in fade-in zoom-in-95 duration-200">
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-slate-200 my-8 animate-modal-expand">
                         {/* Cabecera del modal */}
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
                             <div>
@@ -453,7 +453,8 @@ export default function UsuariosAdministrativosManagement() {
                                 type="button"
                                 onClick={handleCloseModal}
                                 disabled={submitting}
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1 transition-colors text-xl font-bold"
+                                className="modal-close-btn"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>
