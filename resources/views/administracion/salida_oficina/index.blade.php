@@ -3,6 +3,11 @@
     @section('title', 'Salida de Oficina')
     @section('subtitle', 'Despacho y control de inventario de oficinas')
 
+    <style>
+        .record-card { transition: all 0.25s ease; }
+        .record-card:hover { transform: translateY(-3px); box-shadow: 0 15px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); }
+    </style>
+
     <div class="container mx-auto px-4 py-6">
         <div id="salidas-oficinas-root" data-react-component="SalidasOficinas">
             {{-- Fallback de carga inicial mientras React se monta --}}

@@ -3,7 +3,7 @@ import Swal from 'sweetalert2';
 import { downloadWithProgress } from '../../utils/downloadWithProgress';
 
 /**
- * Selector interactivo tipo spring con autocompletado para filtros y formularios
+ * Selector interactivo con autocompletado y diseño Tailwind
  */
 function SearchableSelect({
     label,
@@ -60,40 +60,32 @@ function SearchableSelect({
                     {label} {required && <span className="text-red-500">*</span>}
                 </label>
             )}
+
             <button
                 type="button"
                 disabled={disabled}
                 onClick={() => !disabled && setIsOpen(!isOpen)}
-                className={`select-spring-trigger w-full flex items-center justify-between gap-2 px-3 py-2 text-xs font-semibold rounded-xl border transition-all text-left shadow-2xs focus:ring-2 focus:ring-blue-600 focus:outline-none ${
+                className={`w-full flex items-center justify-between gap-2 px-3.5 py-2.5 text-xs font-semibold rounded-xl border transition-all text-left ${
                     disabled
-                        ? 'bg-slate-100 text-slate-400 cursor-not-allowed border-slate-200'
+                        ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed'
                         : error
-                        ? 'bg-red-50 text-red-800 border-red-300'
-                        : 'bg-blue-100/70 hover:bg-blue-100 text-slate-800 border-white/20'
+                            ? 'border-red-400 bg-red-50 text-slate-800'
+                            : 'bg-blue-100/70 hover:bg-white text-slate-800 border-white/20 focus:ring-2 focus:ring-blue-600'
                 }`}
             >
-                <div className="flex items-center gap-1.5 truncate">
-                    <span className="text-xs opacity-70">{icon}</span>
+                <div className="flex items-center gap-2 truncate">
+                    <span className="text-sm flex-shrink-0">{icon}</span>
                     <span className="truncate">
-                        {selectedOption ? selectedOption.label : placeholder}
+                        {selectedOption ? selectedOption.label : <span className="text-slate-400">{placeholder}</span>}
                     </span>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
-                    {value && !disabled && (
-                        <span
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                onChange('');
-                            }}
-                            className="text-slate-400 hover:text-red-600 p-0.5 cursor-pointer font-bold text-xs"
-                            title="Quitar selección"
-                        >
-                            ✕
+                    {selectedOption?.badge && (
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${selectedOption.badgeClass || 'bg-blue-100 text-blue-900'}`}>
+                            {selectedOption.badge}
                         </span>
                     )}
-                    <span className={`text-[10px] text-slate-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>
-                        ▼
-                    </span>
+                    <span className={`text-slate-400 text-xs transition-transform ${isOpen ? 'rotate-180' : ''}`}>▼</span>
                 </div>
             </button>
 
@@ -185,6 +177,12 @@ export default function SalidasOficinas() {
         areas: [],
         unidad_medidas: []
     });
+    const [permissions, setPermissions] = useState({
+        can_create: false,
+        can_edit: false,
+        can_destroy: false,
+        can_export: true
+    });
     const [pagination, setPagination] = useState({
         current_page: 1,
         last_page: 1,
@@ -193,28 +191,25 @@ export default function SalidasOficinas() {
         to: 0,
         per_page: 15
     });
+
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [permissions, setPermissions] = useState({
-        can_create: false,
-        can_edit: false,
-        can_destroy: false,
-        can_export: false
-    });
 
-    // Filtros combinados simultáneos
-    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+    // Filtros de búsqueda
     const [busqueda, setBusqueda] = useState('');
     const [filterGerencia, setFilterGerencia] = useState('');
     const [filterArea, setFilterArea] = useState('');
     const [filterArticulo, setFilterArticulo] = useState('');
     const [fechaDesde, setFechaDesde] = useState('');
     const [fechaHasta, setFechaHasta] = useState('');
+    const [fechaIngresoDesde, setFechaIngresoDesde] = useState('');
+    const [fechaIngresoHasta, setFechaIngresoHasta] = useState('');
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
-    // Selección múltiple para exportación y eliminación por lote
+    // Selección múltiple para exportación y eliminación
     const [selectedIds, setSelectedIds] = useState([]);
 
-    // Estado de modales (Crear / Editar)
+    // Estado del modal Crear / Editar
     const [modalOpen, setModalOpen] = useState(false);
     const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
     const [selectedSalida, setSelectedSalida] = useState(null);
@@ -230,7 +225,7 @@ export default function SalidasOficinas() {
     });
     const [formErrors, setFormErrors] = useState({});
 
-    // Opciones formateadas
+    // Opciones formateadas de artículos
     const articulosOptions = useMemo(() => {
         return (catalogs.articulos || []).map(a => ({
             id: a.id,
@@ -243,7 +238,7 @@ export default function SalidasOficinas() {
         }));
     }, [catalogs.articulos]);
 
-    // 1. Opciones de Gerencias únicas para filtros y modales
+    // Opciones de Gerencias únicas para filtros y modales
     const gerenciasOptions = useMemo(() => {
         const map = new Map();
         (catalogs.gerencias || []).forEach(g => {
@@ -260,14 +255,13 @@ export default function SalidasOficinas() {
         return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
     }, [catalogs.gerencias]);
 
-    // 2. Opciones de Áreas para el Filtro Principal (Casadas con la Gerencia seleccionada)
+    // Opciones de Áreas para el Filtro Principal (Casadas con la Gerencia seleccionada)
     const areasOptions = useMemo(() => {
         let list = catalogs.areas || [];
         if (filterGerencia) {
             const selectedGer = (catalogs.gerencias || []).find(g => String(g.id) === String(filterGerencia));
             const selectedGerName = selectedGer?.gerencia ? selectedGer.gerencia.trim().toUpperCase() : '';
 
-            // IDs de áreas casadas con esta gerencia en la tabla pivot gerencias
             const marriedAreaIds = new Set();
             (catalogs.gerencias || []).forEach(g => {
                 const gName = (g.gerencia || '').trim().toUpperCase();
@@ -293,7 +287,7 @@ export default function SalidasOficinas() {
         })).sort((a, b) => a.label.localeCompare(b.label));
     }, [catalogs.areas, catalogs.gerencias, filterGerencia]);
 
-    // 3. Opciones de Áreas para el Modal Crear / Editar (Casadas con la Gerencia del formulario)
+    // Opciones de Áreas para el Modal Crear / Editar (Casadas con la Gerencia del formulario)
     const modalAreasOptions = useMemo(() => {
         let list = catalogs.areas || [];
         if (formData.gerencia_id) {
@@ -333,7 +327,6 @@ export default function SalidasOficinas() {
     const handleFilterGerenciaChange = (gId) => {
         setFilterGerencia(gId);
         if (gId) {
-            // Si hay un área seleccionada, verificar si pertenece a la nueva gerencia
             if (filterArea) {
                 const selectedGer = (catalogs.gerencias || []).find(g => String(g.id) === String(gId));
                 const selectedGerName = selectedGer?.gerencia ? selectedGer.gerencia.trim().toUpperCase() : '';
@@ -343,7 +336,7 @@ export default function SalidasOficinas() {
                         .map(g => String(g.area_id))
                 );
                 if (!marriedAreaIds.has(String(filterArea))) {
-                    setFilterArea(''); // Resetear área porque no pertenece a esta gerencia
+                    setFilterArea('');
                 }
             }
         }
@@ -353,7 +346,6 @@ export default function SalidasOficinas() {
     const handleFilterAreaChange = (aId) => {
         setFilterArea(aId);
         if (aId && !filterGerencia) {
-            // Buscar la gerencia correspondiente a esta área
             const areaMatch = (catalogs.areas || []).find(ar => String(ar.id) === String(aId));
             const gerMatch = (catalogs.gerencias || []).find(g => String(g.area_id) === String(aId))
                 || (areaMatch?.gerencia_ids && (catalogs.gerencias || []).find(g => areaMatch.gerencia_ids.includes(g.id)));
@@ -371,7 +363,8 @@ export default function SalidasOficinas() {
     const activeFiltersCount = (filterGerencia ? 1 : 0) +
         (filterArea ? 1 : 0) +
         (filterArticulo ? 1 : 0) +
-        (fechaDesde || fechaHasta ? 1 : 0);
+        (fechaDesde || fechaHasta ? 1 : 0) +
+        (fechaIngresoDesde || fechaIngresoHasta ? 1 : 0);
 
     // Cargar datos desde la API
     const fetchSalidas = useCallback(async (page = 1) => {
@@ -385,6 +378,8 @@ export default function SalidasOficinas() {
             if (filterArticulo) params.append('articulo_id', filterArticulo);
             if (fechaDesde) params.append('fecha_desde', fechaDesde);
             if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+            if (fechaIngresoDesde) params.append('fecha_ingreso_desde', fechaIngresoDesde);
+            if (fechaIngresoHasta) params.append('fecha_ingreso_hasta', fechaIngresoHasta);
 
             const res = await fetch(`/api/administracion/salida_oficinas?${params.toString()}`, {
                 headers: {
@@ -417,7 +412,7 @@ export default function SalidasOficinas() {
         } finally {
             setLoading(false);
         }
-    }, [busqueda, filterGerencia, filterArea, filterArticulo, fechaDesde, fechaHasta]);
+    }, [busqueda, filterGerencia, filterArea, filterArticulo, fechaDesde, fechaHasta, fechaIngresoDesde, fechaIngresoHasta]);
 
     // Recargar al cambiar filtros con debounce para búsqueda
     useEffect(() => {
@@ -428,45 +423,29 @@ export default function SalidasOficinas() {
     }, [fetchSalidas]);
 
     // Presets rápidos de fechas
-    const setDatePreset = (preset) => {
-        const now = new Date();
-        const formatDate = (d) => d.toISOString().split('T')[0];
+    const setSalidaDatePreset = (preset) => {
+        const today = new Date();
+        const pad = (n) => String(n).padStart(2, '0');
+        const formatYMD = (d) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
-        switch (preset) {
-            case 'today':
-                setFechaDesde(formatDate(now));
-                setFechaHasta(formatDate(now));
-                break;
-            case 'thisWeek': {
-                const day = now.getDay();
-                const diffToMonday = now.getDate() - day + (day === 0 ? -6 : 1);
-                const monday = new Date(now.setDate(diffToMonday));
-                const sunday = new Date(monday);
-                sunday.setDate(monday.getDate() + 6);
-                setFechaDesde(formatDate(monday));
-                setFechaHasta(formatDate(sunday));
-                break;
-            }
-            case 'thisMonth': {
-                const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-                const lastDay = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-                setFechaDesde(formatDate(firstDay));
-                setFechaHasta(formatDate(lastDay));
-                break;
-            }
-            case 'thisYear': {
-                const firstDayYear = new Date(now.getFullYear(), 0, 1);
-                const lastDayYear = new Date(now.getFullYear(), 11, 31);
-                setFechaDesde(formatDate(firstDayYear));
-                setFechaHasta(formatDate(lastDayYear));
-                break;
-            }
-            case 'clear':
-                setFechaDesde('');
-                setFechaHasta('');
-                break;
-            default:
-                break;
+        if (preset === 'today') {
+            const d = formatYMD(today);
+            setFechaDesde(d);
+            setFechaHasta(d);
+        } else if (preset === 'week') {
+            const dayOfWeek = today.getDay();
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - ((dayOfWeek + 6) % 7));
+            setFechaDesde(formatYMD(monday));
+            setFechaHasta(formatYMD(today));
+        } else if (preset === 'month') {
+            const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+            setFechaDesde(formatYMD(firstDay));
+            setFechaHasta(formatYMD(today));
+        } else if (preset === 'year') {
+            const firstDayYear = new Date(today.getFullYear(), 0, 1);
+            setFechaDesde(formatYMD(firstDayYear));
+            setFechaHasta(formatYMD(today));
         }
     };
 
@@ -477,17 +456,11 @@ export default function SalidasOficinas() {
         setFilterArticulo('');
         setFechaDesde('');
         setFechaHasta('');
+        setFechaIngresoDesde('');
+        setFechaIngresoHasta('');
     };
 
     // Selección múltiple
-    const handleSelectAll = (e) => {
-        if (e.target.checked) {
-            setSelectedIds(salidas.map(s => s.id));
-        } else {
-            setSelectedIds([]);
-        }
-    };
-
     const handleSelectOne = (id) => {
         setSelectedIds(prev =>
             prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
@@ -545,24 +518,20 @@ export default function SalidasOficinas() {
         const selectedGer = (catalogs.gerencias || []).find(g => String(g.id) === String(gId));
         const selectedGerName = selectedGer?.gerencia ? selectedGer.gerencia.trim().toUpperCase() : '';
 
-        // Buscar todas las áreas casadas con esta gerencia
         const marriedAreaRows = (catalogs.gerencias || []).filter(g =>
             g.area_id && (String(g.id) === String(gId) || (selectedGerName && (g.gerencia || '').trim().toUpperCase() === selectedGerName))
         );
 
         let newAreaId = '';
         if (marriedAreaRows.length === 1) {
-            // Solo tiene 1 área casada: autoasignarla de inmediato
             newAreaId = String(marriedAreaRows[0].area_id);
         } else if (formData.area_id) {
-            // Si el área actual pertenece a la nueva gerencia, mantenerla
             const isMarried = marriedAreaRows.some(g => String(g.area_id) === String(formData.area_id));
             if (isMarried) {
                 newAreaId = formData.area_id;
             }
         }
 
-        // Determinar el ID exacto del registro gerencias (pareja gerencia + area)
         let exactGerId = gId;
         if (newAreaId) {
             const exactMatch = marriedAreaRows.find(g => String(g.area_id) === String(newAreaId));
@@ -587,7 +556,6 @@ export default function SalidasOficinas() {
             const currentGer = (catalogs.gerencias || []).find(g => String(g.id) === String(formData.gerencia_id));
             const currentGerName = currentGer?.gerencia ? currentGer.gerencia.trim().toUpperCase() : '';
 
-            // Buscar la pareja exacta (gerencia actual + esta área) o la gerencia asociada a esta área
             const exactPair = (catalogs.gerencias || []).find(g =>
                 String(g.area_id) === String(aId) && (!currentGerName || (g.gerencia || '').trim().toUpperCase() === currentGerName)
             ) || (catalogs.gerencias || []).find(g => String(g.area_id) === String(aId));
@@ -626,7 +594,6 @@ export default function SalidasOficinas() {
         e.preventDefault();
         setFormErrors({});
 
-        // Validaciones en cliente
         const errors = {};
         if (!formData.fecha_salida) errors.fecha_salida = 'La fecha de salida es obligatoria.';
         if (!formData.articulo_id) errors.articulo_id = 'Debe seleccionar un artículo.';
@@ -684,11 +651,10 @@ export default function SalidasOficinas() {
             setModalOpen(false);
             fetchSalidas(pagination.current_page);
         } catch (err) {
-            console.error('Error guardando salida:', err);
             Swal.fire({
                 icon: 'error',
-                title: 'Error',
-                text: err.message || 'No se pudo guardar la salida. Verifique los datos.',
+                title: 'Error al procesar',
+                text: err.message || 'Ocurrió un error inesperado al guardar la salida.',
                 confirmButtonColor: '#1e3a8a'
             });
         } finally {
@@ -696,7 +662,7 @@ export default function SalidasOficinas() {
         }
     };
 
-    // Eliminación individual con confirmación de contraseña
+    // Eliminación individual protegida con contraseña
     const handleDeleteSingle = async (salida) => {
         const { value: password } = await Swal.fire({
             title: '¿Eliminar salida?',
@@ -780,7 +746,7 @@ export default function SalidasOficinas() {
             showCancelButton: true,
             confirmButtonColor: '#dc2626',
             cancelButtonColor: '#64748b',
-            confirmButtonText: 'Sí, eliminar lote',
+            confirmButtonText: 'Sí, eliminar seleccionados',
             cancelButtonText: 'Cancelar',
             preConfirm: (pwd) => {
                 if (!pwd) {
@@ -796,7 +762,7 @@ export default function SalidasOficinas() {
 
         try {
             Swal.fire({
-                title: 'Eliminando lote...',
+                title: 'Eliminando lote seleccionado...',
                 text: 'Restaurando stock en inventario',
                 allowOutsideClick: false,
                 didOpen: () => Swal.showLoading()
@@ -881,12 +847,12 @@ export default function SalidasOficinas() {
             });
 
             const json = await res.json();
-            if (!res.ok) throw new Error(json.message || 'Error al eliminar todos los registros.');
+            if (!res.ok) throw new Error(json.message || 'Error al eliminar todo.');
 
             Swal.fire({
                 icon: 'success',
-                title: 'Completado',
-                text: json.message || 'Todas las salidas fueron eliminadas y restauradas.',
+                title: 'Inventario restaurado',
+                text: json.message || 'Todas las salidas fueron eliminadas.',
                 timer: 2000,
                 showConfirmButton: false
             });
@@ -903,18 +869,29 @@ export default function SalidasOficinas() {
         }
     };
 
-    // Exportación (Excel y PDF)
-    const handleExport = (type, mode = 'all') => {
+    // Exportación nativa con progreso
+    const handleExport = (type, scope) => {
         const params = new URLSearchParams();
-        if (mode === 'selected' && selectedIds.length > 0) {
+        if (busqueda.trim()) params.append('busqueda', busqueda.trim());
+        if (filterGerencia) params.append('gerencia', filterGerencia);
+        if (filterArea) params.append('area', filterArea);
+        if (filterArticulo) params.append('articulo', filterArticulo);
+        if (fechaDesde) params.append('fecha_desde', fechaDesde);
+        if (fechaHasta) params.append('fecha_hasta', fechaHasta);
+        if (fechaIngresoDesde) params.append('fecha_ingreso_desde', fechaIngresoDesde);
+        if (fechaIngresoHasta) params.append('fecha_ingreso_hasta', fechaIngresoHasta);
+
+        if (scope === 'selected') {
+            if (selectedIds.length === 0) {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Selección requerida',
+                    text: 'Marque al menos una casilla para exportar los seleccionados.',
+                    confirmButtonColor: '#1e3a8a'
+                });
+                return;
+            }
             params.append('selected_ids', selectedIds.join(','));
-        } else {
-            if (busqueda.trim()) params.append('busqueda', busqueda.trim());
-            if (filterGerencia) params.append('gerencia_id', filterGerencia);
-            if (filterArea) params.append('area_id', filterArea);
-            if (filterArticulo) params.append('articulo_id', filterArticulo);
-            if (fechaDesde) params.append('fecha_desde', fechaDesde);
-            if (fechaHasta) params.append('fecha_hasta', fechaHasta);
         }
 
         const endpoint = type === 'excel'
@@ -926,560 +903,579 @@ export default function SalidasOficinas() {
         downloadWithProgress(endpoint, filename, type === 'excel' ? 'Excel' : 'PDF');
     };
 
+    // Agrupación de salidas por artículo para el diseño original idéntico a Blade
+    const groupedSalidas = useMemo(() => {
+        const groups = {};
+        salidas.forEach(item => {
+            const artId = item.articulo_id || item.articulos?.id || 'sin_articulo';
+            if (!groups[artId]) {
+                groups[artId] = {
+                    articuloId: artId,
+                    articulo: item.articulos || (catalogs.articulos || []).find(a => String(a.id) === String(artId)) || null,
+                    items: []
+                };
+            }
+            groups[artId].items.push(item);
+        });
+        return Object.values(groups);
+    }, [salidas, catalogs.articulos]);
+
+    // Helper para formatear fechas a DD/MM/YYYY
+    const formatDisplayDate = (d) => {
+        if (!d) return 'N/A';
+        try {
+            const clean = d.split('T')[0];
+            const [year, month, day] = clean.split('-');
+            if (year && month && day) {
+                return `${day}/${month}/${year}`;
+            }
+            return d;
+        } catch {
+            return d;
+        }
+    };
+
     return (
-        <div className="space-y-6 animate-fadeIn pb-12">
-            {/* Header del Módulo */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl sm:text-3xl font-extrabold text-blue-900 tracking-tight">
-                        Salida de Oficina
-                    </h1>
-                    <p className="text-xs sm:text-sm text-slate-500 mt-0.5">
-                        Registro y control de despacho de materiales a gerencias y áreas
-                    </p>
-                </div>
+        <div className="w-full space-y-6 animate-fadeIn pb-12">
+            {/* Título Principal (Exacto como antes) */}
+            <h2 className="text-4xl font-semibold leading-tight text-center text-blue-900 mb-6">
+                Salida de Oficina
+            </h2>
 
-                <div className="flex items-center gap-2">
-                    {permissions.can_create && (
-                        <button
-                            type="button"
-                            onClick={openCreateModal}
-                            className="btn-save inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0"
-                            style={{
-                                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
-                            }}
-                        >
-                            <span className="text-base leading-none">＋</span>
-                            <span>Nueva Salida</span>
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {/* Tarjetas de Métricas Estadísticas */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                {/* 1. Últimas Fechas de Salida */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            Última Salida
-                        </span>
-                        <div className="w-10 h-10 rounded-xl grid place-items-center bg-blue-50 text-blue-600 text-lg">
-                            📅
+            {/* Tarjetas de estadísticas superiores */}
+            <div className="px-2 sm:px-6 mb-8">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fadeIn">
+                    {/* 1. Últimas Fechas de Salida */}
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded-xl grid place-items-center bg-blue-500/20">
+                                <span className="text-blue-500" style={{ fontSize: 24 }}>📅</span>
+                            </div>
                         </div>
+                        <h3 className="text-2xl font-bold mb-1 text-slate-800">
+                            {metrics.ultimasFechasSalida || 'N/A'}
+                        </h3>
+                        <p className="text-sm text-blue-900 font-semibold">Últimas Fechas de Salida</p>
                     </div>
-                    <h3 className="text-2xl font-black text-slate-800">
-                        {metrics.ultimasFechasSalida || 'N/A'}
-                    </h3>
-                    <p className="text-xs font-semibold text-blue-900 mt-1">
-                        Fecha del despacho más reciente
-                    </p>
-                </div>
 
-                {/* 2. Total Salidas */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            Total Despachos
-                        </span>
-                        <div className="w-10 h-10 rounded-xl grid place-items-center bg-emerald-50 text-emerald-600 text-lg">
-                            🗃️
+                    {/* 2. Total Salidas */}
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded-xl grid place-items-center bg-green-500/20">
+                                <span className="text-green-500" style={{ fontSize: 24 }}>🗃️</span>
+                            </div>
                         </div>
-                    </div>
-                    <div className="flex items-baseline gap-2">
-                        <h3 className="text-2xl font-black text-slate-800">
+                        <h3 className="text-2xl font-bold mb-1 text-slate-800">
                             {metrics.totalSalidas}
                         </h3>
-                        <span className="text-xs font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                            +{metrics.salidasEsteMes} este mes
-                        </span>
-                    </div>
-                    <p className="text-xs font-semibold text-blue-900 mt-1">
-                        Registros acumulados en el sistema
-                    </p>
-                </div>
-
-                {/* 3. Alerta Stock Bajo */}
-                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs transition-all hover:shadow-md">
-                    <div className="flex items-center justify-between mb-3">
-                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
-                            Alerta Stock
-                        </span>
-                        <div className="w-10 h-10 rounded-xl grid place-items-center bg-amber-50 text-amber-600 text-lg">
-                            ⚠️
+                        <p className="text-sm text-blue-900 font-semibold">Total Salidas</p>
+                        <div className="mt-3 flex items-center gap-2 text-xs">
+                            <span className="text-green-500 font-bold">+{metrics.salidasEsteMes}</span>
+                            <span className="text-blue-900 font-semibold">este mes</span>
                         </div>
                     </div>
-                    <div className="flex items-baseline gap-2">
-                        <h3 className="text-2xl font-black text-slate-800">
-                            {metrics.countSalidasBajoStock}
-                        </h3>
-                        <span className="text-xs font-bold text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full">
-                            Artículos críticos
-                        </span>
+
+                    {/* 3. Artículos con Bajo Stock */}
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="w-12 h-12 rounded-xl grid place-items-center bg-red-500/20">
+                                <span className="text-red-500" style={{ fontSize: 24 }}>⚠️</span>
+                            </div>
+                            <span className="text-xs px-2.5 py-1 rounded-full bg-red-500/20 text-red-500 font-bold">
+                                Alerta ({metrics.countSalidasBajoStock})
+                            </span>
+                        </div>
+                        <h3 className="text-sm text-blue-900 font-semibold mb-2">Articulos con Bajo Stock</h3>
+                        <div className="text-sm space-y-1">
+                            {metrics.articulosBajoStock && metrics.articulosBajoStock.length > 0 ? (
+                                metrics.articulosBajoStock.slice(0, 3).map((item, idx) => (
+                                    <div key={item.id || idx} className="flex items-center gap-2 bg-red-500/20 rounded-md p-1">
+                                        <div className="w-12 h-12 rounded flex items-center justify-center flex-shrink-0 bg-white/40">
+                                            {item.imagen ? (
+                                                <img src={`/storage/${item.imagen}`} alt={item.articulo} className="w-12 h-12 object-cover rounded" />
+                                            ) : (
+                                                <span className="text-blue-400" style={{ fontSize: 16 }}>📦</span>
+                                            )}
+                                        </div>
+                                        <div className="min-w-0 flex-1">
+                                            <p className="text-red-600 text-sm font-bold truncate">{item.articulo || 'N/A'}</p>
+                                            <p className="text-red-600 text-sm">
+                                                ({item.stock_disponible ?? item.cantidad ?? 0} unidades)
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-green-600 font-semibold text-xs">No hay items bajo stock</p>
+                            )}
+                        </div>
                     </div>
-                    <p className="text-xs font-semibold text-slate-500 mt-1 truncate">
-                        {metrics.articulosBajoStock?.length > 0
-                            ? metrics.articulosBajoStock.map(a => a.articulo).join(', ')
-                            : 'Inventario con stock suficiente'}
-                    </p>
                 </div>
             </div>
 
-            {/* Panel Principal: Buscador, Filtros y Acciones */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-xs p-5 space-y-4">
-                <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
-                    {/* Buscador en tiempo real (UN SOLO ICONO de lupa limpio) */}
-                    <div className="relative flex-1 min-w-[260px] max-w-md">
-                        <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-                            🔍
-                        </span>
-                        <input
-                            type="text"
-                            value={busqueda}
-                            onChange={(e) => setBusqueda(e.target.value)}
-                            placeholder="Buscar por artículo, gerencia, área o responsable..."
-                            className="w-full pl-10 pr-10 py-2.5 bg-blue-100/70 border border-transparent rounded-xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-xs"
-                        />
-                        {busqueda && (
-                            <button
-                                type="button"
-                                onClick={() => setBusqueda('')}
-                                className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 font-bold"
-                                title="Limpiar búsqueda"
-                            >
-                                ✕
-                            </button>
-                        )}
-                    </div>
-
-                    {/* Botones de acción derecha: Filtros, Exportar, Borrado */}
-                    <div className="flex flex-wrap items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                            className={`inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all border ${
-                                showAdvancedFilters || activeFiltersCount > 0
-                                    ? 'bg-blue-900 text-white border-blue-900 shadow-xs'
-                                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200 border-slate-200'
-                            }`}
-                        >
-                            <span>⚡ Filtros</span>
-                            {activeFiltersCount > 0 && (
-                                <span className="w-5 h-5 rounded-full bg-amber-400 text-blue-950 text-[10px] font-black grid place-items-center">
-                                    {activeFiltersCount}
-                                </span>
-                            )}
-                        </button>
-
-                        {/* Exportar */}
-                        <div className="relative inline-block text-left group">
-                            <button
-                                type="button"
-                                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-xs font-bold bg-blue-100/70 hover:bg-blue-100 text-blue-900 border border-white/20 shadow-xs transition-all"
-                            >
-                                <span>📥 Exportar</span>
-                                <span className="text-[10px]">▼</span>
-                            </button>
-                            <div className="hidden group-hover:block absolute right-0 mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-xl py-1.5 z-50 animate-fadeIn">
-                                <div className="px-3 py-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                                    Exportar Todo
+            {/* Panel de Búsqueda y Filtros Avanzados (Diseño de Antes Exacto) */}
+            <div className="px-2 sm:px-6 mb-6 relative z-30 overflow-visible">
+                <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
+                    <div className="flex flex-col gap-4">
+                        {/* Fila Superior: Buscador Rápido + Acciones (Exportar, Eliminar, Nuevo) */}
+                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                            {/* Buscador general (Un solo icono limpio) */}
+                            <div className="flex-1 max-w-xl">
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        value={busqueda}
+                                        onChange={(e) => setBusqueda(e.target.value)}
+                                        placeholder="Buscar por artículo, gerencia, área o responsable (Enter)..."
+                                        className="w-full bg-blue-50/50 border border-slate-200 rounded-xl pl-10 pr-10 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-inner"
+                                    />
+                                    <span className="absolute left-3.5 top-3 text-slate-400 text-sm">🔍</span>
+                                    {busqueda && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setBusqueda('')}
+                                            className="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600 font-bold"
+                                            title="Limpiar búsqueda"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={() => handleExport('excel', 'all')}
-                                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 flex items-center gap-2"
-                                >
-                                    <span>📊</span> <span>Excel (.xlsx)</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => handleExport('pdf', 'all')}
-                                    className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 flex items-center gap-2"
-                                >
-                                    <span>📄</span> <span>PDF (.pdf)</span>
-                                </button>
-
-                                {selectedIds.length > 0 && (
-                                    <>
-                                        <div className="border-t border-slate-100 my-1"></div>
-                                        <div className="px-3 py-1 text-[10px] font-bold text-blue-600 uppercase tracking-wider">
-                                            Seleccionados ({selectedIds.length})
-                                        </div>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleExport('excel', 'selected')}
-                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 flex items-center gap-2"
-                                        >
-                                            <span>📊</span> <span>Excel seleccionados</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleExport('pdf', 'selected')}
-                                            className="w-full text-left px-3.5 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 flex items-center gap-2"
-                                        >
-                                            <span>📄</span> <span>PDF seleccionados</span>
-                                        </button>
-                                    </>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Eliminar Seleccionados */}
-                        {selectedIds.length > 0 && permissions.can_destroy && (
-                            <button
-                                type="button"
-                                onClick={handleDeleteMultiple}
-                                className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-all shadow-xs"
-                                title="Eliminar registros seleccionados con contraseña"
-                            >
-                                <span>🗑️</span>
-                                <span>Eliminar ({selectedIds.length})</span>
-                            </button>
-                        )}
-
-                        {/* Eliminar Todo */}
-                        {salidas.length > 0 && permissions.can_destroy && (
-                            <button
-                                type="button"
-                                onClick={handleDeleteAll}
-                                className="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-red-50 hover:text-red-700 border border-slate-200 transition-all shadow-xs"
-                                title="Eliminar todas las salidas restaurando el inventario"
-                            >
-                                <span>⚠️ Eliminar Todo</span>
-                            </button>
-                        )}
-                    </div>
-                </div>
-
-                {/* Cajón de Filtros Avanzados */}
-                {showAdvancedFilters && (
-                    <div className="p-4 bg-gradient-to-br from-blue-50/60 to-slate-50/80 rounded-2xl border border-blue-100 space-y-4 animate-fadeIn">
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {/* Artículo */}
-                            <SearchableSelect
-                                label="📦 Artículo"
-                                placeholder="Filtrar por artículo..."
-                                options={articulosOptions}
-                                value={filterArticulo}
-                                onChange={setFilterArticulo}
-                                icon="📦"
-                            />
-
-                            {/* Gerencia */}
-                            <div>
-                                <SearchableSelect
-                                    label="🏢 Gerencia"
-                                    placeholder="Filtrar por gerencia..."
-                                    options={gerenciasOptions}
-                                    value={filterGerencia}
-                                    onChange={handleFilterGerenciaChange}
-                                    icon="🏢"
-                                />
-                                {filterGerencia && (
-                                    <p className="text-[10px] text-blue-700 font-semibold mt-1 flex items-center gap-1">
-                                        <span>🔗</span>
-                                        <span>Gerencia casada con sus áreas asignadas</span>
-                                    </p>
-                                )}
                             </div>
 
-                            {/* Área */}
-                            <div>
-                                <SearchableSelect
-                                    label="📂 Área"
-                                    placeholder={filterGerencia ? "Áreas de esta gerencia..." : "Filtrar por área..."}
-                                    options={areasOptions}
-                                    value={filterArea}
-                                    onChange={handleFilterAreaChange}
-                                    icon="📂"
-                                />
-                                {filterGerencia && (
-                                    <p className="text-[10px] text-slate-500 font-medium mt-1">
-                                        Filtrando {areasOptions.length} área(s) vinculada(s)
-                                    </p>
-                                )}
-                            </div>
-                        </div>
+                            {/* Acciones */}
+                            <div className="flex flex-wrap items-center justify-end gap-3">
+                                {/* Exportar select */}
+                                <select
+                                    onChange={(e) => {
+                                        if (!e.target.value) return;
+                                        const [format, scope] = e.target.value.split(':');
+                                        handleExport(format, scope);
+                                        e.target.value = '';
+                                    }}
+                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs"
+                                    defaultValue=""
+                                >
+                                    <option value="" disabled>📤 Exportar</option>
+                                    <optgroup label="Exportar Todos">
+                                        <option value="excel:all">📊 Excel - Todos los registros</option>
+                                        <option value="pdf:all">📄 PDF - Todos los registros</option>
+                                    </optgroup>
+                                    <optgroup label="Exportar Seleccionados">
+                                        <option value="excel:selected" disabled={selectedIds.length === 0}>
+                                            📊 Excel - Solo seleccionados ({selectedIds.length})
+                                        </option>
+                                        <option value="pdf:selected" disabled={selectedIds.length === 0}>
+                                            📄 PDF - Solo seleccionados ({selectedIds.length})
+                                        </option>
+                                    </optgroup>
+                                </select>
 
-                        {/* Rango de Fechas y Presets */}
-                        <div className="flex flex-wrap items-end gap-3 pt-2 border-t border-blue-100/80">
-                            <div>
-                                <label className="block text-xs font-semibold text-blue-900 mb-1">
-                                    📅 Desde
-                                </label>
-                                <input
-                                    type="date"
-                                    value={fechaDesde}
-                                    onChange={(e) => setFechaDesde(e.target.value)}
-                                    className="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-semibold text-blue-900 mb-1">
-                                    📅 Hasta
-                                </label>
-                                <input
-                                    type="date"
-                                    value={fechaHasta}
-                                    onChange={(e) => setFechaHasta(e.target.value)}
-                                    className="px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:outline-none"
-                                />
-                            </div>
-
-                            {/* Botones Presets Rápidos */}
-                            <div className="flex flex-wrap items-center gap-1.5">
-                                <button
-                                    type="button"
-                                    onClick={() => setDatePreset('today')}
-                                    className="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-white hover:bg-blue-100 text-blue-900 border border-slate-200"
-                                >
-                                    Hoy
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setDatePreset('thisWeek')}
-                                    className="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-white hover:bg-blue-100 text-blue-900 border border-slate-200"
-                                >
-                                    Esta Semana
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setDatePreset('thisMonth')}
-                                    className="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-white hover:bg-blue-100 text-blue-900 border border-slate-200"
-                                >
-                                    Este Mes
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setDatePreset('thisYear')}
-                                    className="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-white hover:bg-blue-100 text-blue-900 border border-slate-200"
-                                >
-                                    Este Año
-                                </button>
-                                {activeFiltersCount > 0 && (
+                                {/* Eliminar Seleccionados */}
+                                {permissions.can_destroy && (
                                     <button
                                         type="button"
-                                        onClick={clearAllFilters}
-                                        className="px-2.5 py-1.5 text-xs font-bold rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 ml-1"
+                                        disabled={selectedIds.length === 0}
+                                        onClick={handleDeleteMultiple}
+                                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer"
                                     >
-                                        Limpiar Todo
+                                        <span>🗑️</span>
+                                        <span>Eliminar Seleccionados</span>
+                                    </button>
+                                )}
+
+                                {/* Eliminar Todo */}
+                                {permissions.can_destroy && salidas.length > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleDeleteAll}
+                                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-gray-600 text-white hover:bg-gray-700 active:translate-y-0.5 text-sm shadow-xs cursor-pointer"
+                                    >
+                                        <span>⚠️</span>
+                                        <span>Eliminar Todo</span>
+                                    </button>
+                                )}
+
+                                {/* Filtros Avanzados */}
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 text-sm shadow-xs cursor-pointer"
+                                >
+                                    <span>⚡</span>
+                                    <span>Filtros Avanzados</span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="w-5 h-5 rounded-full bg-amber-400 text-blue-950 text-xs font-black grid place-items-center">
+                                            {activeFiltersCount}
+                                        </span>
+                                    )}
+                                </button>
+
+                                {/* Nueva Salida */}
+                                {permissions.can_create && (
+                                    <button
+                                        type="button"
+                                        onClick={openCreateModal}
+                                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs cursor-pointer"
+                                    >
+                                        <span>➕</span>
+                                        <span>Nueva Salida</span>
                                     </button>
                                 )}
                             </div>
                         </div>
-                    </div>
-                )}
 
-                {/* Filtros activos tipo pills */}
-                {activeFiltersCount > 0 && (
-                    <div className="flex flex-wrap items-center gap-1.5 pt-1">
-                        <span className="text-[11px] font-bold text-slate-400 uppercase">Activos:</span>
-                        {filterArticulo && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-900 text-xs font-bold rounded-lg">
-                                <span>Artículo: {articulosOptions.find(a => String(a.id) === String(filterArticulo))?.label}</span>
-                                <button type="button" onClick={() => setFilterArticulo('')} className="hover:text-red-600">✕</button>
-                            </span>
-                        )}
-                        {filterGerencia && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-900 text-xs font-bold rounded-lg">
-                                <span>Gerencia: {gerenciasOptions.find(g => String(g.id) === String(filterGerencia))?.label}</span>
-                                <button type="button" onClick={() => setFilterGerencia('')} className="hover:text-red-600">✕</button>
-                            </span>
-                        )}
-                        {filterArea && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-900 text-xs font-bold rounded-lg">
-                                <span>Área: {areasOptions.find(ar => String(ar.id) === String(filterArea))?.label}</span>
-                                <button type="button" onClick={() => setFilterArea('')} className="hover:text-red-600">✕</button>
-                            </span>
-                        )}
-                        {(fechaDesde || fechaHasta) && (
-                            <span className="inline-flex items-center gap-1 px-2.5 py-1 bg-blue-100 text-blue-900 text-xs font-bold rounded-lg">
-                                <span>Rango: {fechaDesde || '...'} a {fechaHasta || '...'}</span>
-                                <button type="button" onClick={() => { setFechaDesde(''); setFechaHasta(''); }} className="hover:text-red-600">✕</button>
-                            </span>
+                        {/* Cajón de Filtros Avanzados */}
+                        {showAdvancedFilters && (
+                            <div className="pt-2 animate-fadeIn space-y-4">
+                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    {/* Gerencia Casada */}
+                                    <div>
+                                        <SearchableSelect
+                                            label="🏢 Gerencia"
+                                            options={gerenciasOptions}
+                                            value={filterGerencia}
+                                            onChange={handleFilterGerenciaChange}
+                                            placeholder="Todas las gerencias"
+                                            icon="🏢"
+                                            allLabel="Todas las gerencias"
+                                        />
+                                        {filterGerencia && (
+                                            <p className="text-[10px] text-blue-800 font-semibold mt-1">
+                                                🔗 Gerencia vinculada con sus áreas
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Área Casada */}
+                                    <div>
+                                        <SearchableSelect
+                                            label="📂 Área"
+                                            options={areasOptions}
+                                            value={filterArea}
+                                            onChange={handleFilterAreaChange}
+                                            placeholder={filterGerencia ? "Áreas de esta gerencia..." : "Todas las áreas"}
+                                            icon="📂"
+                                            allLabel="Todas las áreas"
+                                        />
+                                        {filterGerencia && (
+                                            <p className="text-[10px] text-blue-800 font-semibold mt-1">
+                                                Mostrando {areasOptions.length} área(s) disponible(s)
+                                            </p>
+                                        )}
+                                    </div>
+
+                                    {/* Artículo */}
+                                    <div>
+                                        <SearchableSelect
+                                            label="📦 Artículo"
+                                            options={articulosOptions}
+                                            value={filterArticulo}
+                                            onChange={setFilterArticulo}
+                                            placeholder="Todos los artículos"
+                                            icon="📦"
+                                            allLabel="Todos los artículos"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Rango de fechas con presets */}
+                                <div className="pt-3 border-t border-blue-100/70">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+                                        <label className="block text-xs font-semibold text-blue-900">📅 Rango de Fechas (Salida)</label>
+                                        <div className="flex items-center gap-1.5">
+                                            <button type="button" onClick={() => setSalidaDatePreset('today')} className="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Hoy</button>
+                                            <button type="button" onClick={() => setSalidaDatePreset('week')} className="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Esta Semana</button>
+                                            <button type="button" onClick={() => setSalidaDatePreset('month')} className="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Este Mes</button>
+                                            <button type="button" onClick={() => setSalidaDatePreset('year')} className="px-2.5 py-1 text-2xs font-semibold rounded-lg bg-white border border-blue-200 text-blue-900 hover:bg-blue-100 transition-colors cursor-pointer">Este Año</button>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                                        <div>
+                                            <span className="block text-2xs font-medium text-slate-500 mb-1">Fecha Salida Desde</span>
+                                            <input type="date" value={fechaDesde} onChange={(e) => setFechaDesde(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <span className="block text-2xs font-medium text-slate-500 mb-1">Fecha Salida Hasta</span>
+                                            <input type="date" value={fechaHasta} onChange={(e) => setFechaHasta(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <span className="block text-2xs font-medium text-slate-500 mb-1">Fecha Factura Desde</span>
+                                            <input type="date" value={fechaIngresoDesde} onChange={(e) => setFechaIngresoDesde(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none" />
+                                        </div>
+                                        <div>
+                                            <span className="block text-2xs font-medium text-slate-500 mb-1">Fecha Factura Hasta</span>
+                                            <input type="date" value={fechaIngresoHasta} onChange={(e) => setFechaIngresoHasta(e.target.value)} className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none" />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex items-center justify-end gap-3 pt-2">
+                                    <button type="button" onClick={clearAllFilters} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors cursor-pointer">
+                                        Limpiar Todo
+                                    </button>
+                                </div>
+                            </div>
                         )}
                     </div>
-                )}
+                </div>
             </div>
 
-            {/* Listado de Salidas */}
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-xs overflow-hidden">
-                <div className="px-5 py-3.5 bg-slate-50/70 border-b border-slate-200 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                        <input
-                            type="checkbox"
-                            checked={salidas.length > 0 && selectedIds.length === salidas.length}
-                            onChange={handleSelectAll}
-                            className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
-                        />
-                        <span className="text-xs font-bold text-slate-600">
-                            {selectedIds.length > 0 ? `${selectedIds.length} seleccionados` : 'Seleccionar página'}
-                        </span>
-                    </div>
-
-                    <span className="text-xs font-semibold text-slate-500">
-                        Mostrando {pagination.from || 0} - {pagination.to || 0} de {pagination.total || 0} registros
-                    </span>
-                </div>
-
+            {/* Registros de Salida Agrupados por Artículo (Diseño de Antes Exacto) */}
+            <div className="px-2 sm:px-6 mb-8 relative z-10">
                 {loading ? (
-                    <div className="p-12 text-center">
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-12 text-center shadow-sm">
                         <div className="w-10 h-10 border-4 border-blue-900 border-t-transparent rounded-full animate-spin mx-auto mb-3"></div>
                         <p className="text-sm font-semibold text-slate-600">Cargando despachos de oficina...</p>
                     </div>
                 ) : error ? (
-                    <div className="p-8 text-center text-red-600">
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-8 text-center text-red-600 shadow-sm">
                         <p className="text-base font-bold">Error al cargar datos</p>
                         <p className="text-xs text-slate-500 mt-1">{error}</p>
                         <button
                             type="button"
                             onClick={() => fetchSalidas(1)}
-                            className="mt-3 px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-blue-800"
+                            className="mt-3 px-4 py-2 bg-blue-900 text-white rounded-xl text-xs font-bold shadow-xs hover:bg-blue-800 cursor-pointer"
                         >
                             Reintentar
                         </button>
                     </div>
-                ) : salidas.length === 0 ? (
-                    <div className="p-12 text-center text-slate-400">
-                        <div className="text-4xl mb-2">📭</div>
-                        <p className="text-base font-bold text-slate-600">No se encontraron salidas</p>
-                        <p className="text-xs mt-1">Intente ajustar los filtros de búsqueda o registre una nueva salida.</p>
-                        {activeFiltersCount > 0 && (
+                ) : groupedSalidas.length === 0 ? (
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-12 text-center shadow-sm">
+                        <div className="w-24 h-24 mx-auto mb-4 rounded-full bg-blue-100 flex items-center justify-center">
+                            <span style={{ fontSize: 48 }}>📭</span>
+                        </div>
+                        <h3 className="text-xl font-bold text-blue-900 mb-2">No hay registros de salida</h3>
+                        <p className="text-gray-500 mb-6">Comienza agregando una nueva salida de oficina</p>
+                        {permissions.can_create && (
                             <button
                                 type="button"
-                                onClick={clearAllFilters}
-                                className="mt-3 px-4 py-2 bg-blue-100 text-blue-900 rounded-xl text-xs font-bold hover:bg-blue-200"
+                                onClick={openCreateModal}
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 transition-colors cursor-pointer shadow-sm"
                             >
-                                Limpiar Filtros
+                                <span>➕</span>
+                                <span>Nueva Salida</span>
                             </button>
                         )}
                     </div>
                 ) : (
-                    <div className="divide-y divide-slate-100">
-                        {salidas.map((item) => {
-                            const isSelected = selectedIds.includes(item.id);
-                            return (
-                                <div
-                                    key={item.id}
-                                    className={`p-4 sm:p-5 transition-all hover:bg-blue-50/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
-                                        isSelected ? 'bg-blue-50/60' : ''
-                                    }`}
-                                >
-                                    <div className="flex items-start gap-3 flex-1 min-w-0">
-                                        <input
-                                            type="checkbox"
-                                            checked={isSelected}
-                                            onChange={() => handleSelectOne(item.id)}
-                                            className="mt-1 w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300"
-                                        />
+                    groupedSalidas.map((group) => {
+                        const articulo = group.articulo;
+                        const stockTotal = catalogs.articulos?.find(a => String(a.id) === String(group.articuloId))?.stock_disponible ?? 0;
+                        const stockMinimo = articulo?.stock_min ?? 0;
+                        const tieneStock = stockTotal > stockMinimo;
+                        const colorClase = tieneStock ? 'from-blue-900 to-blue-800' : 'from-red-900 to-red-800';
+                        const badgeColor = tieneStock ? 'bg-blue-500' : 'bg-red-500';
+                        const badgeText = tieneStock ? 'Stock Saludable' : 'Stock Bajo';
+                        const badgeIcon = tieneStock ? '✅' : '⚠️';
 
-                                        <div className="space-y-1.5 flex-1 min-w-0">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                <span className="text-xs font-mono font-bold text-slate-400">
-                                                    #{String(item.id).padStart(4, '0')}
-                                                </span>
-                                                <h4 className="text-sm font-extrabold text-slate-800 truncate">
-                                                    {item.articulos?.articulo || 'Artículo no especificado'}
-                                                </h4>
-                                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-extrabold bg-blue-100 text-blue-900 border border-blue-200">
-                                                    <span>x {item.cantidad}</span>
-                                                    <span className="text-[10px] font-semibold opacity-75">
-                                                        {item.unidad_medidas?.unidad_medida || 'UND'}
-                                                    </span>
-                                                </span>
-                                            </div>
-
-                                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
-                                                <span className="flex items-center gap-1 font-semibold text-slate-700">
-                                                    <span>🏢</span>
-                                                    <span>{item.gerencias?.gerencia || 'Sin Gerencia'}</span>
-                                                </span>
-                                                <span className="flex items-center gap-1">
-                                                    <span>📂</span>
-                                                    <span>{item.areas?.area || 'Sin Área'}</span>
-                                                </span>
-                                                <span className="flex items-center gap-1 font-mono">
-                                                    <span>📅</span>
-                                                    <span>{item.fecha_salida ? item.fecha_salida.split('T')[0] : 'N/A'}</span>
-                                                </span>
-                                                {item.users && (
-                                                    <span className="flex items-center gap-1 text-slate-400">
-                                                        <span>👤</span>
-                                                        <span>{item.users.name || item.users.username}</span>
-                                                    </span>
+                        return (
+                            <div key={group.articuloId} className="mb-6">
+                                {/* Banner de Cabecera del Artículo */}
+                                <div className={`bg-gradient-to-r ${colorClase} text-white rounded-2xl p-4 shadow-lg relative mb-2`}>
+                                    <div className="flex items-center justify-between flex-wrap gap-4">
+                                        <div className="flex items-center gap-4">
+                                            <div className="w-16 h-16 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0">
+                                                {articulo?.imagen ? (
+                                                    <img src={`/storage/${articulo.imagen}`} alt={articulo.articulo} className="w-16 h-16 object-cover rounded-xl" />
+                                                ) : (
+                                                    <span style={{ fontSize: 32 }}>📦</span>
                                                 )}
                                             </div>
-
-                                            {item.ajuste_inventario && (
-                                                <p className="text-xs text-slate-500 italic bg-slate-50 p-1.5 rounded-lg border border-slate-100 inline-block">
-                                                    💬 {item.ajuste_inventario}
-                                                </p>
-                                            )}
+                                            <div className="flex-1">
+                                                <h3 className="text-xl font-bold">{articulo?.articulo || 'Artículo Desconocido'}</h3>
+                                                <div className="flex flex-wrap gap-4 mt-1 text-sm">
+                                                    <div>
+                                                        <span className="text-blue-200">ITEM:</span>
+                                                        <span className="font-semibold ml-1">{articulo ? String(articulo.id).padStart(4, '0') : 'N/A'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-blue-200">Total Salidas:</span>
+                                                        <span className="font-semibold ml-1">{group.items.length}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col items-end gap-2">
+                                            <div className={`${badgeColor} text-white text-xs px-3 py-1 rounded-full font-bold flex items-center gap-1 shadow-xs`}>
+                                                <span>{badgeIcon}</span>
+                                                <span>{badgeText}</span>
+                                            </div>
+                                            <div className="text-right">
+                                                <span className="text-blue-200 text-sm">Stock disponible:</span>
+                                                <span className={`font-bold text-xl ml-1 ${tieneStock ? 'text-blue-200' : 'text-red-300'}`}>{stockTotal}</span>
+                                                <span className="text-blue-200 text-sm"> / {stockMinimo} min</span>
+                                            </div>
                                         </div>
                                     </div>
-
-                                    {/* Acciones */}
-                                    <div className="flex items-center gap-1.5 self-end sm:self-center">
-                                        {permissions.can_edit && (
-                                            <button
-                                                type="button"
-                                                onClick={() => openEditModal(item)}
-                                                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-100/70 hover:bg-blue-100 rounded-xl transition-all"
-                                                title="Editar salida en modal"
-                                            >
-                                                <span>✏️</span>
-                                                <span>Editar</span>
-                                            </button>
-                                        )}
-
-                                        {permissions.can_destroy && (
-                                            <button
-                                                type="button"
-                                                onClick={() => handleDeleteSingle(item)}
-                                                className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-bold text-red-700 bg-red-50 hover:bg-red-100 rounded-xl transition-all"
-                                                title="Eliminar salida y restaurar stock"
-                                            >
-                                                <span>🗑️</span>
-                                            </button>
-                                        )}
-                                    </div>
                                 </div>
-                            );
-                        })}
-                    </div>
+
+                                {/* Tarjetas de registros anidadas e indentadas */}
+                                <div className="ml-2 md:ml-8 space-y-4 mb-6">
+                                    {group.items.map((item) => {
+                                        const stockTotalReal = Number(item.historico_unidades_disponibles ?? item.inventario_oficinas?.unidades ?? 0);
+                                        const stockRestante = Math.max(0, stockTotalReal - Number(item.cantidad || 0));
+                                        const stockMin = Number(item.articulos?.stock_min ?? 0);
+                                        const porcentajeStock = stockTotalReal > 0 ? Math.min(100, Math.round((stockRestante / stockTotalReal) * 100)) : 0;
+                                        const tieneStockBajo = stockRestante < stockMin;
+                                        const colorStock = tieneStockBajo ? 'text-red-500' : 'text-green-600';
+                                        const colorBarra = tieneStockBajo ? 'bg-red-500' : 'bg-green-500';
+                                        const isSelected = selectedIds.includes(item.id);
+
+                                        return (
+                                            <div
+                                                key={item.id}
+                                                className={`bg-white border ${isSelected ? 'border-blue-500 ring-2 ring-blue-500/20' : 'border-white/20'} backdrop-blur-md rounded-2xl p-6 record-card hover:scale-[1.008] transition-transform duration-200 shadow-sm`}
+                                            >
+                                                <div className="flex flex-col lg:flex-row items-start gap-6">
+                                                    <div className="flex-shrink-0 pt-2">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={isSelected}
+                                                            onChange={() => handleSelectOne(item.id)}
+                                                            className="w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer"
+                                                        />
+                                                    </div>
+
+                                                    <div className="flex-1 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                                        <div>
+                                                            <p className="text-base text-blue-900 font-semibold mt-2">Fecha de Salida</p>
+                                                            <p className="font-semibold text-black">{formatDisplayDate(item.fecha_salida)}</p>
+                                                            <p className="text-base text-blue-900 font-semibold mt-2">Item #</p>
+                                                            <p className="font-mono text-sm">{item.articulos ? String(item.articulos.id).padStart(4, '0') : 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-base text-blue-900 font-semibold mt-2">Artículo</p>
+                                                            <p className="font-semibold text-black">{item.articulos ? item.articulos.articulo : 'N/A'}</p>
+                                                            <p className="text-base text-blue-900 font-semibold mt-2">Unidad</p>
+                                                            <p className="text-sm">{item.unidad_medidas ? item.unidad_medidas.unidad_medida : (item.articulos?.unidad_medida?.unidad_medida || 'N/A')}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-base text-blue-900 font-semibold mt-2">Gerencia</p>
+                                                            <p className="text-sm font-semibold">{item.gerencias ? item.gerencias.gerencia : 'N/A'}</p>
+                                                            <p className="text-base text-blue-900 font-semibold mt-2">Área</p>
+                                                            <p className="text-sm font-semibold">{item.areas ? item.areas.area : 'N/A'}</p>
+                                                        </div>
+                                                        <div>
+                                                            <p className="text-base text-blue-900 font-semibold mt-2">Solicitante</p>
+                                                            <p className="text-sm font-semibold">{item.users ? (item.users.name || item.users.username) : 'N/A'}</p>
+                                                            <div className="flex items-center gap-2 mt-4">
+                                                                {permissions.can_edit && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => openEditModal(item)}
+                                                                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-100 hover:bg-blue-200 rounded-xl transition-all cursor-pointer"
+                                                                        title="Editar salida en modal"
+                                                                    >
+                                                                        <span>✏️</span>
+                                                                        <span>Editar</span>
+                                                                    </button>
+                                                                )}
+                                                                {permissions.can_destroy && (
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => handleDeleteSingle(item)}
+                                                                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-red-700 bg-red-100 hover:bg-red-200 rounded-xl transition-all cursor-pointer"
+                                                                        title="Eliminar registro con confirmación de contraseña"
+                                                                    >
+                                                                        <span>🗑️</span>
+                                                                        <span>Eliminar</span>
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <div className="flex flex-col items-center md:items-end gap-4 w-full md:w-auto">
+                                                        <div className="text-center md:text-right min-w-[140px]">
+                                                            <p className="text-sm text-black font-bold mb-1">Unidades Disponibles</p>
+                                                            <div className="flex items-center justify-center md:justify-end gap-2">
+                                                                <span className={`text-2xl font-bold ${colorStock}`}>{stockRestante}</span>
+                                                                <span className="text-xs text-blue-900 font-semibold">de {stockTotalReal}</span>
+                                                            </div>
+                                                            <div className="w-full bg-gray-200 rounded-full h-2 mt-2 overflow-hidden">
+                                                                <div className={`${colorBarra} h-2 rounded-full transition-all`} style={{ width: `${porcentajeStock}%` }}></div>
+                                                            </div>
+                                                            {tieneStockBajo && (
+                                                                <span className="text-xs text-red-500 mt-1 inline-block font-semibold">⚠️ Stock bajo (mín: {stockMin})</span>
+                                                            )}
+                                                        </div>
+
+                                                        <div className="text-right mt-4">
+                                                            <p className="text-sm text-black font-bold mb-1">
+                                                                Cantidad Retirada <span style={{ fontSize: 20 }}>📦</span>
+                                                            </p>
+                                                            <p className="text-2xl text-center font-bold text-orange-600">{item.cantidad}</p>
+                                                        </div>
+
+                                                        {item.ajuste_inventario && (
+                                                            <div className="text-right">
+                                                                <p className="text-xs text-blue-900 font-semibold mb-1">Ajuste Inventario</p>
+                                                                <p className="font-mono text-sm bg-gray-200 px-2 py-1 rounded inline-block">{item.ajuste_inventario}</p>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        );
+                                    })}
+                                </div>
+                            </div>
+                        );
+                    })
                 )}
 
                 {/* Paginación */}
                 {pagination.last_page > 1 && (
-                    <div className="p-4 bg-slate-50/80 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2">
-                        <div className="text-xs text-slate-500">
-                            Página <span className="font-bold">{pagination.current_page}</span> de <span className="font-bold">{pagination.last_page}</span>
-                        </div>
-
-                        <div className="flex items-center gap-1">
-                            <button
-                                type="button"
-                                disabled={pagination.current_page === 1}
-                                onClick={() => fetchSalidas(pagination.current_page - 1)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                Anterior
-                            </button>
-                            <button
-                                type="button"
-                                disabled={pagination.current_page === pagination.last_page}
-                                onClick={() => fetchSalidas(pagination.current_page + 1)}
-                                className="px-3 py-1.5 rounded-lg text-xs font-bold border border-slate-200 bg-white text-slate-700 hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                                Siguiente
-                            </button>
+                    <div className="mt-8">
+                        <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-4">
+                            <span className="text-xs font-semibold text-slate-500">
+                                Mostrando {pagination.from || 0} - {pagination.to || 0} de {pagination.total || 0} registros (Página {pagination.current_page} de {pagination.last_page})
+                            </span>
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    disabled={pagination.current_page <= 1}
+                                    onClick={() => fetchSalidas(pagination.current_page - 1)}
+                                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                >
+                                    ◀ Anterior
+                                </button>
+                                {Array.from({ length: pagination.last_page }, (_, i) => i + 1)
+                                    .filter(p => p === 1 || p === pagination.last_page || Math.abs(p - pagination.current_page) <= 2)
+                                    .map((p, idx, arr) => (
+                                        <React.Fragment key={p}>
+                                            {idx > 0 && arr[idx - 1] !== p - 1 && (
+                                                <span className="px-1 text-xs text-slate-400">...</span>
+                                            )}
+                                            <button
+                                                type="button"
+                                                onClick={() => fetchSalidas(p)}
+                                                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                                    pagination.current_page === p
+                                                        ? 'bg-blue-900 text-white shadow-sm'
+                                                        : 'bg-white text-slate-700 hover:bg-slate-100 border border-slate-200'
+                                                }`}
+                                            >
+                                                {p}
+                                            </button>
+                                        </React.Fragment>
+                                    ))}
+                                <button
+                                    type="button"
+                                    disabled={pagination.current_page >= pagination.last_page}
+                                    onClick={() => fetchSalidas(pagination.current_page + 1)}
+                                    className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-blue-50 text-blue-900 border border-blue-200 hover:bg-blue-100 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
+                                >
+                                    Siguiente ▶
+                                </button>
+                            </div>
                         </div>
                     </div>
                 )}
             </div>
 
-            {/* Modal de Crear / Editar Salida de Oficina (Animación Mikael Ainalem con backdrop-blur) */}
+            {/* Modal de Crear / Editar Salida de Oficina (Animación con backdrop-blur corporativo) */}
             {modalOpen && (
                 <div
                     className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
@@ -1514,7 +1510,7 @@ export default function SalidasOficinas() {
                                 type="button"
                                 disabled={submitting}
                                 onClick={() => setModalOpen(false)}
-                                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all"
+                                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
                             >
                                 ✕
                             </button>
@@ -1546,7 +1542,7 @@ export default function SalidasOficinas() {
                                 <SearchableSelect
                                     label="📦 Artículo"
                                     required={true}
-                                    placeholder="Seleccione el artículo a despachar..."
+                                    placeholder="Seleccione artículo a retirar..."
                                     options={articulosOptions}
                                     value={formData.articulo_id}
                                     onChange={handleModalArticuloChange}
@@ -1555,14 +1551,12 @@ export default function SalidasOficinas() {
                                     allLabel={null}
                                 />
                                 {currentModalArticulo && (
-                                    <div className="mt-2 p-2.5 rounded-xl bg-blue-50 border border-blue-200 flex items-center justify-between text-xs">
-                                        <span className="font-semibold text-slate-700">
-                                            Stock Disponible en Almacén:
+                                    <div className="mt-1.5 flex items-center justify-between text-2xs p-2 bg-blue-50 rounded-xl border border-blue-100">
+                                        <span className="text-blue-900 font-semibold">
+                                            Stock disponible: <strong className="text-blue-950 font-black">{maxStockDisponible}</strong> {currentModalArticulo.unidad_medida}
                                         </span>
-                                        <span className={`font-black px-2 py-0.5 rounded-full ${
-                                            maxStockDisponible > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-700'
-                                        }`}>
-                                            {maxStockDisponible} {currentModalArticulo.unidad_medida || 'UNIDADES'}
+                                        <span className="text-slate-500 font-medium">
+                                            Mínimo requerido: {currentModalArticulo.stock_min}
                                         </span>
                                     </div>
                                 )}
@@ -1603,7 +1597,7 @@ export default function SalidasOficinas() {
                                 </div>
                             </div>
 
-                            {/* Gerencia y Área (Casadas) */}
+                            {/* Gerencia Solicitante */}
                             <div>
                                 <SearchableSelect
                                     label="🏢 Gerencia Solicitante"
@@ -1618,7 +1612,7 @@ export default function SalidasOficinas() {
                                 />
                             </div>
 
-                            {/* Área */}
+                            {/* Área de Destino (Casada con Gerencia) */}
                             <div>
                                 <SearchableSelect
                                     label="📂 Área de Destino (Casada con Gerencia)"
@@ -1648,26 +1642,25 @@ export default function SalidasOficinas() {
                                     rows="3"
                                     value={formData.ajuste_inventario}
                                     onChange={(e) => setFormData(prev => ({ ...prev, ajuste_inventario: e.target.value }))}
-                                    placeholder="Motivo del despacho, destinatario o detalles adicionales..."
-                                    className="w-full px-3.5 py-2.5 text-xs font-medium rounded-xl border border-white/20 bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all resize-none"
+                                    placeholder="Motivo de salida, número de oficio, o notas para el inventario..."
+                                    className="w-full px-3.5 py-2.5 text-xs font-medium rounded-xl border border-white/20 bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all placeholder-slate-400"
                                 />
                             </div>
 
-                            {/* Botones de Acción */}
+                            {/* Botones de acción del Modal */}
                             <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
                                 <button
                                     type="button"
                                     disabled={submitting}
                                     onClick={() => setModalOpen(false)}
-                                    className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all"
+                                    className="btn-cancel px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
                                 >
-                                    Regresar
+                                    Cancelar
                                 </button>
-
                                 <button
                                     type="submit"
-                                    disabled={submitting || (formData.articulo_id && maxStockDisponible < 1)}
-                                    className="btn-save inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-xs font-bold text-white shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                                    disabled={submitting}
+                                    className="btn-save inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
                                     style={{
                                         background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
                                     }}
@@ -1678,10 +1671,7 @@ export default function SalidasOficinas() {
                                             <span>Guardando...</span>
                                         </>
                                     ) : (
-                                        <>
-                                            <span>💾</span>
-                                            <span>{modalMode === 'create' ? 'Guardar Salida' : 'Actualizar Salida'}</span>
-                                        </>
+                                        <span>{modalMode === 'create' ? 'Registrar Salida' : 'Guardar Cambios'}</span>
                                     )}
                                 </button>
                             </div>
