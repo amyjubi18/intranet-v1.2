@@ -46,6 +46,21 @@ class GerenciasController extends Controller
         $todasLasGerencias = Gerencia::orderBy('gerencia', 'asc')->get();
         $todasLasAreas = Area::orderBy('area', 'asc')->get();
 
+        if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'gerencias' => $gerencias,
+                    'areas' => $todasLasAreas,
+                    'permissions' => [
+                        'can_create' => Gate::allows('gerencia_create'),
+                        'can_edit' => Gate::allows('gerencia_edit'),
+                        'can_destroy' => Gate::allows('gerencia_destroy'),
+                    ]
+                ]
+            ]);
+        }
+
         return view('administracion.gerencias.index', [
             'gerencias'=> $gerencias,
             'todasLasGerencias' => $todasLasGerencias,
@@ -64,17 +79,29 @@ class GerenciasController extends Controller
        return view('administracion.gerencias.create',['areas'=> Area::all()]);
    }
    public function store(Request $request){
-       //dd($gerencia);
+       abort_if(Gate::denies('gerencia_create'), 403);
        $request->validate([
            'gerencia' => 'required',
-           'area_id' => 'required',
-
+           'area_id' => 'required|exists:areas,id',
+       ], [
+           'gerencia.required' => 'El nombre de la gerencia es obligatorio.',
+           'area_id.required' => 'Debe seleccionar un área.',
+           'area_id.exists' => 'El área seleccionada no es válida.',
        ]);
-       //gerencia::create($request->validated());
         $gerencia = new Gerencia;
        $gerencia->gerencia = $request->gerencia;
        $gerencia->area_id = $request->area_id;
        $gerencia->save();
+
+       if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+           return response()->json([
+               'status' => 200,
+               'success' => true,
+               'message' => 'Gerencia creada correctamente',
+               'data' => $gerencia->load('area')
+           ], 200);
+       }
+
        return redirect()->route('administracion.gerencias.index')->with('status', 'gerencia creada');
 
    }
@@ -86,25 +113,49 @@ class GerenciasController extends Controller
    }
    public function update(Request $request,  $id)
    {
+        abort_if(Gate::denies('gerencia_edit'), 403);
+        $request->validate([
+            'gerencia' => 'required',
+            'area_id' => 'required|exists:areas,id',
+        ], [
+            'gerencia.required' => 'El nombre de la gerencia es obligatorio.',
+            'area_id.required' => 'Debe seleccionar un área.',
+            'area_id.exists' => 'El área seleccionada no es válida.',
+        ]);
 
-    $request->validate([
-        'gerencia' => 'required',
-        'area_id' => 'required',
-    ]);
+        $gerencia = Gerencia::findOrFail($id);
+        $gerencia->gerencia = $request->input('gerencia');
+        $gerencia->area_id = $request->input('area_id');
+        $gerencia->save();
 
-    $gerencia = Gerencia::find($id);
+        if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'message' => 'Gerencia actualizada correctamente',
+                'data' => $gerencia->load('area')
+            ], 200);
+        }
 
-    $gerencia->gerencia = $request->input('gerencia');
-    $gerencia->area_id = $request->input('area_id');
-      $gerencia->save();
-       return redirect()->route('administracion.gerencias.index', $gerencia->id)->with('success', 'Excel actualizado correctamente');
+        return redirect()->route('administracion.gerencias.index', $gerencia->id)->with('success', 'Excel actualizado correctamente');
    }
    public function destroy($id)
    {
         abort_if(Gate::denies('gerencia_destroy'), 403);
         $gerencia = Gerencia::find($id);
-       $gerencia->delete();
-       return redirect()->route('administracion.gerencias.index')->with('Articulo Eliminada');
+        if ($gerencia) {
+            $gerencia->delete();
+        }
+
+        if (request()->wantsJson() || request()->is('api/*') || request()->ajax()) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'message' => 'Gerencia eliminada correctamente'
+            ], 200);
+        }
+
+        return redirect()->route('administracion.gerencias.index')->with('Articulo Eliminada');
    }
 
 }

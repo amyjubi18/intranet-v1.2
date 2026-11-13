@@ -28,6 +28,20 @@ class ProveedorController extends Controller
 
         $proveedores = $query->orderBy($sort, $direction)->paginate(15);
 
+        if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'proveedores' => $proveedores,
+                    'permissions' => [
+                        'can_create' => Gate::allows('proveedor_create'),
+                        'can_edit' => Gate::allows('proveedor_edit'),
+                        'can_destroy' => Gate::allows('proveedor_destroy'),
+                    ]
+                ]
+            ]);
+        }
+
         return view('administracion.proveedores.index', compact('proveedores', 'search', 'sort', 'direction'));
    }
     public function show(){
@@ -38,15 +52,27 @@ class ProveedorController extends Controller
        return view('administracion.proveedores.create',['proveedore'=> $proveedore]);
    }
    public function store(Request $request){
+       abort_if(Gate::denies('proveedor_create'), 403);
        $request->validate([
-           'proveedor' => 'required|unique:proveedores',
-
+           'proveedor' => 'required|unique:proveedores,proveedor',
+       ], [
+           'proveedor.required' => 'El nombre del proveedor es obligatorio.',
+           'proveedor.unique' => 'Este proveedor ya se encuentra registrado.',
        ]);
         $proveedore = new Proveedore;
        $proveedore->proveedor = $request->proveedor;
        $proveedore->save();
-       return redirect()->route('administracion.proveedores.index')->with('status', 'Proveedor creado');
 
+       if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+           return response()->json([
+               'status' => 200,
+               'success' => true,
+               'message' => 'Proveedor creado correctamente',
+               'data' => $proveedore
+           ], 200);
+       }
+
+       return redirect()->route('administracion.proveedores.index')->with('status', 'Proveedor creado');
    }
    public function edit(Proveedore $proveedore)
    {
@@ -55,13 +81,39 @@ class ProveedorController extends Controller
    }
    public function update(Request $request, Proveedore $proveedore)
    {
-      $proveedore->update($request->only('proveedor'));
+       abort_if(Gate::denies('proveedor_edit'), 403);
+       $request->validate([
+           'proveedor' => 'required|unique:proveedores,proveedor,' . $proveedore->id,
+       ], [
+           'proveedor.required' => 'El nombre del proveedor es obligatorio.',
+           'proveedor.unique' => 'Este proveedor ya se encuentra registrado.',
+       ]);
+       $proveedore->update($request->only('proveedor'));
+
+       if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+           return response()->json([
+               'status' => 200,
+               'success' => true,
+               'message' => 'Proveedor actualizado correctamente',
+               'data' => $proveedore
+           ], 200);
+       }
+
        return redirect()->route('administracion.proveedores.index');
    }
    public function destroy(Proveedore $proveedore)
    {
         abort_if(Gate::denies('proveedor_destroy'), 403);
        $proveedore->delete();
+
+       if (request()->wantsJson() || request()->is('api/*') || request()->ajax()) {
+           return response()->json([
+               'status' => 200,
+               'success' => true,
+               'message' => 'Proveedor eliminado correctamente'
+           ], 200);
+       }
+
        return redirect()->route('administracion.proveedores.index')->with('Proveedor Eliminado');
    }
 }

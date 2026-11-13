@@ -22,6 +22,11 @@ import EstadosUsoManagement from './components/administracion/EstadosUsoManageme
 import ColorsManagement from './components/administracion/ColorsManagement';
 import CondicionesManagement from './components/administracion/CondicionesManagement';
 import UsuariosAdministrativosManagement from './components/administracion/UsuariosAdministrativosManagement';
+import ArticulosManagement from './components/administracion/ArticulosManagement';
+import ProveedoresManagement from './components/administracion/ProveedoresManagement';
+import UnidadesMedidaManagement from './components/administracion/UnidadesMedidaManagement';
+import AreasManagement from './components/administracion/AreasManagement';
+import GerenciasManagement from './components/administracion/GerenciasManagement';
 import { downloadWithProgress } from './utils/downloadWithProgress';
 
 // Interceptor global para cualquier enlace o select de descarga/exportación (PDF, Excel, Imagen)
@@ -161,6 +166,18 @@ function initReactRoots() {
     mountComponent('CondicionesManagement', CondicionesManagement);
     mountById('condiciones-root', CondicionesManagement);
 
+    // OGA: Administración - Artículos, Proveedores, Unidades de Medida, Áreas, Gerencias
+    mountComponent('ArticulosManagement', ArticulosManagement);
+    mountById('articulos-root', ArticulosManagement);
+    mountComponent('ProveedoresManagement', ProveedoresManagement);
+    mountById('proveedores-root', ProveedoresManagement);
+    mountComponent('UnidadesMedidaManagement', UnidadesMedidaManagement);
+    mountById('unidades-medida-root', UnidadesMedidaManagement);
+    mountComponent('AreasManagement', AreasManagement);
+    mountById('areas-root', AreasManagement);
+    mountComponent('GerenciasManagement', GerenciasManagement);
+    mountById('gerencias-root', GerenciasManagement);
+
     // OGH: Digitalización de Documentos
     mountComponent('DigitalizacionDocumentos', DigitalizacionDocumentos);
     mountById('digitalizacion-documentos-root', DigitalizacionDocumentos);
@@ -206,7 +223,12 @@ if (typeof window !== 'undefined') {
         CategoriasManagement,
         DocumentViewer,
         EstanteriaSelector,
-        NotificationCenter
+        NotificationCenter,
+        ArticulosManagement,
+        ProveedoresManagement,
+        UnidadesMedidaManagement,
+        AreasManagement,
+        GerenciasManagement
     };
 }
 

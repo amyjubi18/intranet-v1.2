@@ -40,6 +40,22 @@ class ArticuloController extends Controller
             ->paginate(15);
 
         $all_articulos = Articulo::with('unidad_medida')->get();
+        $unidad_medidas = UnidadMedida::orderBy('unidad_medida', 'asc')->get();
+
+        if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+            return response()->json([
+                'status' => 200,
+                'data' => [
+                    'articulos' => $articulos,
+                    'unidad_medidas' => $unidad_medidas,
+                    'permissions' => [
+                        'can_create' => Gate::allows('articulo_create'),
+                        'can_edit' => Gate::allows('articulo_edit'),
+                        'can_destroy' => Gate::allows('articulo_destroy'),
+                    ]
+                ]
+            ]);
+        }
 
         return view('administracion.articulos.index', ['articulos'=> $articulos, 'all_articulos' => $all_articulos, 'search' => $search, 'sort' => $sort, 'direction' => $direction]);
    }
@@ -86,6 +102,15 @@ class ArticuloController extends Controller
     $articulo->unidad_medida_id = $request->unidad_medida_id;
     $articulo->save();
 
+    if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+        return response()->json([
+            'status' => 200,
+            'success' => true,
+            'message' => 'Artículo creado correctamente',
+            'data' => $articulo->load('unidad_medida')
+        ], 200);
+    }
+
     return redirect()->route('administracion.articulos.index')->with('status', 'Artículo creado correctamente');
 }
    public function edit($id)
@@ -128,13 +153,33 @@ class ArticuloController extends Controller
     // Guardar los cambios
     $articulo->save();
 
+    if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
+        return response()->json([
+            'status' => 200,
+            'success' => true,
+            'message' => 'Artículo actualizado correctamente',
+            'data' => $articulo->load('unidad_medida')
+        ], 200);
+    }
+
     return redirect()->route('administracion.articulos.index')->with('success', 'Artículo actualizado correctamente');
 }
    public function destroy($id)
    {
         abort_if(Gate::denies('articulo_destroy'), 403);
         $articulo = Articulo::find($id);
-       $articulo->delete();
-       return redirect()->route('administracion.articulos.index')->with('Articulo Eliminada');
+        if ($articulo) {
+            $articulo->delete();
+        }
+
+        if (request()->wantsJson() || request()->is('api/*') || request()->ajax()) {
+            return response()->json([
+                'status' => 200,
+                'success' => true,
+                'message' => 'Artículo eliminado correctamente'
+            ], 200);
+        }
+
+        return redirect()->route('administracion.articulos.index')->with('Articulo Eliminada');
    }
 }
