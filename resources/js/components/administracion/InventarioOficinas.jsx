@@ -270,6 +270,11 @@ export default function InventarioOficinas() {
     });
     const [formErrors, setFormErrors] = useState({});
 
+    // Estado del scanner de cámara
+    const [cameraModalOpen, setCameraModalOpen] = useState(false);
+    const [cameraModalTitle, setCameraModalTitle] = useState('Escanear con Cámara');
+    const [cameraTargetField, setCameraTargetField] = useState('n_factura');
+
     // Bloquear scroll de fondo cuando el modal esté abierto
     useEffect(() => {
         if (modalOpen || cameraModalOpen) {
@@ -281,11 +286,6 @@ export default function InventarioOficinas() {
             document.body.style.overflow = '';
         };
     }, [modalOpen, cameraModalOpen]);
-
-    // Estado del scanner de cámara
-    const [cameraModalOpen, setCameraModalOpen] = useState(false);
-    const [cameraModalTitle, setCameraModalTitle] = useState('Escanear con Cámara');
-    const [cameraTargetField, setCameraTargetField] = useState('n_factura');
 
     // Opciones formateadas para los SearchableSelect
     const proveedoresOptions = useMemo(() => {
