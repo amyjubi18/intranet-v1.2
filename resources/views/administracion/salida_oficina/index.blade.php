@@ -1096,4 +1096,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 @livewireScripts
 <script src="//unpkg.com/alpinejs" defer></script>
-{{-- @endcan --}}
+@endcan
