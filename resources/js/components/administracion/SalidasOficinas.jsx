@@ -1475,203 +1475,229 @@ export default function SalidasOficinas() {
                 )}
             </div>
 
-            {/* Modal de Crear / Editar Salida de Oficina (Animación con backdrop-blur corporativo) */}
+            {/* Modal de Crear / Editar Salida de Oficina (Diseño exacto de inventario_oficinas) */}
             {modalOpen && (
-                <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
-                    onClick={(e) => {
-                        if (e.target === e.currentTarget && !submitting) {
-                            setModalOpen(false);
-                        }
-                    }}
-                >
-                    <div
-                        className="modal-content animate-modal-expand bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] overflow-y-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Cabecera del modal con degradado corporativo */}
-                        <div
-                            className="p-5 sm:p-6 text-white rounded-t-3xl flex items-center justify-between relative overflow-hidden"
-                            style={{
-                                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
-                            }}
-                        >
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-2xl max-w-3xl w-full my-8 p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-modal-expand">
+                        {/* Cabecera del modal */}
+                        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
                             <div>
-                                <h3 className="text-lg sm:text-xl font-black tracking-tight">
+                                <h3 className="text-2xl font-bold text-slate-800">
                                     {modalMode === 'create' ? 'Registrar Salida de Oficina' : 'Editar Salida de Oficina'}
                                 </h3>
-                                <p className="text-xs text-blue-100 mt-0.5">
+                                <p className="text-xs text-slate-500 mt-0.5">
                                     {modalMode === 'create'
-                                        ? 'Complete los datos para despachar material desde almacén'
-                                        : `Actualizando despacho #${String(selectedSalida?.id).padStart(4, '0')}`}
+                                        ? 'Completa los datos para registrar un nuevo despacho de artículo en almacén'
+                                        : `Actualizar información del despacho (#${String(selectedSalida?.id).padStart(4, '0')})`}
                                 </p>
                             </div>
                             <button
                                 type="button"
-                                disabled={submitting}
                                 onClick={() => setModalOpen(false)}
-                                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
+                                disabled={submitting}
+                                className="modal-close-btn cursor-pointer"
+                                title="Cerrar modal"
                             >
                                 ✕
                             </button>
                         </div>
 
                         {/* Formulario */}
-                        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
-                            {/* Fecha de Salida */}
-                            <div>
-                                <label className="block text-xs font-bold text-blue-900 mb-1">
-                                    📅 Fecha de Salida <span className="text-red-500">*</span>
-                                </label>
-                                <input
-                                    type="date"
-                                    max={new Date().toISOString().split('T')[0]}
-                                    value={formData.fecha_salida}
-                                    onChange={(e) => setFormData(prev => ({ ...prev, fecha_salida: e.target.value }))}
-                                    className={`w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all ${
-                                        formErrors.fecha_salida ? 'border-red-400 bg-red-50' : 'border-white/20'
-                                    }`}
-                                />
-                                {formErrors.fecha_salida && (
-                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.fecha_salida}</p>
-                                )}
-                            </div>
-
-                            {/* Artículo */}
-                            <div>
-                                <SearchableSelect
-                                    label="📦 Artículo"
-                                    required={true}
-                                    placeholder="Seleccione artículo a retirar..."
-                                    options={articulosOptions}
-                                    value={formData.articulo_id}
-                                    onChange={handleModalArticuloChange}
-                                    error={formErrors.articulo_id}
-                                    icon="📦"
-                                    allLabel={null}
-                                />
-                                {currentModalArticulo && (
-                                    <div className="mt-1.5 flex items-center justify-between text-2xs p-2 bg-blue-50 rounded-xl border border-blue-100">
-                                        <span className="text-blue-900 font-semibold">
-                                            Stock disponible: <strong className="text-blue-950 font-black">{maxStockDisponible}</strong> {currentModalArticulo.unidad_medida}
-                                        </span>
-                                        <span className="text-slate-500 font-medium">
-                                            Mínimo requerido: {currentModalArticulo.stock_min}
-                                        </span>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Cantidad y Unidad de Medida */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Fila 1: Fecha de Salida y Cantidad a Despachar */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                                 <div>
-                                    <label className="block text-xs font-bold text-blue-900 mb-1">
-                                        🔢 Cantidad a Despachar <span className="text-red-500">*</span>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Fecha de Salida: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        max={new Date().toISOString().split('T')[0]}
+                                        value={formData.fecha_salida}
+                                        onChange={(e) => {
+                                            setFormData(prev => ({ ...prev, fecha_salida: e.target.value }));
+                                            if (formErrors.fecha_salida) setFormErrors(prev => ({ ...prev, fecha_salida: null }));
+                                        }}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.fecha_salida && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.fecha_salida}</p>}
+                                </div>
+
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Cantidad a Despachar: <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="number"
                                         min="1"
-                                        max={maxStockDisponible > 0 ? maxStockDisponible : 1}
+                                        max={maxStockDisponible > 0 ? maxStockDisponible : undefined}
                                         value={formData.cantidad}
-                                        onChange={(e) => setFormData(prev => ({ ...prev, cantidad: e.target.value }))}
+                                        onChange={(e) => {
+                                            setFormData(prev => ({ ...prev, cantidad: e.target.value }));
+                                            if (formErrors.cantidad) setFormErrors(prev => ({ ...prev, cantidad: null }));
+                                        }}
                                         placeholder="Ej: 5"
-                                        className={`w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all ${
-                                            formErrors.cantidad ? 'border-red-400 bg-red-50' : 'border-white/20'
-                                        }`}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
                                     />
-                                    {formErrors.cantidad && (
-                                        <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.cantidad}</p>
+                                    {formErrors.cantidad && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.cantidad}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 2: Artículo y Unidad de Medida */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Artículo: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.articulo_id}
+                                        onChange={(e) => handleModalArticuloChange(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione un Artículo</option>
+                                        {(catalogs.articulos || []).map((art) => (
+                                            <option key={art.id} value={art.id}>
+                                                {String(art.id).padStart(4, '0')} - {art.articulo} ({art.stock_disponible} disponibles)
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formErrors.articulo_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.articulo_id}</p>}
+                                    {currentModalArticulo && (
+                                        <div className="mt-1.5 flex items-center justify-between text-2xs p-2 bg-blue-50 rounded-xl border border-blue-100">
+                                            <span className="text-blue-900 font-semibold">
+                                                Stock disponible: <strong className="text-blue-950 font-black">{maxStockDisponible}</strong> {currentModalArticulo.unidad_medida}
+                                            </span>
+                                            <span className="text-slate-500 font-medium">
+                                                Mínimo: {currentModalArticulo.stock_min}
+                                            </span>
+                                        </div>
                                     )}
                                 </div>
 
                                 <div>
-                                    <label className="block text-xs font-bold text-blue-900 mb-1">
-                                        📏 Unidad de Medida
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Unidad de Medida: <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="text"
                                         disabled={true}
                                         value={currentModalArticulo?.unidad_medida || 'UNIDAD'}
-                                        className="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border border-slate-200 bg-slate-100 text-slate-500 cursor-not-allowed"
+                                        className="w-full px-3.5 py-2.5 bg-slate-100 border-none rounded-xl text-sm font-medium text-slate-500 cursor-not-allowed"
                                     />
                                 </div>
                             </div>
 
-                            {/* Gerencia Solicitante */}
-                            <div>
-                                <SearchableSelect
-                                    label="🏢 Gerencia Solicitante"
-                                    required={true}
-                                    placeholder="Seleccione gerencia..."
-                                    options={gerenciasOptions}
-                                    value={formData.gerencia_id}
-                                    onChange={handleModalGerenciaChange}
-                                    error={formErrors.gerencia_id}
-                                    icon="🏢"
-                                    allLabel={null}
-                                />
+                            {/* Fila 3: Gerencia Solicitante y Área de Destino (Casadas) */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Gerencia Solicitante: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.gerencia_id}
+                                        onChange={(e) => handleModalGerenciaChange(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Gerencia</option>
+                                        {gerenciasOptions.map((g) => (
+                                            <option key={g.id} value={g.id}>
+                                                {g.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formErrors.gerencia_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.gerencia_id}</p>}
+                                </div>
+
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Área de Destino: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.area_id}
+                                        onChange={(e) => handleModalAreaChange(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">{formData.gerencia_id ? "Seleccione el Área vinculada" : "Seleccione Área"}</option>
+                                        {modalAreasOptions.map((a) => (
+                                            <option key={a.id} value={a.id}>
+                                                {a.label}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formErrors.area_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.area_id}</p>}
+                                    {formData.gerencia_id && modalAreasOptions.length > 0 && (
+                                        <p className="text-[10px] text-blue-700 font-semibold mt-1 flex items-center gap-1">
+                                            <span>🔗</span>
+                                            <span>{modalAreasOptions.length} área(s) vinculada(s) a esta Gerencia</span>
+                                        </p>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* Área de Destino (Casada con Gerencia) */}
+                            {/* Fila 4: Ajuste de Inventario / Observaciones */}
                             <div>
-                                <SearchableSelect
-                                    label="📂 Área de Destino (Casada con Gerencia)"
-                                    required={true}
-                                    placeholder={formData.gerencia_id ? "Seleccione el área vinculada..." : "Seleccione gerencia primero o elija un área..."}
-                                    options={modalAreasOptions}
-                                    value={formData.area_id}
-                                    onChange={handleModalAreaChange}
-                                    error={formErrors.area_id}
-                                    icon="📂"
-                                    allLabel={null}
-                                />
-                                {formData.gerencia_id && modalAreasOptions.length > 0 && (
-                                    <p className="text-[10px] text-blue-700 font-semibold mt-1 flex items-center gap-1">
-                                        <span>🔗</span>
-                                        <span>Mostrando {modalAreasOptions.length} área(s) disponible(s) para esta Gerencia</span>
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Ajuste de Inventario / Observación */}
-                            <div>
-                                <label className="block text-xs font-bold text-blue-900 mb-1">
-                                    💬 Ajuste de Inventario / Observaciones
+                                <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                    Ajuste de Inventario / Observaciones:
                                 </label>
                                 <textarea
                                     rows="3"
                                     value={formData.ajuste_inventario}
                                     onChange={(e) => setFormData(prev => ({ ...prev, ajuste_inventario: e.target.value }))}
                                     placeholder="Motivo de salida, número de oficio, o notas para el inventario..."
-                                    className="w-full px-3.5 py-2.5 text-xs font-medium rounded-xl border border-white/20 bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all placeholder-slate-400"
+                                    className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder-slate-400"
+                                    disabled={submitting}
                                 />
                             </div>
 
-                            {/* Botones de acción del Modal */}
-                            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                            {/* Botones de acción inferiores (Diseño exacto de inventario_oficinas y bienes_publicos) */}
+                            <div className="flex items-center justify-between gap-4 pt-6 mt-6 border-t border-slate-200">
                                 <button
                                     type="button"
-                                    disabled={submitting}
                                     onClick={() => setModalOpen(false)}
-                                    className="btn-cancel px-4 py-2 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-all disabled:opacity-50 cursor-pointer"
+                                    disabled={submitting}
+                                    className="btn-save inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all duration-300 disabled:opacity-60 text-sm hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer shadow-md"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
                                 >
-                                    Cancelar
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1 fill-white" viewBox="0 0 24 24">
+                                        <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path>
+                                    </svg>
+                                    <span>Regresar</span>
                                 </button>
+
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="btn-save inline-flex items-center gap-2 px-5 py-2 text-xs font-bold text-white rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
+                                    className="btn-save inline-flex items-center justify-center gap-2 px-8 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer"
                                     style={{
-                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
                                     }}
                                 >
                                     {submitting ? (
                                         <>
-                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                             <span>Guardando...</span>
                                         </>
                                     ) : (
-                                        <span>{modalMode === 'create' ? 'Registrar Salida' : 'Guardar Cambios'}</span>
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1" viewBox="0 0 24 24" style={{ fill: 'rgba(255, 255, 255, 1)' }}>
+                                                <path d="M5 21h14a2 2 0 0 0 2-2V8a1 1 0 0 0-.29-.71l-4-4A1 1 0 0 0 16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2zm10-2H9v-5h6zM13 7h-2V5h2zM5 5h2v4h8V5h.59L19 8.41V19h-2v-5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5H5z"></path>
+                                            </svg>
+                                            <span>{modalMode === 'create' ? 'Guardar Registro' : 'Actualizar Registro'}</span>
+                                        </>
                                     )}
                                 </button>
                             </div>
