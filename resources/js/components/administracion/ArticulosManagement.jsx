@@ -15,8 +15,8 @@ export default function ArticulosManagement() {
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
     const [unidadMedidaFilter, setUnidadMedidaFilter] = useState('');
-    const [sortField, setSortField] = useState('id'); // 'id' | 'articulo'
-    const [sortDirection, setSortDirection] = useState('desc');
+    const [sortField, setSortField] = useState('articulo'); // 'articulo' | 'id'
+    const [sortDirection, setSortDirection] = useState('asc');
     const [permissions, setPermissions] = useState({
         can_create: true,
         can_edit: true,
@@ -274,32 +274,18 @@ export default function ArticulosManagement() {
 
     return (
         <div className="w-full">
-            {/* Filtros y controles (Diseño Original Exacto) */}
+            {/* Filtros y controles (Diseño Usuarios de Uso) */}
             <div className="sticky top-0 z-10 px-6 mb-6">
                 <div className="p-6 bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-wrap items-center gap-4">
-                            {/* Filtro por Unidad de Medida */}
-                            <select
-                                value={unidadMedidaFilter}
-                                onChange={(e) => setUnidadMedidaFilter(e.target.value)}
-                                className="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                            >
-                                <option value="">Todas las unidades</option>
-                                {unidadMedidas.map(um => (
-                                    <option key={um.id} value={um.id} className="text-slate-800 bg-white">
-                                        {um.unidad_medida}
-                                    </option>
-                                ))}
-                            </select>
-
                             {/* Buscador */}
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="🔍 Buscar artículos..."
+                                    placeholder="Buscar artículo..."
                                     className="w-64 px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                 />
                                 {search && (
@@ -313,6 +299,20 @@ export default function ArticulosManagement() {
                                 )}
                             </div>
 
+                            {/* Filtro por Unidad de Medida */}
+                            <select
+                                value={unidadMedidaFilter}
+                                onChange={(e) => setUnidadMedidaFilter(e.target.value)}
+                                className="px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                            >
+                                <option value="">Todas las unidades de medida</option>
+                                {unidadMedidas.map(um => (
+                                    <option key={um.id} value={um.id}>
+                                        {um.unidad_medida}
+                                    </option>
+                                ))}
+                            </select>
+
                             {(search || unidadMedidaFilter) && (
                                 <button
                                     type="button"
@@ -323,28 +323,28 @@ export default function ArticulosManagement() {
                                 </button>
                             )}
 
-                            {/* Selectores de ordenamiento */}
-                            <div className="flex items-center gap-2 ml-2">
-                                <span className="text-xs text-gray-500">Ordenar:</span>
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSort('id')}
-                                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold transition-colors cursor-pointer ${
-                                        sortField === 'id' ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <span>ITEM</span>
-                                    <span>{sortField === 'id' ? (sortDirection === 'asc' ? '⬆️' : '⬇️') : '⇅'}</span>
-                                </button>
+                            {/* Selector de ordenamiento */}
+                            <div className="flex items-center gap-1 ml-2">
+                                <span className="text-xs text-gray-500">Ordenar por:</span>
                                 <button
                                     type="button"
                                     onClick={() => toggleSort('articulo')}
                                     className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold transition-colors cursor-pointer ${
-                                        sortField === 'articulo' ? 'bg-blue-100 text-blue-900' : 'text-gray-600 hover:bg-gray-100'
+                                        sortField === 'articulo' ? 'bg-blue-100 text-blue-900 hover:bg-blue-200' : 'text-gray-600 hover:bg-gray-100'
                                     }`}
                                 >
                                     <span>Artículo</span>
                                     <span>{sortField === 'articulo' ? (sortDirection === 'asc' ? '⬆️' : '⬇️') : '⇅'}</span>
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => toggleSort('id')}
+                                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold transition-colors cursor-pointer ${
+                                        sortField === 'id' ? 'bg-blue-100 text-blue-900 hover:bg-blue-200' : 'text-gray-600 hover:bg-gray-100'
+                                    }`}
+                                >
+                                    <span>ITEM</span>
+                                    <span>{sortField === 'id' ? (sortDirection === 'asc' ? '⬆️' : '⬇️') : '⇅'}</span>
                                 </button>
                             </div>
                         </div>

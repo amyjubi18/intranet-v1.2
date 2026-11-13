@@ -260,32 +260,18 @@ export default function GerenciasManagement() {
 
     return (
         <div className="w-full">
-            {/* Filtros y controles */}
+            {/* Filtros y controles (Diseño Usuarios de Uso) */}
             <div className="sticky top-0 z-10 px-6 mb-6">
                 <div className="p-6 bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-wrap items-center gap-4">
-                            {/* Filtro por Área */}
-                            <select
-                                value={areaFilter}
-                                onChange={(e) => setAreaFilter(e.target.value)}
-                                className="bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                            >
-                                <option value="">Todas las áreas</option>
-                                {areas.map(a => (
-                                    <option key={a.id} value={a.id} className="text-slate-800 bg-white">
-                                        {a.area}
-                                    </option>
-                                ))}
-                            </select>
-
                             {/* Buscador */}
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="🔍 Buscar gerencia..."
+                                    placeholder="Buscar gerencia..."
                                     className="w-64 px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                 />
                                 {search && (
@@ -298,6 +284,20 @@ export default function GerenciasManagement() {
                                     </button>
                                 )}
                             </div>
+
+                            {/* Filtro por Área */}
+                            <select
+                                value={areaFilter}
+                                onChange={(e) => setAreaFilter(e.target.value)}
+                                className="px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
+                            >
+                                <option value="">Todas las áreas</option>
+                                {areas.map(a => (
+                                    <option key={a.id} value={a.id}>
+                                        {a.area}
+                                    </option>
+                                ))}
+                            </select>
 
                             {(search || areaFilter) && (
                                 <button

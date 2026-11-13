@@ -24,20 +24,23 @@ class GerenciasController extends Controller
         $query = Gerencia::query()->with('area');
 
         // Filtros específicos
-        if ($request->has('gerencia') && $request->gerencia) {
+        if ($request->filled('gerencia')) {
             $query->where('id', $request->gerencia);
         }
 
-        if ($request->has('area') && $request->area) {
-            $query->where('area_id', $request->area);
+        $areaFilter = $request->input('area_id') ?: $request->input('area');
+        if ($areaFilter) {
+            $query->where('area_id', $areaFilter);
         }
 
         // Handle simple search
         if ($search) {
-            $query->where('gerencia', 'LIKE', '%'.$search.'%')
-                ->orWhereHas('area', function ($q) use ($search) {
-                    $q->where('area', 'LIKE', '%' . $search . '%');
-                });
+            $query->where(function ($q) use ($search) {
+                $q->where('gerencia', 'LIKE', '%' . $search . '%')
+                  ->orWhereHas('area', function ($sub) use ($search) {
+                      $sub->where('area', 'LIKE', '%' . $search . '%');
+                  });
+            });
         }
 
         $gerencias = $query->orderBy($sort, $direction)->paginate(15);

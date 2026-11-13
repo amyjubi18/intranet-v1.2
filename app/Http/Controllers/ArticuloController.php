@@ -26,15 +26,17 @@ class ArticuloController extends Controller
             ->when($request->input('articulo_id'), function($query) use ($request) {
                 return $query->where('id', $request->input('articulo_id'));
             })
-            ->when($request->input('unidad_medida_id'), function($query) use ($request) {
-                return $query->where('unidad_medida_id', $request->input('unidad_medida_id'));
+            ->when($request->input('unidad_medida_id') ?: $request->input('unidad'), function($query, $unidadId) {
+                return $query->where('unidad_medida_id', $unidadId);
             })
             ->when($search, function($query) use ($search) {
-                return $query->where('articulo', 'LIKE', '%'. $search . '%')
-                    ->orWhere('id', 'LIKE', '%'. $search . '%')
-                    ->orWhereHas('unidad_medida', function ($q) use ($search) {
-                        $q->where('unidad_medida', 'LIKE', '%' . $search . '%');
-                    });
+                return $query->where(function($q) use ($search) {
+                    $q->where('articulo', 'LIKE', '%'. $search . '%')
+                        ->orWhere('id', 'LIKE', '%'. $search . '%')
+                        ->orWhereHas('unidad_medida', function ($sub) use ($search) {
+                            $sub->where('unidad_medida', 'LIKE', '%' . $search . '%');
+                        });
+                });
             })
             ->orderBy($sort, $direction)
             ->paginate(15);
