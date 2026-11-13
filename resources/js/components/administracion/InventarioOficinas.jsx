@@ -435,12 +435,16 @@ export default function InventarioOficinas() {
 
     // Handlers para el modal de Crear y Editar
     const handleOpenCreate = () => {
+        const defaultUbicacion = (catalogs.ubicaciones && catalogs.ubicaciones.length > 0)
+            ? String(catalogs.ubicaciones[0].id)
+            : '1';
+
         setFormData({
             fecha_ingreso: new Date().toISOString().split('T')[0],
             articulo_id: '',
             unidad_medida_id: '',
             proveedore_id: '',
-            ubicacion_id: '',
+            ubicacion_id: defaultUbicacion,
             unidades: '',
             n_factura: ''
         });
@@ -452,12 +456,16 @@ export default function InventarioOficinas() {
 
     const handleOpenEdit = (item) => {
         setSelectedInventario(item);
+        const defaultUbicacion = (catalogs.ubicaciones && catalogs.ubicaciones.length > 0)
+            ? String(catalogs.ubicaciones[0].id)
+            : '1';
+
         setFormData({
             fecha_ingreso: item.fecha_ingreso ? item.fecha_ingreso.split('T')[0] : new Date().toISOString().split('T')[0],
             articulo_id: item.articulo_id ? String(item.articulo_id) : '',
             unidad_medida_id: item.unidad_medida_id ? String(item.unidad_medida_id) : '',
             proveedore_id: item.proveedore_id ? String(item.proveedore_id) : '',
-            ubicacion_id: item.ubicacion_id ? String(item.ubicacion_id) : '',
+            ubicacion_id: item.ubicacion_id ? String(item.ubicacion_id) : defaultUbicacion,
             unidades: item.unidades !== undefined && item.unidades !== null ? String(item.unidades) : '',
             n_factura: item.n_factura || ''
         });
@@ -514,12 +522,16 @@ export default function InventarioOficinas() {
                 : `/administracion/inventario_oficinas/${selectedInventario.id}`;
             const method = modalMode === 'create' ? 'POST' : 'PUT';
 
+            const defaultUbicacion = (catalogs.ubicaciones && catalogs.ubicaciones.length > 0)
+                ? catalogs.ubicaciones[0].id
+                : 1;
+
             const payload = {
                 fecha_ingreso: formData.fecha_ingreso,
                 articulo_id: formData.articulo_id,
                 unidad_medida_id: formData.unidad_medida_id,
                 proveedore_id: formData.proveedore_id,
-                ubicacion_id: formData.ubicacion_id || null,
+                ubicacion_id: formData.ubicacion_id || defaultUbicacion,
                 unidades: formData.unidades,
                 n_factura: formData.n_factura
             };
@@ -604,18 +616,29 @@ export default function InventarioOficinas() {
     };
 
     const handleDeleteSingle = async (item) => {
-        const result = await Swal.fire({
+        const { value: password } = await Swal.fire({
             title: '¿Estás seguro?',
-            text: `Se eliminará el registro de inventario con Factura #${item.n_factura || 'S/N'}`,
+            text: `Se eliminará el registro de inventario con Factura #${item.n_factura || 'S/N'}. Ingresa tu contraseña para confirmar:`,
             icon: 'warning',
+            input: 'password',
+            inputPlaceholder: 'Ingresa tu contraseña...',
+            inputAttributes: {
+                autocapitalize: 'off',
+                autocorrect: 'off'
+            },
             showCancelButton: true,
             confirmButtonColor: '#F52727',
             cancelButtonColor: '#2780F5',
             confirmButtonText: 'Sí, eliminar',
-            cancelButtonText: 'Cancelar'
+            cancelButtonText: 'Cancelar',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Debes ingresar tu contraseña';
+                }
+            }
         });
 
-        if (!result.isConfirmed) return;
+        if (!password) return;
 
         try {
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
@@ -626,7 +649,8 @@ export default function InventarioOficinas() {
                     'Accept': 'application/json',
                     'X-CSRF-TOKEN': token || '',
                     'X-Requested-With': 'XMLHttpRequest'
-                }
+                },
+                body: JSON.stringify({ password })
             });
 
             const json = await res.json().catch(() => ({}));
@@ -1594,15 +1618,16 @@ export default function InventarioOficinas() {
                                 </div>
                                 <div>
                                     <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        Ubicación:
+                                        Ubicación: <span className="text-red-500">*</span>
                                     </label>
                                     <select
                                         value={formData.ubicacion_id}
                                         onChange={(e) => handleFormChange('ubicacion_id', e.target.value)}
                                         className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
                                         disabled={submitting}
                                     >
-                                        <option value="">Seleccione Ubicación (Opcional)</option>
+                                        <option value="">Seleccione Ubicación</option>
                                         {(catalogs.ubicaciones || []).map((ub) => (
                                             <option key={ub.id} value={ub.id}>
                                                 {ub.ubicacion}

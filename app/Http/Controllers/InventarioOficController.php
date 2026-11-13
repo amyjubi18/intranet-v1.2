@@ -323,12 +323,13 @@ case 'busqueda':
                 'ubicacion_id' => 'nullable',
             ]);
 
+            $defaultUbicacionId = Ubicacion::first()?->id ?? 1;
             $inventario_oficina = new InventarioOficina;
             $inventario_oficina->fecha_ingreso = $request->input('fecha_ingreso');
             $inventario_oficina->unidad_medida_id = $request->input('unidad_medida_id');
             $inventario_oficina->articulo_id = $request->input('articulo_id');
             $inventario_oficina->proveedore_id = $request->input('proveedore_id');
-            $inventario_oficina->ubicacion_id = $request->input('ubicacion_id') ?: null;
+            $inventario_oficina->ubicacion_id = $request->filled('ubicacion_id') ? $request->input('ubicacion_id') : $defaultUbicacionId;
             $inventario_oficina->unidades = $request->input('unidades');
             $inventario_oficina->unidades_disponibles = $request->input('unidades');
             $inventario_oficina->n_factura = $request->input('n_factura');
@@ -434,8 +435,10 @@ case 'busqueda':
         $inventario_oficina->unidad_medida_id = $request->input('unidad_medida_id');
         $inventario_oficina->articulo_id = $request->input('articulo_id');
         $inventario_oficina->proveedore_id = $request->input('proveedore_id');
-        if ($request->has('ubicacion_id')) {
-            $inventario_oficina->ubicacion_id = $request->input('ubicacion_id') ?: null;
+        if ($request->filled('ubicacion_id')) {
+            $inventario_oficina->ubicacion_id = $request->input('ubicacion_id');
+        } elseif (!$inventario_oficina->ubicacion_id) {
+            $inventario_oficina->ubicacion_id = Ubicacion::first()?->id ?? 1;
         }
         $inventario_oficina->n_factura = $request->input('n_factura');
         $inventario_oficina->unidades = $newUnidades;
@@ -454,15 +457,27 @@ case 'busqueda':
         return redirect()->route('administracion.inventario_oficinas.index', $inventario_oficina->id)->with('success', 'Registro actualizado correctamente');
     }
 
-    public function destroy($id)
+    public function destroy(Request $request, $id)
     {
         abort_if(Gate::denies('inventarioofic_destroy'), 403);
+
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
         $inventario_oficina = InventarioOficina::find($id);
         if ($inventario_oficina) {
             $inventario_oficina->delete();
         }
 
-        if (request()->wantsJson() || request()->ajax()) {
+        if ($request->wantsJson() || $request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Registro eliminado correctamente']);
         }
 
