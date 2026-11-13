@@ -41,7 +41,7 @@ class ArticuloController extends Controller
             ->orderBy($sort, $direction)
             ->paginate(15);
 
-        $all_articulos = Articulo::with('unidad_medida')->get();
+        $all_articulos = Articulo::with('unidad_medida')->orderBy('articulo', 'asc')->get();
         $unidad_medidas = UnidadMedida::orderBy('unidad_medida', 'asc')->get();
 
         if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
@@ -49,6 +49,7 @@ class ArticuloController extends Controller
                 'status' => 200,
                 'data' => [
                     'articulos' => $articulos,
+                    'all_articulos' => $all_articulos,
                     'unidad_medidas' => $unidad_medidas,
                     'permissions' => [
                         'can_create' => Gate::allows('articulo_create'),

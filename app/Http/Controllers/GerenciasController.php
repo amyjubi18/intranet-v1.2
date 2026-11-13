@@ -24,8 +24,9 @@ class GerenciasController extends Controller
         $query = Gerencia::query()->with('area');
 
         // Filtros específicos
-        if ($request->filled('gerencia')) {
-            $query->where('id', $request->gerencia);
+        $gerenciaFilter = $request->input('gerencia_id') ?: $request->input('gerencia');
+        if ($gerenciaFilter) {
+            $query->where('id', $gerenciaFilter);
         }
 
         $areaFilter = $request->input('area_id') ?: $request->input('area');
@@ -46,7 +47,7 @@ class GerenciasController extends Controller
         $gerencias = $query->orderBy($sort, $direction)->paginate(15);
 
         // Obtener todas las gerencias y áreas sin paginar para los filtros
-        $todasLasGerencias = Gerencia::orderBy('gerencia', 'asc')->get();
+        $todasLasGerencias = Gerencia::with('area')->orderBy('gerencia', 'asc')->get();
         $todasLasAreas = Area::orderBy('area', 'asc')->get();
 
         if ($request->wantsJson() || $request->is('api/*') || $request->ajax()) {
@@ -54,6 +55,7 @@ class GerenciasController extends Controller
                 'status' => 200,
                 'data' => [
                     'gerencias' => $gerencias,
+                    'todas_las_gerencias' => $todasLasGerencias,
                     'areas' => $todasLasAreas,
                     'permissions' => [
                         'can_create' => Gate::allows('gerencia_create'),

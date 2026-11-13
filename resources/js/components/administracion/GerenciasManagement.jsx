@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
+import SearchableSelect from '../ui/SearchableSelect';
 
 export default function GerenciasManagement() {
     const [gerencias, setGerencias] = useState([]);
+    const [todasLasGerencias, setTodasLasGerencias] = useState([]);
     const [areas, setAreas] = useState([]);
     const [pagination, setPagination] = useState({
         current_page: 1,
@@ -14,6 +16,7 @@ export default function GerenciasManagement() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
+    const [gerenciaFilter, setGerenciaFilter] = useState('');
     const [areaFilter, setAreaFilter] = useState('');
     const [sortDirection, setSortDirection] = useState('asc');
     const [permissions, setPermissions] = useState({
@@ -56,6 +59,10 @@ export default function GerenciasManagement() {
                 direction: sortDirection
             });
             if (search.trim()) params.append('search', search.trim());
+            if (gerenciaFilter) {
+                params.append('gerencia', gerenciaFilter);
+                params.append('gerencia_id', gerenciaFilter);
+            }
             if (areaFilter) {
                 params.append('area', areaFilter);
                 params.append('area_id', areaFilter);
@@ -87,6 +94,10 @@ export default function GerenciasManagement() {
                 per_page: resData.per_page || 15
             });
 
+            if (json.data?.todas_las_gerencias) {
+                setTodasLasGerencias(json.data.todas_las_gerencias);
+            }
+
             if (json.data?.areas) {
                 setAreas(json.data.areas);
             }
@@ -100,14 +111,59 @@ export default function GerenciasManagement() {
         } finally {
             setLoading(false);
         }
-    }, [search, areaFilter, sortDirection]);
+    }, [search, gerenciaFilter, areaFilter, sortDirection]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchGerencias(1);
-        }, 300);
+        }, 250);
         return () => clearTimeout(timer);
-    }, [search, areaFilter, sortDirection, fetchGerencias]);
+    }, [search, gerenciaFilter, areaFilter, sortDirection, fetchGerencias]);
+
+    // Opciones para Select Filtrable: Áreas
+    const areasOptions = useMemo(() => {
+        return areas.map(a => ({
+            id: a.id,
+            label: a.area,
+            badge: 'Área'
+        }));
+    }, [areas]);
+
+    // Opciones para Select Filtrable: Gerencias (Casadas con Área)
+    const gerenciasOptions = useMemo(() => {
+        let list = todasLasGerencias;
+        if (areaFilter) {
+            list = list.filter(g => String(g.area_id) === String(areaFilter));
+        }
+        return list.map(g => ({
+            id: g.id,
+            label: g.gerencia,
+            badge: g.area?.area || null
+        }));
+    }, [todasLasGerencias, areaFilter]);
+
+    // Manejador Casado: Cambio de Área en el filtro
+    const handleAreaChange = (aId) => {
+        setAreaFilter(aId);
+        // Si la gerencia seleccionada no pertenece al área elegida, limpiarla
+        if (aId && gerenciaFilter) {
+            const ger = todasLasGerencias.find(g => String(g.id) === String(gerenciaFilter));
+            if (ger && String(ger.area_id) !== String(aId)) {
+                setGerenciaFilter('');
+            }
+        }
+    };
+
+    // Manejador Casado: Cambio de Gerencia en el filtro (autoselecciona su área)
+    const handleGerenciaChange = (gId) => {
+        setGerenciaFilter(gId);
+        if (gId) {
+            const ger = todasLasGerencias.find(g => String(g.id) === String(gId));
+            if (ger && ger.area_id) {
+                setAreaFilter(String(ger.area_id));
+            }
+        }
+    };
 
     // Abrir modal de creación
     const handleOpenCreate = () => {
@@ -258,92 +314,121 @@ export default function GerenciasManagement() {
 
     const clearFilters = () => {
         setSearch('');
+        setGerenciaFilter('');
         setAreaFilter('');
     };
 
+    const hasActiveFilters = Boolean(search || gerenciaFilter || areaFilter);
+
     return (
         <div className="w-full">
-            {/* Filtros y controles (Diseño Usuarios de Uso) */}
-            <div className="sticky top-0 z-10 px-6 mb-6">
+            {/* Filtros y controles con Selects Filtrables Casados */}
+            <div className="sticky top-0 z-30 px-6 mb-6">
                 <div className="p-6 bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap items-center gap-4">
-                            {/* Buscador */}
-                            <div className="relative">
+                        <div className="flex flex-wrap items-center gap-4 flex-1">
+                            {/* Buscador de texto libre */}
+                            <div className="relative w-60">
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Buscar gerencia..."
-                                    className="w-64 px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                    placeholder="Buscar por texto..."
+                                    className="w-full px-4 py-2.5 text-xs font-semibold bg-blue-100/70 border border-white/20 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                 />
                                 {search && (
                                     <button
                                         type="button"
                                         onClick={() => setSearch('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs"
                                     >
                                         ✕
                                     </button>
                                 )}
                             </div>
 
-                            {/* Filtro por Área */}
-                            <select
-                                value={areaFilter}
-                                onChange={(e) => setAreaFilter(e.target.value)}
-                                className="px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                            >
-                                <option value="">Todas las áreas</option>
-                                {areas.map(a => (
-                                    <option key={a.id} value={a.id}>
-                                        {a.area}
-                                    </option>
-                                ))}
-                            </select>
+                            {/* Select Filtrable Casado: Gerencia */}
+                            <div className="w-72">
+                                <SearchableSelect
+                                    options={gerenciasOptions}
+                                    value={gerenciaFilter}
+                                    onChange={handleGerenciaChange}
+                                    placeholder="Todas las gerencias"
+                                    allLabel="Todas las gerencias"
+                                    icon="🏢"
+                                />
+                            </div>
 
-                            {(search || areaFilter) && (
+                            {/* Select Filtrable Casado: Área */}
+                            <div className="w-64">
+                                <SearchableSelect
+                                    options={areasOptions}
+                                    value={areaFilter}
+                                    onChange={handleAreaChange}
+                                    placeholder="Todas las áreas"
+                                    allLabel="Todas las áreas"
+                                    icon="📍"
+                                />
+                            </div>
+
+                            {hasActiveFilters && (
                                 <button
                                     type="button"
                                     onClick={clearFilters}
-                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm cursor-pointer"
+                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-xs shadow-xs cursor-pointer"
                                 >
                                     🗑️ Limpiar
                                 </button>
                             )}
 
                             {/* Selector de ordenamiento */}
-                            <div className="flex items-center gap-1 ml-2">
-                                <span className="text-xs text-gray-500">Ordenar por:</span>
+                            <div className="flex items-center gap-1 ml-auto">
+                                <span className="text-xs text-gray-500 font-medium">Ordenar:</span>
                                 <button
                                     type="button"
                                     onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold bg-blue-100 text-blue-900 hover:bg-blue-200 transition-colors cursor-pointer"
+                                    className="px-2.5 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold transition-all cursor-pointer"
+                                    title="Alternar orden A-Z / Z-A"
                                 >
-                                    <span>Gerencia</span>
-                                    <span>{sortDirection === 'asc' ? '⬆️' : '⬇️'}</span>
+                                    {sortDirection === 'asc' ? 'A ➜ Z' : 'Z ➜ A'}
                                 </button>
                             </div>
                         </div>
 
-                        {/* Botón Nuevo */}
-                        <div className="flex items-center gap-3">
-                            {permissions.can_create && (
-                                <button
-                                    type="button"
-                                    onClick={handleOpenCreate}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 text-sm cursor-pointer shadow-sm active:translate-y-0.5"
-                                >
-                                    <span>➕</span>
-                                    Nueva Gerencia
-                                </button>
-                            )}
-                        </div>
+                        {/* Botón Crear */}
+                        {permissions.can_create && (
+                            <button
+                                type="button"
+                                onClick={handleOpenCreate}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
+                            >
+                                <span>➕</span>
+                                Registrar Gerencia
+                            </button>
+                        )}
                     </div>
+
+                    {/* Indicador de relación casada */}
+                    {(gerenciaFilter || areaFilter) && (
+                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-[11px] text-blue-900 font-semibold">
+                            <span>🔗</span>
+                            <span>
+                                {gerenciaFilter && areaFilter
+                                    ? 'Filtro sincronizado: Gerencia y Área enlazadas.'
+                                    : areaFilter
+                                        ? `Mostrando ${gerenciasOptions.length} gerencia(s) perteneciente(s) al área seleccionada.`
+                                        : 'Gerencia seleccionada y área asociada.'}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Listado de gerencias */}
+            {/* Listado de Gerencias */}
             <div className="px-6 mb-8">
                 {loading && gerencias.length === 0 ? (
                     <div className="p-8 text-center bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm animate-pulse">
@@ -363,7 +448,7 @@ export default function GerenciasManagement() {
                     </div>
                 ) : gerencias.length === 0 ? (
                     <div className="p-8 text-center bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm">
-                        <p className="text-slate-500 font-medium">No hay ninguna gerencia registrada</p>
+                        <p className="text-slate-500 font-medium">No se encontraron gerencias con los filtros aplicados</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -375,13 +460,15 @@ export default function GerenciasManagement() {
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center justify-between">
                                     {/* Gerencia */}
                                     <div className="text-center lg:text-left">
-                                        <p className="text-xs text-blue-900 font-semibold mb-1">🏢 Gerencia</p>
+                                        <p className="text-xs text-blue-900 font-semibold mb-1">
+                                            🏢 Gerencia <span className="text-blue-500 font-bold ml-1">({String(ger.id).padStart(4, '0')})</span>
+                                        </p>
                                         <p className="font-semibold text-lg text-black w-fit p-2 rounded-lg">
                                             {ger.gerencia}
                                         </p>
                                     </div>
 
-                                    {/* Área */}
+                                    {/* Área (casada) */}
                                     <div className="text-center lg:text-left">
                                         <p className="text-xs text-green-900 font-semibold mb-1">📍 Área</p>
                                         <p className="font-semibold text-lg text-black w-fit p-2 rounded-lg">
@@ -421,37 +508,79 @@ export default function GerenciasManagement() {
                 )}
 
                 {/* Paginación */}
-                {pagination.last_page > 1 && (
-                    <div className="flex justify-center mt-8">
-                        <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => fetchGerencias(pagination.current_page - 1)}
-                                disabled={pagination.current_page <= 1}
-                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-                            >
-                                Anterior
-                            </button>
-                            <span className="text-xs font-bold text-blue-900 px-3">
-                                Página {pagination.current_page} de {pagination.last_page} ({pagination.total} registros)
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => fetchGerencias(pagination.current_page + 1)}
-                                disabled={pagination.current_page >= pagination.last_page}
-                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-                            >
-                                Siguiente
-                            </button>
+                {pagination.total > 0 && (
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="text-xs font-semibold text-slate-600">
+                            Mostrando {gerencias.length} de {pagination.total} gerencia(s)
+                            {pagination.last_page > 1 && ` (Página ${pagination.current_page} de ${pagination.last_page})`}
                         </div>
+
+                        {pagination.last_page > 1 && (
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => fetchGerencias(pagination.current_page - 1)}
+                                    disabled={pagination.current_page <= 1 || loading}
+                                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                        pagination.current_page <= 1 || loading
+                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                            : 'bg-white text-slate-700 hover:bg-blue-50 border border-slate-200 cursor-pointer'
+                                    }`}
+                                >
+                                    ◀ Anterior
+                                </button>
+
+                                {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
+                                    let pageNum;
+                                    if (pagination.last_page <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (pagination.current_page <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (pagination.current_page >= pagination.last_page - 2) {
+                                        pageNum = pagination.last_page - 4 + i;
+                                    } else {
+                                        pageNum = pagination.current_page - 2 + i;
+                                    }
+
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            type="button"
+                                            onClick={() => fetchGerencias(pageNum)}
+                                            disabled={loading}
+                                            className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                                pagination.current_page === pageNum
+                                                    ? 'bg-blue-900 text-white shadow-sm'
+                                                    : 'bg-white text-slate-700 hover:bg-blue-50 border border-slate-200'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+
+                                <button
+                                    type="button"
+                                    onClick={() => fetchGerencias(pagination.current_page + 1)}
+                                    disabled={pagination.current_page >= pagination.last_page || loading}
+                                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                        pagination.current_page >= pagination.last_page || loading
+                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                            : 'bg-white text-slate-700 hover:bg-blue-50 border border-slate-200 cursor-pointer'
+                                    }`}
+                                >
+                                    Siguiente ▶
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Modal Crear / Editar (Portaled a document.body) */}
-            {modalOpen && typeof document !== 'undefined' && createPortal(
+            {/* Modal de Crear / Editar usando createPortal con backdrop-blur completo */}
+            {modalOpen && createPortal(
                 <div
-                    className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300"
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -469,7 +598,7 @@ export default function GerenciasManagement() {
                     }}
                 >
                     <div
-                        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden my-auto animate-modal-expand"
+                        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 my-auto animate-modal-expand overflow-visible"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Cabecera con degradado corporativo exacto */}
@@ -506,7 +635,7 @@ export default function GerenciasManagement() {
                                     type="text"
                                     value={formData.gerencia}
                                     onChange={(e) => setFormData({ ...formData, gerencia: e.target.value })}
-                                    placeholder="Ingrese nombre de la gerencia..."
+                                    placeholder="Ej: Gerencia de Administración y Finanzas..."
                                     className="w-full bg-[#f0f5ff] border border-blue-200/60 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all"
                                     required
                                     autoFocus
@@ -517,31 +646,25 @@ export default function GerenciasManagement() {
                                 )}
                             </div>
 
-                            {/* Área Asignada */}
+                            {/* Área (SearchableSelect) */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
                                     📍 Área Asignada <span className="text-red-500">*</span>
                                 </label>
-                                <select
+                                <SearchableSelect
+                                    options={areasOptions}
                                     value={formData.area_id}
-                                    onChange={(e) => setFormData({ ...formData, area_id: e.target.value })}
-                                    className="w-full bg-[#f0f5ff] border border-blue-200/60 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
-                                    required
+                                    onChange={(val) => setFormData({ ...formData, area_id: val })}
+                                    placeholder="Seleccione un área..."
+                                    allLabel={false}
+                                    icon="📍"
+                                    error={formErrors.area_id ? formErrors.area_id[0] : null}
                                     disabled={submitting}
-                                >
-                                    <option value="">Seleccione un área...</option>
-                                    {areas.map(a => (
-                                        <option key={a.id} value={a.id}>
-                                            {a.area}
-                                        </option>
-                                    ))}
-                                </select>
-                                {formErrors.area_id && (
-                                    <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.area_id[0]}</p>
-                                )}
+                                    required
+                                />
                             </div>
 
-                            {/* Botones de acción */}
+                            {/* Botones de acción inferiores */}
                             <div className="flex items-center justify-between gap-4 pt-4 border-t border-slate-200 mt-6">
                                 <button
                                     type="button"
@@ -568,7 +691,7 @@ export default function GerenciasManagement() {
                                     ) : (
                                         <>
                                             <span>💾</span>
-                                            <span>{modalMode === 'create' ? 'Guardar' : 'Actualizar'}</span>
+                                            <span>{modalMode === 'create' ? 'Guardar Gerencia' : 'Actualizar'}</span>
                                         </>
                                     )}
                                 </button>

@@ -1,9 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
+import SearchableSelect from '../ui/SearchableSelect';
 
 export default function ArticulosManagement() {
     const [articulos, setArticulos] = useState([]);
+    const [allArticulos, setAllArticulos] = useState([]);
     const [unidadMedidas, setUnidadMedidas] = useState([]);
     const [pagination, setPagination] = useState({
         current_page: 1,
@@ -14,6 +16,7 @@ export default function ArticulosManagement() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
+    const [articuloFilter, setArticuloFilter] = useState('');
     const [unidadMedidaFilter, setUnidadMedidaFilter] = useState('');
     const [sortDirection, setSortDirection] = useState('asc');
     const [permissions, setPermissions] = useState({
@@ -57,6 +60,7 @@ export default function ArticulosManagement() {
                 direction: sortDirection
             });
             if (search.trim()) params.append('search', search.trim());
+            if (articuloFilter) params.append('articulo_id', articuloFilter);
             if (unidadMedidaFilter) {
                 params.append('unidad_medida_id', unidadMedidaFilter);
                 params.append('unidad', unidadMedidaFilter);
@@ -88,6 +92,10 @@ export default function ArticulosManagement() {
                 per_page: resData.per_page || 15
             });
 
+            if (json.data?.all_articulos) {
+                setAllArticulos(json.data.all_articulos);
+            }
+
             if (json.data?.unidad_medidas) {
                 setUnidadMedidas(json.data.unidad_medidas);
             }
@@ -101,14 +109,59 @@ export default function ArticulosManagement() {
         } finally {
             setLoading(false);
         }
-    }, [search, unidadMedidaFilter, sortDirection]);
+    }, [search, articuloFilter, unidadMedidaFilter, sortDirection]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchArticulos(1);
-        }, 300);
+        }, 250);
         return () => clearTimeout(timer);
-    }, [search, unidadMedidaFilter, sortDirection, fetchArticulos]);
+    }, [search, articuloFilter, unidadMedidaFilter, sortDirection, fetchArticulos]);
+
+    // Opciones para Select Filtrable: Unidad de Medida
+    const unidadMedidasOptions = useMemo(() => {
+        return unidadMedidas.map(um => ({
+            id: um.id,
+            label: um.unidad_medida,
+            badge: 'Unidad'
+        }));
+    }, [unidadMedidas]);
+
+    // Opciones para Select Filtrable: Artículos (Casado con Unidad de Medida)
+    const articulosOptions = useMemo(() => {
+        let list = allArticulos;
+        if (unidadMedidaFilter) {
+            list = list.filter(a => String(a.unidad_medida_id) === String(unidadMedidaFilter));
+        }
+        return list.map(a => ({
+            id: a.id,
+            label: a.articulo,
+            badge: a.unidad_medida?.unidad_medida || null
+        }));
+    }, [allArticulos, unidadMedidaFilter]);
+
+    // Manejador Casado: Cambio de Unidad de Medida en filtro
+    const handleUnidadChange = (uId) => {
+        setUnidadMedidaFilter(uId);
+        // Si el artículo seleccionado no pertenece a la unidad seleccionada, limpiarlo
+        if (uId && articuloFilter) {
+            const art = allArticulos.find(a => String(a.id) === String(articuloFilter));
+            if (art && String(art.unidad_medida_id) !== String(uId)) {
+                setArticuloFilter('');
+            }
+        }
+    };
+
+    // Manejador Casado: Cambio de Artículo en filtro (autoselecciona su unidad)
+    const handleArticuloChange = (aId) => {
+        setArticuloFilter(aId);
+        if (aId) {
+            const art = allArticulos.find(a => String(a.id) === String(aId));
+            if (art && art.unidad_medida_id) {
+                setUnidadMedidaFilter(String(art.unidad_medida_id));
+            }
+        }
+    };
 
     // Abrir modal de creación
     const handleOpenCreate = () => {
@@ -261,92 +314,121 @@ export default function ArticulosManagement() {
 
     const clearFilters = () => {
         setSearch('');
+        setArticuloFilter('');
         setUnidadMedidaFilter('');
     };
 
+    const hasActiveFilters = Boolean(search || articuloFilter || unidadMedidaFilter);
+
     return (
         <div className="w-full">
-            {/* Filtros y controles (Diseño Usuarios de Uso) */}
-            <div className="sticky top-0 z-10 px-6 mb-6">
+            {/* Filtros y controles con Selects Filtrables Casados */}
+            <div className="sticky top-0 z-30 px-6 mb-6">
                 <div className="p-6 bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap items-center gap-4">
-                            {/* Buscador */}
-                            <div className="relative">
+                        <div className="flex flex-wrap items-center gap-4 flex-1">
+                            {/* Buscador de texto libre */}
+                            <div className="relative w-60">
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Buscar artículo..."
-                                    className="w-64 px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                    placeholder="Buscar por texto..."
+                                    className="w-full px-4 py-2.5 text-xs font-semibold bg-blue-100/70 border border-white/20 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                 />
                                 {search && (
                                     <button
                                         type="button"
                                         onClick={() => setSearch('')}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs"
                                     >
                                         ✕
                                     </button>
                                 )}
                             </div>
 
-                            {/* Filtro por Unidad de Medida */}
-                            <select
-                                value={unidadMedidaFilter}
-                                onChange={(e) => setUnidadMedidaFilter(e.target.value)}
-                                className="px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 cursor-pointer"
-                            >
-                                <option value="">Todas las unidades de medida</option>
-                                {unidadMedidas.map(um => (
-                                    <option key={um.id} value={um.id}>
-                                        {um.unidad_medida}
-                                    </option>
-                                ))}
-                            </select>
+                            {/* Select Filtrable Casado: Artículo */}
+                            <div className="w-72">
+                                <SearchableSelect
+                                    options={articulosOptions}
+                                    value={articuloFilter}
+                                    onChange={handleArticuloChange}
+                                    placeholder="Todos los artículos"
+                                    allLabel="Todos los artículos"
+                                    icon="📄"
+                                />
+                            </div>
 
-                            {(search || unidadMedidaFilter) && (
+                            {/* Select Filtrable Casado: Unidad de Medida */}
+                            <div className="w-64">
+                                <SearchableSelect
+                                    options={unidadMedidasOptions}
+                                    value={unidadMedidaFilter}
+                                    onChange={handleUnidadChange}
+                                    placeholder="Todas las unidades"
+                                    allLabel="Todas las unidades"
+                                    icon="📏"
+                                />
+                            </div>
+
+                            {hasActiveFilters && (
                                 <button
                                     type="button"
                                     onClick={clearFilters}
-                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm cursor-pointer"
+                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-xs shadow-xs cursor-pointer"
                                 >
                                     🗑️ Limpiar
                                 </button>
                             )}
 
                             {/* Selector de ordenamiento */}
-                            <div className="flex items-center gap-1 ml-2">
-                                <span className="text-xs text-gray-500">Ordenar por:</span>
+                            <div className="flex items-center gap-1 ml-auto">
+                                <span className="text-xs text-gray-500 font-medium">Ordenar:</span>
                                 <button
                                     type="button"
                                     onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold bg-blue-100 text-blue-900 hover:bg-blue-200 transition-colors cursor-pointer"
+                                    className="px-2.5 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold transition-all cursor-pointer"
+                                    title="Alternar orden A-Z / Z-A"
                                 >
-                                    <span>Artículo</span>
-                                    <span>{sortDirection === 'asc' ? '⬆️' : '⬇️'}</span>
+                                    {sortDirection === 'asc' ? 'A ➜ Z' : 'Z ➜ A'}
                                 </button>
                             </div>
                         </div>
 
-                        {/* Botón Nuevo */}
-                        <div className="flex items-center gap-3">
-                            {permissions.can_create && (
-                                <button
-                                    type="button"
-                                    onClick={handleOpenCreate}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 text-sm cursor-pointer shadow-sm active:translate-y-0.5"
-                                >
-                                    <span>➕</span>
-                                    Nuevo
-                                </button>
-                            )}
-                        </div>
+                        {/* Botón Crear */}
+                        {permissions.can_create && (
+                            <button
+                                type="button"
+                                onClick={handleOpenCreate}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
+                            >
+                                <span>➕</span>
+                                Registrar Artículo
+                            </button>
+                        )}
                     </div>
+
+                    {/* Indicador de relación casada */}
+                    {(articuloFilter || unidadMedidaFilter) && (
+                        <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2 text-[11px] text-blue-900 font-semibold">
+                            <span>🔗</span>
+                            <span>
+                                {articuloFilter && unidadMedidaFilter
+                                    ? 'Filtro sincronizado: Artículo y Unidad de Medida enlazados.'
+                                    : unidadMedidaFilter
+                                        ? `Mostrando ${articulosOptions.length} artículo(s) perteneciente(s) a la unidad seleccionada.`
+                                        : 'Artículo seleccionado y unidad asociada.'}
+                            </span>
+                        </div>
+                    )}
                 </div>
             </div>
 
-            {/* Listado de artículos */}
+            {/* Listado de Artículos */}
             <div className="px-6 mb-8">
                 {loading && articulos.length === 0 ? (
                     <div className="p-8 text-center bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm animate-pulse">
@@ -366,7 +448,7 @@ export default function ArticulosManagement() {
                     </div>
                 ) : articulos.length === 0 ? (
                     <div className="p-8 text-center bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm">
-                        <p className="text-slate-500 font-medium">No hay ningún artículo registrado</p>
+                        <p className="text-slate-500 font-medium">No se encontraron artículos con los filtros aplicados</p>
                     </div>
                 ) : (
                     <div className="space-y-4">
@@ -429,37 +511,79 @@ export default function ArticulosManagement() {
                 )}
 
                 {/* Paginación */}
-                {pagination.last_page > 1 && (
-                    <div className="flex justify-center mt-8">
-                        <div className="p-3 bg-white border border-slate-200 rounded-xl shadow-xs flex items-center gap-2">
-                            <button
-                                type="button"
-                                onClick={() => fetchArticulos(pagination.current_page - 1)}
-                                disabled={pagination.current_page <= 1}
-                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-                            >
-                                Anterior
-                            </button>
-                            <span className="text-xs font-bold text-blue-900 px-3">
-                                Página {pagination.current_page} de {pagination.last_page} ({pagination.total} registros)
-                            </span>
-                            <button
-                                type="button"
-                                onClick={() => fetchArticulos(pagination.current_page + 1)}
-                                disabled={pagination.current_page >= pagination.last_page}
-                                className="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40 cursor-pointer"
-                            >
-                                Siguiente
-                            </button>
+                {pagination.total > 0 && (
+                    <div className="mt-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div className="text-xs font-semibold text-slate-600">
+                            Mostrando {articulos.length} de {pagination.total} artículo(s)
+                            {pagination.last_page > 1 && ` (Página ${pagination.current_page} de ${pagination.last_page})`}
                         </div>
+
+                        {pagination.last_page > 1 && (
+                            <div className="flex items-center gap-1.5">
+                                <button
+                                    type="button"
+                                    onClick={() => fetchArticulos(pagination.current_page - 1)}
+                                    disabled={pagination.current_page <= 1 || loading}
+                                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                        pagination.current_page <= 1 || loading
+                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                            : 'bg-white text-slate-700 hover:bg-blue-50 border border-slate-200 cursor-pointer'
+                                    }`}
+                                >
+                                    ◀ Anterior
+                                </button>
+
+                                {Array.from({ length: Math.min(5, pagination.last_page) }, (_, i) => {
+                                    let pageNum;
+                                    if (pagination.last_page <= 5) {
+                                        pageNum = i + 1;
+                                    } else if (pagination.current_page <= 3) {
+                                        pageNum = i + 1;
+                                    } else if (pagination.current_page >= pagination.last_page - 2) {
+                                        pageNum = pagination.last_page - 4 + i;
+                                    } else {
+                                        pageNum = pagination.current_page - 2 + i;
+                                    }
+
+                                    return (
+                                        <button
+                                            key={pageNum}
+                                            type="button"
+                                            onClick={() => fetchArticulos(pageNum)}
+                                            disabled={loading}
+                                            className={`w-8 h-8 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                                                pagination.current_page === pageNum
+                                                    ? 'bg-blue-900 text-white shadow-sm'
+                                                    : 'bg-white text-slate-700 hover:bg-blue-50 border border-slate-200'
+                                            }`}
+                                        >
+                                            {pageNum}
+                                        </button>
+                                    );
+                                })}
+
+                                <button
+                                    type="button"
+                                    onClick={() => fetchArticulos(pagination.current_page + 1)}
+                                    disabled={pagination.current_page >= pagination.last_page || loading}
+                                    className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${
+                                        pagination.current_page >= pagination.last_page || loading
+                                            ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                                            : 'bg-white text-slate-700 hover:bg-blue-50 border border-slate-200 cursor-pointer'
+                                    }`}
+                                >
+                                    Siguiente ▶
+                                </button>
+                            </div>
+                        )}
                     </div>
                 )}
             </div>
 
-            {/* Modal Crear / Editar (Portaled a document.body) */}
-            {modalOpen && typeof document !== 'undefined' && createPortal(
+            {/* Modal de Crear / Editar usando createPortal con backdrop-blur completo */}
+            {modalOpen && createPortal(
                 <div
-                    className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
+                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300"
                     style={{
                         position: 'fixed',
                         top: 0,
@@ -477,7 +601,7 @@ export default function ArticulosManagement() {
                     }}
                 >
                     <div
-                        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 overflow-hidden my-auto animate-modal-expand"
+                        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 my-auto animate-modal-expand overflow-visible"
                         onClick={(e) => e.stopPropagation()}
                     >
                         {/* Cabecera con degradado corporativo exacto */}
@@ -525,28 +649,22 @@ export default function ArticulosManagement() {
                                 )}
                             </div>
 
-                            {/* Unidad de Medida */}
+                            {/* Unidad de Medida (SearchableSelect) */}
                             <div>
                                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wide mb-1.5">
                                     📏 Unidad de Medida <span className="text-red-500">*</span>
                                 </label>
-                                <select
+                                <SearchableSelect
+                                    options={unidadMedidasOptions}
                                     value={formData.unidad_medida_id}
-                                    onChange={(e) => setFormData({ ...formData, unidad_medida_id: e.target.value })}
-                                    className="w-full bg-[#f0f5ff] border border-blue-200/60 rounded-xl px-4 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 transition-all cursor-pointer"
-                                    required
+                                    onChange={(val) => setFormData({ ...formData, unidad_medida_id: val })}
+                                    placeholder="Seleccione una unidad de medida..."
+                                    allLabel={false}
+                                    icon="📏"
+                                    error={formErrors.unidad_medida_id ? formErrors.unidad_medida_id[0] : null}
                                     disabled={submitting}
-                                >
-                                    <option value="">Seleccione una unidad de medida...</option>
-                                    {unidadMedidas.map(um => (
-                                        <option key={um.id} value={um.id}>
-                                            {um.unidad_medida}
-                                        </option>
-                                    ))}
-                                </select>
-                                {formErrors.unidad_medida_id && (
-                                    <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.unidad_medida_id[0]}</p>
-                                )}
+                                    required
+                                />
                             </div>
 
                             {/* Stock Mínimo */}
