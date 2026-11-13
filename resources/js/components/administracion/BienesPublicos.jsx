@@ -63,7 +63,7 @@ function SearchableSelect({
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-blue-100/70 hover:bg-blue-100 text-slate-800 text-xs font-semibold rounded-xl border border-white/20 transition-all text-left shadow-2xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="select-spring-trigger w-full flex items-center justify-between gap-2 px-3 py-2 bg-blue-100/70 hover:bg-blue-100 text-slate-800 text-xs font-semibold rounded-xl border border-white/20 transition-all text-left shadow-2xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
             >
                 <div className="flex items-center gap-1.5 truncate">
                     <span className="text-xs opacity-70">{icon}</span>
@@ -90,12 +90,12 @@ function SearchableSelect({
                             ✕
                         </span>
                     ) : null}
-                    <span className="text-[10px] text-slate-500">▼</span>
+                    <span className={`text-[10px] text-slate-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
                 </div>
             </button>
 
             {isOpen && (
-                <div className="absolute z-[100] left-0 mt-1 w-full min-w-[240px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-fadeIn ring-1 ring-black/5">
+                <div className="select-spring-menu absolute z-[100] left-0 mt-1 w-full min-w-[240px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2.5 ring-1 ring-black/5">
                     <div className="relative mb-2">
                         <input
                             type="text"
@@ -103,20 +103,20 @@ function SearchableSelect({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Buscar en la lista..."
-                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-slate-50 rounded-lg border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none"
+                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
                         />
-                        <span className="absolute left-2 top-1.5 text-xs text-slate-400">🔍</span>
+                        <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">🔍</span>
                     </div>
 
-                    <div className="max-h-48 overflow-y-auto space-y-0.5 text-xs">
+                    <div className="max-h-48 overflow-y-auto space-y-1 text-xs pr-0.5">
                         <div
                             onClick={() => {
                                 onChange('');
                                 setIsOpen(false);
                                 setSearch('');
                             }}
-                            className={`px-3 py-2 rounded-lg cursor-pointer font-medium transition-colors ${
-                                !value ? 'bg-blue-900 text-white font-bold' : 'text-slate-600 hover:bg-blue-50'
+                            className={`select-spring-item px-3 py-2 rounded-xl cursor-pointer font-medium transition-all ${
+                                !value ? 'bg-blue-900 text-white font-bold shadow-xs' : 'text-slate-600 hover:bg-blue-50'
                             }`}
                         >
                             {allLabel}
@@ -127,7 +127,7 @@ function SearchableSelect({
                                 Sin coincidencias
                             </div>
                         ) : (
-                            filtered.map((opt) => {
+                            filtered.map((opt, idx) => {
                                 const isSelected = String(opt.id) === String(value);
                                 return (
                                     <div
@@ -137,9 +137,10 @@ function SearchableSelect({
                                             setIsOpen(false);
                                             setSearch('');
                                         }}
-                                        className={`px-3 py-1.5 rounded-lg cursor-pointer transition-colors truncate flex items-center justify-between ${
+                                        style={{ animationDelay: `${Math.min((idx + 1) * 35, 300)}ms` }}
+                                        className={`select-spring-item px-3 py-2 rounded-xl cursor-pointer transition-all truncate flex items-center justify-between ${
                                             isSelected
-                                                ? 'bg-blue-900 text-white font-bold'
+                                                ? 'bg-blue-900 text-white font-bold shadow-xs'
                                                 : 'text-slate-700 hover:bg-blue-50 hover:text-blue-900'
                                         }`}
                                     >
@@ -152,7 +153,7 @@ function SearchableSelect({
                                             )}
                                             <span className="truncate">{opt.label}</span>
                                         </div>
-                                        {isSelected && <span className="ml-1 text-xs">✓</span>}
+                                        {isSelected && <span className="ml-1 text-xs font-bold text-white">✓</span>}
                                     </div>
                                 );
                             })

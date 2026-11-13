@@ -894,3 +894,95 @@ div.swal2-popup.swal2-hide,
   transform: rotate(90deg) scale(1.08);
 }
 
+/* ==========================================================================
+   SELECT ANIMATION: SPRING ELASTIC & STAGGERED ITEMS (SIMEY / CJ FROM JBW)
+   ========================================================================== */
+:root {
+  --select-spring: linear(
+    0, 0.008 1.1%, 0.034 2.3%, 0.134 4.9%, 0.264 7.3%, 0.683 14.3%,
+    0.797 16.5%, 0.89 18.6%, 0.967 20.7%, 1.027 22.8%, 1.073 25%,
+    1.104 27.3%, 1.123 30.6%, 1.119 34.3%, 1.018 49.5%, 0.988 58.6%,
+    0.985 65.2%, 1 84.5%, 1
+  );
+  --select-cubic: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --select-cubic-out: cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+@keyframes selectSpringOpen {
+  0% {
+    opacity: 0;
+    transform: scale(1, 0.25) translateY(-14px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1, 1) translateY(0);
+  }
+}
+
+@keyframes selectItemStagger {
+  0% {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Menús de opciones personalizados (SearchableSelect, TomSelect, etc.) */
+.select-spring-menu,
+.ts-dropdown {
+  transform-origin: center top !important;
+  animation: selectSpringOpen 0.44s var(--select-spring, var(--select-cubic)) forwards !important;
+  will-change: transform, opacity;
+}
+
+.select-spring-menu .select-spring-item,
+.ts-dropdown .option {
+  animation: selectItemStagger 0.46s var(--select-spring, var(--select-cubic)) backwards !important;
+  transition: all 0.22s var(--select-cubic-out) !important;
+}
+
+.select-spring-menu .select-spring-item:hover,
+.ts-dropdown .option:hover {
+  transform: translateX(4px) !important;
+}
+
+/* Retrasos escalonados para las opciones */
+.select-spring-menu .select-spring-item:nth-child(1), .ts-dropdown .option:nth-child(1) { animation-delay: 0.03s !important; }
+.select-spring-menu .select-spring-item:nth-child(2), .ts-dropdown .option:nth-child(2) { animation-delay: 0.06s !important; }
+.select-spring-menu .select-spring-item:nth-child(3), .ts-dropdown .option:nth-child(3) { animation-delay: 0.09s !important; }
+.select-spring-menu .select-spring-item:nth-child(4), .ts-dropdown .option:nth-child(4) { animation-delay: 0.12s !important; }
+.select-spring-menu .select-spring-item:nth-child(5), .ts-dropdown .option:nth-child(5) { animation-delay: 0.15s !important; }
+.select-spring-menu .select-spring-item:nth-child(6), .ts-dropdown .option:nth-child(6) { animation-delay: 0.18s !important; }
+.select-spring-menu .select-spring-item:nth-child(7), .ts-dropdown .option:nth-child(7) { animation-delay: 0.21s !important; }
+.select-spring-menu .select-spring-item:nth-child(8), .ts-dropdown .option:nth-child(8) { animation-delay: 0.24s !important; }
+
+/* Botones disparadores y selectores nativos */
+.select-spring-trigger {
+  transition: all 0.28s var(--select-cubic-out) !important;
+}
+.select-spring-trigger:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(30, 58, 138, 0.08);
+}
+.select-spring-trigger:active {
+  transform: scale(0.98);
+}
+
+select {
+  transition: all 0.28s var(--select-cubic-out) !important;
+}
+select:hover {
+  border-color: #3b82f6 !important;
+}
+select:focus {
+  transform: scale(1.01) !important;
+  border-color: #2563eb !important;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.18) !important;
+}
+select:active {
+  transform: scale(0.99) !important;
+}
+

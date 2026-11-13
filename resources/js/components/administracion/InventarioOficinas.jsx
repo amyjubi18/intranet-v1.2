@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import Swal from 'sweetalert2';
 import { downloadWithProgress } from '../../utils/downloadWithProgress';
+import CameraScannerModal from '../ui/CameraScannerModal';
 
 /**
  * Selector buscable interactivo con autocompletado y diseño Tailwind
@@ -61,7 +62,7 @@ function SearchableSelect({
             <button
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
-                className="w-full flex items-center justify-between gap-2 px-3 py-2 bg-blue-100/70 hover:bg-blue-100 text-slate-800 text-xs font-semibold rounded-xl border border-white/20 transition-all text-left shadow-2xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
+                className="select-spring-trigger w-full flex items-center justify-between gap-2 px-3 py-2 bg-blue-100/70 hover:bg-blue-100 text-slate-800 text-xs font-semibold rounded-xl border border-white/20 transition-all text-left shadow-2xs focus:ring-2 focus:ring-blue-600 focus:outline-none"
             >
                 <div className="flex items-center gap-1.5 truncate">
                     <span className="text-xs opacity-70">{icon}</span>
@@ -82,12 +83,12 @@ function SearchableSelect({
                             ✕
                         </span>
                     ) : null}
-                    <span className="text-[10px] text-slate-500">▼</span>
+                    <span className={`text-[10px] text-slate-500 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`}>▼</span>
                 </div>
             </button>
 
             {isOpen && (
-                <div className="absolute z-[100] left-0 mt-1 w-full min-w-[240px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2 animate-fadeIn ring-1 ring-black/5">
+                <div className="select-spring-menu absolute z-[100] left-0 mt-1 w-full min-w-[240px] bg-white border border-slate-200 rounded-2xl shadow-2xl p-2.5 ring-1 ring-black/5">
                     <div className="relative mb-2">
                         <input
                             type="text"
@@ -95,20 +96,20 @@ function SearchableSelect({
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
                             placeholder="Buscar en la lista..."
-                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-slate-50 rounded-lg border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none"
+                            className="w-full pl-7 pr-3 py-1.5 text-xs bg-slate-50 rounded-xl border border-slate-200 focus:border-blue-500 focus:bg-white focus:outline-none transition-all"
                         />
-                        <span className="absolute left-2 top-1.5 text-xs text-slate-400">🔍</span>
+                        <span className="absolute left-2.5 top-1.5 text-xs text-slate-400">🔍</span>
                     </div>
 
-                    <div className="max-h-48 overflow-y-auto space-y-0.5 text-xs">
+                    <div className="max-h-48 overflow-y-auto space-y-1 text-xs pr-0.5">
                         <div
                             onClick={() => {
                                 onChange('');
                                 setIsOpen(false);
                                 setSearch('');
                             }}
-                            className={`px-3 py-2 rounded-lg cursor-pointer font-medium transition-colors ${
-                                !value ? 'bg-blue-900 text-white font-bold' : 'text-slate-600 hover:bg-blue-50'
+                            className={`select-spring-item px-3 py-2 rounded-xl cursor-pointer font-medium transition-all ${
+                                !value ? 'bg-blue-900 text-white font-bold shadow-xs' : 'text-slate-600 hover:bg-blue-50'
                             }`}
                         >
                             {allLabel}
@@ -119,7 +120,7 @@ function SearchableSelect({
                                 Sin coincidencias
                             </div>
                         ) : (
-                            filtered.map((opt) => {
+                            filtered.map((opt, idx) => {
                                 const isSelected = String(opt.id) === String(value);
                                 return (
                                     <div
@@ -129,14 +130,15 @@ function SearchableSelect({
                                             setIsOpen(false);
                                             setSearch('');
                                         }}
-                                        className={`px-3 py-1.5 rounded-lg cursor-pointer transition-colors truncate flex items-center justify-between ${
+                                        style={{ animationDelay: `${Math.min((idx + 1) * 35, 300)}ms` }}
+                                        className={`select-spring-item px-3 py-2 rounded-xl cursor-pointer transition-all truncate flex items-center justify-between ${
                                             isSelected
-                                                ? 'bg-blue-900 text-white font-bold'
+                                                ? 'bg-blue-900 text-white font-bold shadow-xs'
                                                 : 'text-slate-700 hover:bg-blue-50 hover:text-blue-900'
                                         }`}
                                     >
                                         <span className="truncate">{opt.label}</span>
-                                        {isSelected && <span className="ml-1 text-xs">✓</span>}
+                                        {isSelected && <span className="ml-1 text-xs font-bold text-white">✓</span>}
                                     </div>
                                 );
                             })
@@ -247,6 +249,27 @@ export default function InventarioOficinas() {
 
     // Selección múltiple
     const [selectedIds, setSelectedIds] = useState([]);
+
+    // Estado del modal de Crear / Editar
+    const [modalOpen, setModalOpen] = useState(false);
+    const [modalMode, setModalMode] = useState('create'); // 'create' | 'edit'
+    const [selectedInventario, setSelectedInventario] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
+    const [formData, setFormData] = useState({
+        fecha_ingreso: new Date().toISOString().split('T')[0],
+        articulo_id: '',
+        unidad_medida_id: '',
+        proveedore_id: '',
+        ubicacion_id: '',
+        unidades: '',
+        n_factura: ''
+    });
+    const [formErrors, setFormErrors] = useState({});
+
+    // Estado del scanner de cámara
+    const [cameraModalOpen, setCameraModalOpen] = useState(false);
+    const [cameraModalTitle, setCameraModalTitle] = useState('Escanear con Cámara');
+    const [cameraTargetField, setCameraTargetField] = useState('n_factura');
 
     // Opciones formateadas para los SearchableSelect
     const proveedoresOptions = useMemo(() => {
@@ -408,6 +431,176 @@ export default function InventarioOficinas() {
 
     const toggleSelect = (id) => {
         setSelectedIds(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    };
+
+    // Handlers para el modal de Crear y Editar
+    const handleOpenCreate = () => {
+        setFormData({
+            fecha_ingreso: new Date().toISOString().split('T')[0],
+            articulo_id: '',
+            unidad_medida_id: '',
+            proveedore_id: '',
+            ubicacion_id: '',
+            unidades: '',
+            n_factura: ''
+        });
+        setFormErrors({});
+        setSelectedInventario(null);
+        setModalMode('create');
+        setModalOpen(true);
+    };
+
+    const handleOpenEdit = (item) => {
+        setSelectedInventario(item);
+        setFormData({
+            fecha_ingreso: item.fecha_ingreso ? item.fecha_ingreso.split('T')[0] : new Date().toISOString().split('T')[0],
+            articulo_id: item.articulo_id ? String(item.articulo_id) : '',
+            unidad_medida_id: item.unidad_medida_id ? String(item.unidad_medida_id) : '',
+            proveedore_id: item.proveedore_id ? String(item.proveedore_id) : '',
+            ubicacion_id: item.ubicacion_id ? String(item.ubicacion_id) : '',
+            unidades: item.unidades !== undefined && item.unidades !== null ? String(item.unidades) : '',
+            n_factura: item.n_factura || ''
+        });
+        setFormErrors({});
+        setModalMode('edit');
+        setModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        if (submitting) return;
+        setModalOpen(false);
+        setSelectedInventario(null);
+        setFormErrors({});
+    };
+
+    const handleFormChange = (field, value) => {
+        setFormData(prev => ({ ...prev, [field]: value }));
+        if (formErrors[field]) {
+            setFormErrors(prev => {
+                const next = { ...prev };
+                delete next[field];
+                return next;
+            });
+        }
+    };
+
+    const handleArticuloChange = (artId) => {
+        const selectedArt = (catalogs.articulos || []).find(a => String(a.id) === String(artId));
+        setFormData(prev => ({
+            ...prev,
+            articulo_id: artId,
+            unidad_medida_id: (selectedArt && selectedArt.unidad_medida_id)
+                ? String(selectedArt.unidad_medida_id)
+                : prev.unidad_medida_id
+        }));
+        if (formErrors.articulo_id) {
+            setFormErrors(prev => {
+                const next = { ...prev };
+                delete next.articulo_id;
+                return next;
+            });
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setSubmitting(true);
+        setFormErrors({});
+
+        try {
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const url = modalMode === 'create'
+                ? '/administracion/inventario_oficinas'
+                : `/administracion/inventario_oficinas/${selectedInventario.id}`;
+            const method = modalMode === 'create' ? 'POST' : 'PUT';
+
+            const payload = {
+                fecha_ingreso: formData.fecha_ingreso,
+                articulo_id: formData.articulo_id,
+                unidad_medida_id: formData.unidad_medida_id,
+                proveedore_id: formData.proveedore_id,
+                ubicacion_id: formData.ubicacion_id || null,
+                unidades: formData.unidades,
+                n_factura: formData.n_factura
+            };
+
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const data = await response.json().catch(() => ({}));
+
+            if (!response.ok) {
+                if (response.status === 422 && data.errors) {
+                    setFormErrors(data.errors);
+                    Swal.fire({
+                        icon: 'warning',
+                        title: 'Campos requeridos',
+                        text: 'Por favor, revise los campos marcados en el formulario.',
+                        confirmButtonColor: '#1e3a8a'
+                    });
+                    return;
+                }
+                throw new Error(data.message || 'Error al procesar la solicitud');
+            }
+
+            await Swal.fire({
+                icon: 'success',
+                title: modalMode === 'create' ? '¡Registrado!' : '¡Actualizado!',
+                text: data.message || (modalMode === 'create' ? 'Registro creado correctamente' : 'Registro actualizado correctamente'),
+                timer: 2000,
+                showConfirmButton: false
+            });
+
+            setModalOpen(false);
+            fetchInventario(pagination.current_page);
+        } catch (err) {
+            console.error('Error submitting form:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.message || 'Ocurrió un error inesperado al guardar.',
+                confirmButtonColor: '#1e3a8a'
+            });
+        } finally {
+            setSubmitting(false);
+        }
+    };
+
+    const openCameraScanner = (field, title) => {
+        setCameraTargetField(field);
+        setCameraModalTitle(title || 'Escanear con Cámara');
+        setCameraModalOpen(true);
+    };
+
+    const handleCameraScanSuccess = (decodedText, field) => {
+        const target = field || cameraTargetField;
+        if (target) {
+            setFormData(prev => ({ ...prev, [target]: decodedText }));
+            if (formErrors[target]) {
+                setFormErrors(prev => {
+                    const next = { ...prev };
+                    delete next[target];
+                    return next;
+                });
+            }
+        }
+        Swal.fire({
+            icon: 'success',
+            title: '¡Código detectado!',
+            text: `Se leyó correctamente: ${decodedText}`,
+            timer: 1500,
+            showConfirmButton: false,
+            toast: true,
+            position: 'top-end'
+        });
     };
 
     const handleDeleteSingle = async (item) => {
@@ -799,13 +992,14 @@ export default function InventarioOficinas() {
                                 )}
 
                                 {permissions.can_create && (
-                                    <a
-                                        href="/administracion/inventario_oficinas/create"
-                                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs"
+                                    <button
+                                        type="button"
+                                        onClick={handleOpenCreate}
+                                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs cursor-pointer"
                                     >
                                         <span>➕</span>
                                         <span>Nuevo Registro</span>
-                                    </a>
+                                    </button>
                                 )}
                             </div>
                         </div>
@@ -1194,13 +1388,14 @@ export default function InventarioOficinas() {
                                                         {/* Botones de acción */}
                                                         <div className="flex flex-wrap justify-start md:justify-end gap-2 mt-3">
                                                             {permissions.can_edit && (
-                                                                <a
-                                                                    href={`/administracion/inventario_oficinas/${singleItem.id}/edit`}
-                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold bg-green-600 text-white hover:bg-green-700 text-xs transition-colors shadow-xs"
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => handleOpenEdit(singleItem)}
+                                                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl font-semibold bg-green-600 text-white hover:bg-green-700 text-xs transition-colors shadow-xs cursor-pointer"
                                                                 >
                                                                     <span>✏️</span>
                                                                     <span>Editar</span>
-                                                                </a>
+                                                                </button>
                                                             )}
 
                                                             {permissions.can_destroy && (
@@ -1257,6 +1452,243 @@ export default function InventarioOficinas() {
                     </div>
                 </div>
             )}
+
+            {/* Modal de Crear / Editar Inventario de Oficina */}
+            {modalOpen && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-2xl max-w-3xl w-full my-8 p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-modal-expand">
+                        {/* Cabecera del modal */}
+                        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
+                            <div>
+                                <h3 className="text-2xl font-bold text-slate-800">
+                                    {modalMode === 'create' ? 'Registrar Ingreso de Inventario' : 'Editar Inventario de Oficina'}
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    {modalMode === 'create'
+                                        ? 'Completa los datos para registrar un nuevo ingreso de artículo en inventario'
+                                        : `Actualizar información del registro (Factura: ${formData.n_factura || 'S/N'})`}
+                                </p>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={handleCloseModal}
+                                disabled={submitting}
+                                className="modal-close-btn"
+                                title="Cerrar modal"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Formulario */}
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            {/* Fila 1: Fecha de Factura / Ingreso y Número de Factura */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Fecha de Factura / Ingreso: <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        value={formData.fecha_ingreso}
+                                        onChange={(e) => handleFormChange('fecha_ingreso', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.fecha_ingreso && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.fecha_ingreso[0]}</p>}
+                                </div>
+                                <div>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <label className="text-sm font-semibold text-slate-800">
+                                            Número de Factura: <span className="text-red-500">*</span>
+                                        </label>
+                                        <button
+                                            type="button"
+                                            onClick={() => openCameraScanner('n_factura', 'Escanear N° de Factura con Cámara')}
+                                            className="text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                            title="Escanear número de factura con la cámara"
+                                        >
+                                            <span>📷</span>
+                                            <span>Escanear</span>
+                                        </button>
+                                    </div>
+                                    <input
+                                        type="text"
+                                        value={formData.n_factura}
+                                        onChange={(e) => handleFormChange('n_factura', e.target.value)}
+                                        placeholder="Ej: F001-123456"
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
+                                        required
+                                        disabled={submitting}
+                                    />
+                                    {formErrors.n_factura && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.n_factura[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 2: Artículo y Unidad de Medida */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Artículo: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.articulo_id}
+                                        onChange={(e) => handleArticuloChange(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione un Artículo</option>
+                                        {(catalogs.articulos || []).map((art) => (
+                                            <option key={art.id} value={art.id}>
+                                                {String(art.id).padStart(4, '0')} - {art.articulo}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formErrors.articulo_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.articulo_id[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Unidad de Medida: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.unidad_medida_id}
+                                        onChange={(e) => handleFormChange('unidad_medida_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Unidad de Medida</option>
+                                        {(catalogs.unidad_medidas || []).map((u) => (
+                                            <option key={u.id} value={u.id}>
+                                                {u.unidad_medida}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formErrors.unidad_medida_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.unidad_medida_id[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 3: Proveedor y Ubicación */}
+                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Proveedor: <span className="text-red-500">*</span>
+                                    </label>
+                                    <select
+                                        value={formData.proveedore_id}
+                                        onChange={(e) => handleFormChange('proveedore_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        required
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Proveedor</option>
+                                        {(catalogs.proveedores || []).map((p) => (
+                                            <option key={p.id} value={p.id}>
+                                                {p.proveedor}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formErrors.proveedore_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.proveedore_id[0]}</p>}
+                                </div>
+                                <div>
+                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                        Ubicación:
+                                    </label>
+                                    <select
+                                        value={formData.ubicacion_id}
+                                        onChange={(e) => handleFormChange('ubicacion_id', e.target.value)}
+                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        disabled={submitting}
+                                    >
+                                        <option value="">Seleccione Ubicación (Opcional)</option>
+                                        {(catalogs.ubicaciones || []).map((ub) => (
+                                            <option key={ub.id} value={ub.id}>
+                                                {ub.ubicacion}
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {formErrors.ubicacion_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.ubicacion_id[0]}</p>}
+                                </div>
+                            </div>
+
+                            {/* Fila 4: Cantidad / Unidades */}
+                            <div>
+                                <label className="block mb-1 text-sm font-semibold text-slate-800">
+                                    Cantidad / Unidades: <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    step="1"
+                                    value={formData.unidades}
+                                    onChange={(e) => handleFormChange('unidades', e.target.value)}
+                                    placeholder="Ej: 50"
+                                    className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                    required
+                                    disabled={submitting}
+                                />
+                                {formErrors.unidades && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.unidades[0]}</p>}
+                            </div>
+
+                            {/* Botones de acción inferiores (Diseño exacto de bienes_publicos) */}
+                            <div className="flex items-center justify-between gap-4 pt-6 mt-6 border-t border-slate-200">
+                                <button
+                                    type="button"
+                                    onClick={handleCloseModal}
+                                    disabled={submitting}
+                                    className="btn-save inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all duration-300 disabled:opacity-60 text-sm hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer shadow-md"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1 fill-white" viewBox="0 0 24 24">
+                                        <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path>
+                                    </svg>
+                                    <span>Regresar</span>
+                                </button>
+
+                                <button
+                                    type="submit"
+                                    disabled={submitting}
+                                    className="btn-save inline-flex items-center justify-center gap-2 px-8 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
+                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                    }}
+                                >
+                                    {submitting ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <span>Guardando...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1" viewBox="0 0 24 24" style={{ fill: 'rgba(255, 255, 255, 1)' }}>
+                                                <path d="M5 21h14a2 2 0 0 0 2-2V8a1 1 0 0 0-.29-.71l-4-4A1 1 0 0 0 16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2zm10-2H9v-5h6zM13 7h-2V5h2zM5 5h2v4h8V5h.59L19 8.41V19h-2v-5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5H5z"></path>
+                                            </svg>
+                                            <span>{modalMode === 'create' ? 'Guardar Registro' : 'Actualizar Registro'}</span>
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Modal de Escaneo en Vivo con Cámara */}
+            <CameraScannerModal
+                isOpen={cameraModalOpen}
+                onClose={() => setCameraModalOpen(false)}
+                onScan={handleCameraScanSuccess}
+                title={cameraModalTitle}
+                subtitle="Apunta la cámara al código de barras o código QR"
+                allowedFields={['n_factura']}
+                defaultTargetField={cameraTargetField}
+            />
         </div>
     );
 }

@@ -238,8 +238,9 @@ case 'busqueda':
             ->first();
 
         $proveedores = Proveedore::all();
-        $articulos = Articulo::all();
+        $articulos = Articulo::with('unidad_medida')->get();
         $unidad_medidas = UnidadMedida::all();
+        $ubicaciones = Ubicacion::all();
         $facturas = InventarioOficina::distinct()->pluck('n_factura')->filter()->sort()->values();
 
         if ($request->wantsJson() || $request->is('api/*')) {
@@ -261,6 +262,7 @@ case 'busqueda':
                         'proveedores' => $proveedores,
                         'articulos' => $articulos,
                         'unidad_medidas' => $unidad_medidas,
+                        'ubicaciones' => $ubicaciones,
                         'facturas' => $facturas,
                     ],
                     'permissions' => [
@@ -289,6 +291,7 @@ case 'busqueda':
             'proveedores',
             'articulos',
             'unidad_medidas',
+            'ubicaciones',
             'facturas',
         ));
     }
@@ -306,6 +309,44 @@ case 'busqueda':
 
     public function store(Request $request)
     {
+        abort_if(Gate::denies('inventarioofic_create'), 403);
+
+        // Soporte para registro individual (desde Modal React)
+        if (!is_array($request->fecha_ingreso)) {
+            $request->validate([
+                'fecha_ingreso' => 'required|date',
+                'unidad_medida_id' => 'required',
+                'articulo_id' => 'required',
+                'proveedore_id' => 'required',
+                'unidades' => 'required|numeric|min:1',
+                'n_factura' => 'required|string',
+                'ubicacion_id' => 'nullable',
+            ]);
+
+            $inventario_oficina = new InventarioOficina;
+            $inventario_oficina->fecha_ingreso = $request->input('fecha_ingreso');
+            $inventario_oficina->unidad_medida_id = $request->input('unidad_medida_id');
+            $inventario_oficina->articulo_id = $request->input('articulo_id');
+            $inventario_oficina->proveedore_id = $request->input('proveedore_id');
+            $inventario_oficina->ubicacion_id = $request->input('ubicacion_id') ?: null;
+            $inventario_oficina->unidades = $request->input('unidades');
+            $inventario_oficina->unidades_disponibles = $request->input('unidades');
+            $inventario_oficina->n_factura = $request->input('n_factura');
+            $inventario_oficina->user_id = auth()->id();
+            $inventario_oficina->save();
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Registro de inventario creado exitosamente',
+                    'data' => $inventario_oficina
+                ], 201);
+            }
+
+            return redirect()->route('administracion.inventario_oficinas.index')->with('datos', "Registro guardado exitosamente");
+        }
+
+        // Modo lote original (compatibilidad)
         $request->validate([
             'fecha_ingreso' =>'required|array',
             'unidad_medida_id' => 'required|array',
@@ -334,8 +375,20 @@ case 'busqueda':
         }
 
         if ($count > 0) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Se guardaron {$count} registro(s) exitosamente"
+                ], 201);
+            }
             return redirect()->route('administracion.inventario_oficinas.index')->with('datos', "Se guardaron {$count} registro(s) exitosamente");
         } else {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pudo guardar ningún registro'
+                ], 422);
+            }
             return redirect()->back()->with('error', 'No se pudo guardar ningún registro');
         }
     }
@@ -360,23 +413,43 @@ case 'busqueda':
 
     public function update(Request $request, $id)
     {
+        abort_if(Gate::denies('inventarioofic_edit'), 403);
         $request->validate([
-            'fecha_ingreso' =>'required|date|before_or_equal:today',
+            'fecha_ingreso' =>'required|date',
             'unidad_medida_id' => 'required',
             'articulo_id' => 'required',
             'proveedore_id' => 'required',
-            'unidades' => 'required|integer|min:1',
-            'n_factura' => 'required',
+            'unidades' => 'required|numeric|min:1',
+            'n_factura' => 'required|string',
+            'ubicacion_id' => 'nullable',
         ]);
-        $inventario_oficina = InventarioOficina::find($id);
+        $inventario_oficina = InventarioOficina::findOrFail($id);
+
+        $oldUnidades = (int)$inventario_oficina->unidades;
+        $newUnidades = (int)$request->input('unidades');
+        $diff = $newUnidades - $oldUnidades;
+        $newDisponibles = max(0, ((int)$inventario_oficina->unidades_disponibles) + $diff);
+
         $inventario_oficina->fecha_ingreso = $request->input('fecha_ingreso');
         $inventario_oficina->unidad_medida_id = $request->input('unidad_medida_id');
         $inventario_oficina->articulo_id = $request->input('articulo_id');
         $inventario_oficina->proveedore_id = $request->input('proveedore_id');
+        if ($request->has('ubicacion_id')) {
+            $inventario_oficina->ubicacion_id = $request->input('ubicacion_id') ?: null;
+        }
         $inventario_oficina->n_factura = $request->input('n_factura');
-        $inventario_oficina->unidades = $request->input('unidades');
+        $inventario_oficina->unidades = $newUnidades;
+        $inventario_oficina->unidades_disponibles = $newDisponibles;
         $inventario_oficina->user_id = auth()->id();
         $inventario_oficina->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Registro actualizado correctamente',
+                'data' => $inventario_oficina
+            ]);
+        }
 
         return redirect()->route('administracion.inventario_oficinas.index', $inventario_oficina->id)->with('success', 'Registro actualizado correctamente');
     }
@@ -385,7 +458,14 @@ case 'busqueda':
     {
         abort_if(Gate::denies('inventarioofic_destroy'), 403);
         $inventario_oficina = InventarioOficina::find($id);
-        $inventario_oficina->delete();
+        if ($inventario_oficina) {
+            $inventario_oficina->delete();
+        }
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Registro eliminado correctamente']);
+        }
+
         return redirect()->route('administracion.inventario_oficinas.index')->with('success', 'Registro eliminado correctamente');
     }
 
