@@ -15,7 +15,6 @@ export default function ArticulosManagement() {
     const [error, setError] = useState(null);
     const [search, setSearch] = useState('');
     const [unidadMedidaFilter, setUnidadMedidaFilter] = useState('');
-    const [sortField, setSortField] = useState('articulo'); // 'articulo' | 'id'
     const [sortDirection, setSortDirection] = useState('asc');
     const [permissions, setPermissions] = useState({
         can_create: true,
@@ -54,11 +53,14 @@ export default function ArticulosManagement() {
         try {
             const params = new URLSearchParams({
                 page: page,
-                sort: sortField,
+                sort: 'articulo',
                 direction: sortDirection
             });
             if (search.trim()) params.append('search', search.trim());
-            if (unidadMedidaFilter) params.append('unidad_medida_id', unidadMedidaFilter);
+            if (unidadMedidaFilter) {
+                params.append('unidad_medida_id', unidadMedidaFilter);
+                params.append('unidad', unidadMedidaFilter);
+            }
 
             const res = await fetch(`/administracion/articulos?${params.toString()}`, {
                 headers: {
@@ -99,24 +101,14 @@ export default function ArticulosManagement() {
         } finally {
             setLoading(false);
         }
-    }, [search, unidadMedidaFilter, sortField, sortDirection]);
+    }, [search, unidadMedidaFilter, sortDirection]);
 
     useEffect(() => {
         const timer = setTimeout(() => {
             fetchArticulos(1);
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, unidadMedidaFilter, sortField, sortDirection, fetchArticulos]);
-
-    // Alternar orden
-    const toggleSort = (field) => {
-        if (sortField === field) {
-            setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc');
-        } else {
-            setSortField(field);
-            setSortDirection('asc');
-        }
-    };
+    }, [search, unidadMedidaFilter, sortDirection, fetchArticulos]);
 
     // Abrir modal de creación
     const handleOpenCreate = () => {
@@ -328,23 +320,11 @@ export default function ArticulosManagement() {
                                 <span className="text-xs text-gray-500">Ordenar por:</span>
                                 <button
                                     type="button"
-                                    onClick={() => toggleSort('articulo')}
-                                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold transition-colors cursor-pointer ${
-                                        sortField === 'articulo' ? 'bg-blue-100 text-blue-900 hover:bg-blue-200' : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
+                                    onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold bg-blue-100 text-blue-900 hover:bg-blue-200 transition-colors cursor-pointer"
                                 >
                                     <span>Artículo</span>
-                                    <span>{sortField === 'articulo' ? (sortDirection === 'asc' ? '⬆️' : '⬇️') : '⇅'}</span>
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => toggleSort('id')}
-                                    className={`inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold transition-colors cursor-pointer ${
-                                        sortField === 'id' ? 'bg-blue-100 text-blue-900 hover:bg-blue-200' : 'text-gray-600 hover:bg-gray-100'
-                                    }`}
-                                >
-                                    <span>ITEM</span>
-                                    <span>{sortField === 'id' ? (sortDirection === 'asc' ? '⬆️' : '⬇️') : '⇅'}</span>
+                                    <span>{sortDirection === 'asc' ? '⬆️' : '⬇️'}</span>
                                 </button>
                             </div>
                         </div>
@@ -395,30 +375,31 @@ export default function ArticulosManagement() {
                                 key={art.id}
                                 className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 hover:scale-[1.01] transition-transform shadow-xs"
                             >
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
-                                    {/* ID / ITEM */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center justify-between">
+                                    {/* Artículo */}
                                     <div className="text-center lg:text-left">
-                                        <p className="text-xs text-blue-900 font-semibold mb-1">ITEM</p>
-                                        <p className="text-2xl font-bold text-blue-400">
-                                            {String(art.id).padStart(4, '0')}
+                                        <p className="text-xs text-blue-900 font-semibold mb-1">
+                                            📄 Artículo <span className="text-blue-500 font-bold ml-1">({String(art.id).padStart(4, '0')})</span>
+                                        </p>
+                                        <p className="font-semibold text-lg text-black w-fit p-2 rounded-lg">
+                                            {art.articulo}
                                         </p>
                                     </div>
 
-                                    {/* Artículo y Unidad de Medida */}
+                                    {/* Unidad de Medida (casada) */}
                                     <div className="text-center lg:text-left">
-                                        <p className="text-xs text-blue-900 font-semibold mb-1">📄 Artículo</p>
-                                        <p className="font-semibold text-lg text-slate-800 mb-2">{art.articulo}</p>
-                                        <p className="text-xs text-blue-900 font-semibold mb-1">Unidad de Medida</p>
-                                        <p className="text-sm px-2.5 py-1 rounded-full bg-blue-50 text-blue-800 border border-blue-200 inline-block font-medium">
-                                            {art.unidad_medida?.unidad_medida || 'N/A'}
+                                        <p className="text-xs text-green-900 font-semibold mb-1">📏 Unidad de Medida</p>
+                                        <p className="font-semibold text-lg text-black w-fit p-2 rounded-lg">
+                                            {art.unidad_medida?.unidad_medida || 'Sin unidad'}
+                                        </p>
+                                        <p className="text-xs text-slate-500 font-semibold px-2">
+                                            Stock Mínimo: <span className="text-blue-800">{art.stock_min}</span>
                                         </p>
                                     </div>
 
-                                    {/* Stock Mínimo y Acciones */}
+                                    {/* Acciones */}
                                     <div className="text-center lg:text-left">
-                                        <p className="text-xs text-blue-900 font-semibold mb-1">Stock Mínimo</p>
-                                        <p className="font-semibold text-lg text-slate-800 mb-2">{art.stock_min}</p>
-                                        <div className="flex justify-center lg:justify-start gap-2">
+                                        <div className="flex justify-center gap-2 lg:justify-start">
                                             {permissions.can_edit && (
                                                 <button
                                                     type="button"

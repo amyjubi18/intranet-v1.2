@@ -56,7 +56,10 @@ export default function GerenciasManagement() {
                 direction: sortDirection
             });
             if (search.trim()) params.append('search', search.trim());
-            if (areaFilter) params.append('area', areaFilter);
+            if (areaFilter) {
+                params.append('area', areaFilter);
+                params.append('area_id', areaFilter);
+            }
 
             const res = await fetch(`/administracion/gerencias?${params.toString()}`, {
                 headers: {
