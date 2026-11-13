@@ -13,7 +13,10 @@ function SearchableSelect({
     onChange,
     placeholder = 'Seleccionar...',
     allLabel = 'Todos',
-    icon = '📋'
+    icon = '📋',
+    disabled = false,
+    error = null,
+    required = false
 }) {
     const [isOpen, setIsOpen] = useState(false);
     const [search, setSearch] = useState('');
@@ -292,6 +295,13 @@ export default function InventarioOficinas() {
             label: u.unidad_medida
         }));
     }, [catalogs.unidad_medidas]);
+
+    const ubicacionesOptions = useMemo(() => {
+        return (catalogs.ubicaciones || []).map(ub => ({
+            id: ub.id,
+            label: ub.ubicacion
+        }));
+    }, [catalogs.ubicaciones]);
 
     const facturasOptions = useMemo(() => {
         return (catalogs.facturas || []).map(f => ({
@@ -1477,27 +1487,42 @@ export default function InventarioOficinas() {
                 </div>
             )}
 
-            {/* Modal de Crear / Editar Inventario de Oficina */}
+            {/* Modal de Crear / Editar Inventario de Oficina (Diseño moderno con degradado corporativo y SearchableSelect) */}
             {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
-                    <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-2xl max-w-3xl w-full my-8 p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-modal-expand">
-                        {/* Cabecera del modal */}
-                        <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
+                <div
+                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !submitting) {
+                            handleCloseModal();
+                        }
+                    }}
+                >
+                    <div
+                        className="modal-content animate-modal-expand bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        {/* Cabecera del modal con degradado corporativo */}
+                        <div
+                            className="p-5 sm:p-6 text-white rounded-t-3xl flex items-center justify-between relative overflow-hidden"
+                            style={{
+                                background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
+                            }}
+                        >
                             <div>
-                                <h3 className="text-2xl font-bold text-slate-800">
+                                <h3 className="text-lg sm:text-xl font-black tracking-tight">
                                     {modalMode === 'create' ? 'Registrar Ingreso de Inventario' : 'Editar Inventario de Oficina'}
                                 </h3>
-                                <p className="text-xs text-slate-500 mt-0.5">
+                                <p className="text-xs text-blue-100 mt-0.5">
                                     {modalMode === 'create'
                                         ? 'Completa los datos para registrar un nuevo ingreso de artículo en inventario'
-                                        : `Actualizar información del registro (Factura: ${formData.n_factura || 'S/N'})`}
+                                        : `Actualizando factura #${formData.n_factura || 'S/N'}`}
                                 </p>
                             </div>
                             <button
                                 type="button"
-                                onClick={handleCloseModal}
                                 disabled={submitting}
-                                className="modal-close-btn"
+                                onClick={handleCloseModal}
+                                className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
                                 title="Cerrar modal"
                             >
                                 ✕
@@ -1505,32 +1530,37 @@ export default function InventarioOficinas() {
                         </div>
 
                         {/* Formulario */}
-                        <form onSubmit={handleSubmit} className="space-y-4">
-                            {/* Fila 1: Fecha de Factura / Ingreso y Número de Factura */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <form onSubmit={handleSubmit} className="p-5 sm:p-6 space-y-4">
+                            {/* Fila 1: Fecha de Factura y Número de Factura */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        Fecha de Factura / Ingreso: <span className="text-red-500">*</span>
+                                    <label className="block text-xs font-bold text-blue-900 mb-1">
+                                        📅 Fecha de Factura / Ingreso <span className="text-red-500">*</span>
                                     </label>
                                     <input
                                         type="date"
                                         value={formData.fecha_ingreso}
                                         onChange={(e) => handleFormChange('fecha_ingreso', e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        className={`w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all ${
+                                            formErrors.fecha_ingreso ? 'border-red-400 bg-red-50' : 'border-white/20'
+                                        }`}
                                         required
                                         disabled={submitting}
                                     />
-                                    {formErrors.fecha_ingreso && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.fecha_ingreso[0]}</p>}
+                                    {formErrors.fecha_ingreso && (
+                                        <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.fecha_ingreso[0] || formErrors.fecha_ingreso}</p>
+                                    )}
                                 </div>
+
                                 <div>
                                     <div className="flex items-center justify-between mb-1">
-                                        <label className="text-sm font-semibold text-slate-800">
-                                            Número de Factura: <span className="text-red-500">*</span>
+                                        <label className="block text-xs font-bold text-blue-900">
+                                            📄 Número de Factura <span className="text-red-500">*</span>
                                         </label>
                                         <button
                                             type="button"
                                             onClick={() => openCameraScanner('n_factura', 'Escanear N° de Factura con Cámara')}
-                                            className="text-[11px] font-bold text-blue-900 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
+                                            className="text-[10px] font-bold text-blue-900 hover:text-blue-700 bg-blue-100 hover:bg-blue-200 border border-blue-200 px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer"
                                             title="Escanear número de factura con la cámara"
                                         >
                                             <span>📷</span>
@@ -1542,24 +1572,30 @@ export default function InventarioOficinas() {
                                         value={formData.n_factura}
                                         onChange={(e) => handleFormChange('n_factura', e.target.value)}
                                         placeholder="Ej: F001-123456"
-                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono"
+                                        className={`w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 font-mono transition-all ${
+                                            formErrors.n_factura ? 'border-red-400 bg-red-50' : 'border-white/20'
+                                        }`}
                                         required
                                         disabled={submitting}
                                     />
-                                    {formErrors.n_factura && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.n_factura[0]}</p>}
+                                    {formErrors.n_factura && (
+                                        <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.n_factura[0] || formErrors.n_factura}</p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Fila 2: Artículo y Unidad de Medida */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        Artículo: <span className="text-red-500">*</span>
+                                    <label className="block text-xs font-bold text-blue-900 mb-1">
+                                        📦 Artículo <span className="text-red-500">*</span>
                                     </label>
                                     <select
                                         value={formData.articulo_id}
                                         onChange={(e) => handleArticuloChange(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        className={`w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all ${
+                                            formErrors.articulo_id ? 'border-red-400 bg-red-50' : 'border-white/20'
+                                        }`}
                                         required
                                         disabled={submitting}
                                     >
@@ -1570,16 +1606,21 @@ export default function InventarioOficinas() {
                                             </option>
                                         ))}
                                     </select>
-                                    {formErrors.articulo_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.articulo_id[0]}</p>}
+                                    {formErrors.articulo_id && (
+                                        <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.articulo_id[0] || formErrors.articulo_id}</p>
+                                    )}
                                 </div>
+
                                 <div>
-                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        Unidad de Medida: <span className="text-red-500">*</span>
+                                    <label className="block text-xs font-bold text-blue-900 mb-1">
+                                        📏 Unidad de Medida <span className="text-red-500">*</span>
                                     </label>
                                     <select
                                         value={formData.unidad_medida_id}
                                         onChange={(e) => handleFormChange('unidad_medida_id', e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        className={`w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all ${
+                                            formErrors.unidad_medida_id ? 'border-red-400 bg-red-50' : 'border-white/20'
+                                        }`}
                                         required
                                         disabled={submitting}
                                     >
@@ -1590,20 +1631,24 @@ export default function InventarioOficinas() {
                                             </option>
                                         ))}
                                     </select>
-                                    {formErrors.unidad_medida_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.unidad_medida_id[0]}</p>}
+                                    {formErrors.unidad_medida_id && (
+                                        <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.unidad_medida_id[0] || formErrors.unidad_medida_id}</p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Fila 3: Proveedor y Ubicación */}
-                            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
-                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        Proveedor: <span className="text-red-500">*</span>
+                                    <label className="block text-xs font-bold text-blue-900 mb-1">
+                                        🏭 Proveedor <span className="text-red-500">*</span>
                                     </label>
                                     <select
                                         value={formData.proveedore_id}
                                         onChange={(e) => handleFormChange('proveedore_id', e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        className={`w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all ${
+                                            formErrors.proveedore_id ? 'border-red-400 bg-red-50' : 'border-white/20'
+                                        }`}
                                         required
                                         disabled={submitting}
                                     >
@@ -1614,16 +1659,21 @@ export default function InventarioOficinas() {
                                             </option>
                                         ))}
                                     </select>
-                                    {formErrors.proveedore_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.proveedore_id[0]}</p>}
+                                    {formErrors.proveedore_id && (
+                                        <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.proveedore_id[0] || formErrors.proveedore_id}</p>
+                                    )}
                                 </div>
+
                                 <div>
-                                    <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                        Ubicación: <span className="text-red-500">*</span>
+                                    <label className="block text-xs font-bold text-blue-900 mb-1">
+                                        📍 Ubicación <span className="text-red-500">*</span>
                                     </label>
                                     <select
                                         value={formData.ubicacion_id}
                                         onChange={(e) => handleFormChange('ubicacion_id', e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                        className={`w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all ${
+                                            formErrors.ubicacion_id ? 'border-red-400 bg-red-50' : 'border-white/20'
+                                        }`}
                                         required
                                         disabled={submitting}
                                     >
@@ -1634,14 +1684,16 @@ export default function InventarioOficinas() {
                                             </option>
                                         ))}
                                     </select>
-                                    {formErrors.ubicacion_id && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.ubicacion_id[0]}</p>}
+                                    {formErrors.ubicacion_id && (
+                                        <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.ubicacion_id[0] || formErrors.ubicacion_id}</p>
+                                    )}
                                 </div>
                             </div>
 
                             {/* Fila 4: Cantidad / Unidades */}
                             <div>
-                                <label className="block mb-1 text-sm font-semibold text-slate-800">
-                                    Cantidad / Unidades: <span className="text-red-500">*</span>
+                                <label className="block text-xs font-bold text-blue-900 mb-1">
+                                    🔢 Cantidad / Unidades <span className="text-red-500">*</span>
                                 </label>
                                 <input
                                     type="number"
@@ -1650,51 +1702,44 @@ export default function InventarioOficinas() {
                                     value={formData.unidades}
                                     onChange={(e) => handleFormChange('unidades', e.target.value)}
                                     placeholder="Ej: 50"
-                                    className="w-full px-3.5 py-2.5 bg-blue-100 border-none rounded-xl text-sm font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                                    className={`w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all ${
+                                        formErrors.unidades ? 'border-red-400 bg-red-50' : 'border-white/20'
+                                    }`}
                                     required
                                     disabled={submitting}
                                 />
-                                {formErrors.unidades && <p className="mt-1 text-xs text-red-500 font-semibold">{formErrors.unidades[0]}</p>}
+                                {formErrors.unidades && (
+                                    <p className="text-[11px] text-red-500 mt-1 font-medium">{formErrors.unidades[0] || formErrors.unidades}</p>
+                                )}
                             </div>
 
-                            {/* Botones de acción inferiores (Diseño exacto de bienes_publicos) */}
-                            <div className="flex items-center justify-between gap-4 pt-6 mt-6 border-t border-slate-200">
+                            {/* Botones de acción del Modal */}
+                            <div className="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
                                 <button
                                     type="button"
-                                    onClick={handleCloseModal}
                                     disabled={submitting}
-                                    className="btn-save inline-flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold text-white transition-all duration-300 disabled:opacity-60 text-sm hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer shadow-md"
-                                    style={{
-                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
-                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
-                                    }}
+                                    onClick={handleCloseModal}
+                                    className="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
                                 >
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1 fill-white" viewBox="0 0 24 24">
-                                        <path d="M11 7.05V4a1 1 0 0 0-1-1 1 1 0 0 0-.7.29l-7 7a1 1 0 0 0 0 1.42l7 7A1 1 0 0 0 11 18v-3.1h.85a10.89 10.89 0 0 1 8.36 3.72 1 1 0 0 0 1.11.35A1 1 0 0 0 22 18c0-9.12-8.08-10.68-11-10.95zm.85 5.83a14.74 14.74 0 0 0-2 .13A1 1 0 0 0 9 14v1.59L4.42 11 9 6.41V8a1 1 0 0 0 1 1c.91 0 8.11.2 9.67 6.43a13.07 13.07 0 0 0-7.82-2.55z"></path>
-                                    </svg>
-                                    <span>Regresar</span>
+                                    Regresar
                                 </button>
-
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="btn-save inline-flex items-center justify-center gap-2 px-8 py-3 text-sm font-bold text-white rounded-xl shadow-md transition-all duration-300 disabled:opacity-50 hover:-translate-y-0.5 active:translate-y-0.5 cursor-pointer"
+                                    className="btn-save inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md hover:shadow-lg transition-all disabled:opacity-50 cursor-pointer"
                                     style={{
-                                        background: 'linear-gradient(135deg, #14368b 0%, #4f46e5 100%)',
-                                        boxShadow: '0 4px 12px rgba(99, 102, 241, 0.3)'
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)'
                                     }}
                                 >
                                     {submitting ? (
                                         <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                            <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                             <span>Guardando...</span>
                                         </>
                                     ) : (
                                         <>
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" className="mr-1" viewBox="0 0 24 24" style={{ fill: 'rgba(255, 255, 255, 1)' }}>
-                                                <path d="M5 21h14a2 2 0 0 0 2-2V8a1 1 0 0 0-.29-.71l-4-4A1 1 0 0 0 16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2zm10-2H9v-5h6zM13 7h-2V5h2zM5 5h2v4h8V5h.59L19 8.41V19h-2v-5a2 2 0 0 0-2-2H9a2 2 0 0 0-2 2v5H5z"></path>
-                                            </svg>
-                                            <span>{modalMode === 'create' ? 'Guardar Registro' : 'Actualizar Registro'}</span>
+                                            <span>💾</span>
+                                            <span>{modalMode === 'create' ? 'Guardar Ingreso' : 'Actualizar Registro'}</span>
                                         </>
                                     )}
                                 </button>
