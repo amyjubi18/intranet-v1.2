@@ -351,7 +351,7 @@
     </div>
 
     <!-- Birthday Calendar Modal -->
-    <div id="birthdayModal" class="modal-overlay" onclick="closeBirthdayModal(event)">
+    <div id="birthdayModal" class="modal-overlay" style="display: none;" onclick="closeBirthdayModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">🎂 Calendario de Cumpleaños</h2>
@@ -383,7 +383,7 @@
     </div>
 
     <!-- News Modal (Add News) -->
-    <div id="newsModal" class="modal-overlay" onclick="closeNewsModal(event)">
+    <div id="newsModal" class="modal-overlay" style="display: none;" onclick="closeNewsModal(event)">
         <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">📰 Agregar Noticia</h2>
@@ -432,7 +432,7 @@
     </div>
 
     <!-- News Details Modal -->
-    <div id="newsDetailsModal" class="modal-overlay" onclick="closeNewsDetailsModal(event)">
+    <div id="newsDetailsModal" class="modal-overlay" style="display: none;" onclick="closeNewsDetailsModal(event)">
         <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 id="newsDetailsTitle" class="text-xl font-bold">📰 Noticia</h2>
@@ -445,7 +445,7 @@
     </div>
 
     <!-- Directory Modal (Ver todas) -->
-    <div id="directoryModal" class="modal-overlay" onclick="closeDirectoryModal(event)">
+    <div id="directoryModal" class="modal-overlay" style="display: none;" onclick="closeDirectoryModal(event)">
         <div class="modal-content" style="max-width: 600px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">📞 Directorio Completo</h2>
@@ -458,7 +458,7 @@
     </div>
 
     <!-- Directory Edit/Add Modal (Admin only) -->
-    <div id="directoryEditModal" class="modal-overlay" onclick="closeDirectoryEditModal(event)">
+    <div id="directoryEditModal" class="modal-overlay" style="display: none;" onclick="closeDirectoryEditModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 id="directoryEditTitle" class="text-xl font-bold">📞 Editar Contacto</h2>
@@ -489,7 +489,7 @@
     </div>
 
     <!-- Delete Confirmation Modal -->
-    <div id="directoryDeleteModal" class="modal-overlay" onclick="closeDirectoryDeleteModal(event)">
+    <div id="directoryDeleteModal" class="modal-overlay" style="display: none;" onclick="closeDirectoryDeleteModal(event)">
         <div class="modal-content" style="max-width: 400px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">⚠️ Confirmar Eliminación</h2>
@@ -505,7 +505,7 @@
     </div>
 
     <!-- Event Modal (Add/Edit) -->
-    <div id="eventModal" class="modal-overlay" onclick="closeEventModal(event)">
+    <div id="eventModal" class="modal-overlay" style="display: none;" onclick="closeEventModal(event)">
         <div class="modal-content" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 id="eventModalTitle" class="text-xl font-bold">📅 Agregar Evento</h2>
@@ -568,7 +568,7 @@
     </div>
 
     <!-- Event Details Modal -->
-    <div id="eventDetailsModal" class="modal-overlay" onclick="closeEventDetailsModal(event)">
+    <div id="eventDetailsModal" class="modal-overlay" style="display: none;" onclick="closeEventDetailsModal(event)">
         <div class="modal-content" style="max-width: 450px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">📅 Detalles del Evento</h2>
@@ -586,7 +586,7 @@
     </div>
 
     <!-- Event Delete Confirmation Modal -->
-    <div id="eventDeleteModal" class="modal-overlay" onclick="closeEventDeleteModal(event)">
+    <div id="eventDeleteModal" class="modal-overlay" style="display: none;" onclick="closeEventDeleteModal(event)">
         <div class="modal-content" style="max-width: 400px;" onclick="event.stopPropagation()">
             <div class="flex items-center justify-between mb-4">
                 <h2 class="text-xl font-bold">⚠️ Confirmar Eliminación</h2>
@@ -817,7 +817,8 @@
                 document.getElementById('eventDetailsContent').innerHTML = content;
                 document.getElementById('eventDeleteId').value = eventsOnDay[0].id;
                 selectedEvent = eventsOnDay[0];
-                document.getElementById('eventDetailsModal').classList.add('show');
+                const edm = document.getElementById('eventDetailsModal');
+                if (edm) { edm.style.display = 'flex'; edm.classList.add('show'); }
             }
         }
 
@@ -853,7 +854,8 @@
             `;
 
             document.getElementById('eventDeleteId').value = event.id;
-            document.getElementById('eventDetailsModal').classList.add('show');
+            const edm = document.getElementById('eventDetailsModal');
+            if (edm) { edm.style.display = 'flex'; edm.classList.add('show'); }
         }
 
         function openAddEventModal(date = null) {
@@ -879,7 +881,8 @@
             selectedEventColor = '#3b82f6';
             document.getElementById('colorBlue').checked = true;
 
-            document.getElementById('eventModal').classList.add('show');
+            const em = document.getElementById('eventModal');
+            if (em) { em.style.display = 'flex'; em.classList.add('show'); }
         }
 
         function editCurrentEvent() {
@@ -914,7 +917,8 @@
                 document.getElementById(colorMap[selectedEvent.color]).checked = true;
             }
 
-            document.getElementById('eventModal').classList.add('show');
+            const em = document.getElementById('eventModal');
+            if (em) { em.style.display = 'flex'; em.classList.add('show'); }
         }
 
         function selectEventColor(color) {
@@ -923,7 +927,11 @@
 
         function closeEventModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('eventModal').classList.remove('show');
+                const em = document.getElementById('eventModal');
+                if (em) {
+                    em.classList.remove('show');
+                    em.style.display = 'none';
+                }
             }
         }
 
@@ -1010,20 +1018,36 @@
         function deleteCurrentEvent() {
             if (!selectedEvent) return;
             document.getElementById('eventDeleteId').value = selectedEvent.id;
-            document.getElementById('eventDetailsModal').classList.remove('show');
-            document.getElementById('eventDeleteModal').classList.add('show');
+            const edm = document.getElementById('eventDetailsModal');
+            if (edm) {
+                edm.classList.remove('show');
+                edm.style.display = 'none';
+            }
+            const delModal = document.getElementById('eventDeleteModal');
+            if (delModal) {
+                delModal.style.display = 'flex';
+                delModal.classList.add('show');
+            }
         }
 
         function closeEventDetailsModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('eventDetailsModal').classList.remove('show');
+                const edm = document.getElementById('eventDetailsModal');
+                if (edm) {
+                    edm.classList.remove('show');
+                    edm.style.display = 'none';
+                }
                 selectedEvent = null;
             }
         }
 
         function closeEventDeleteModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('eventDeleteModal').classList.remove('show');
+                const delModal = document.getElementById('eventDeleteModal');
+                if (delModal) {
+                    delModal.classList.remove('show');
+                    delModal.style.display = 'none';
+                }
             }
         }
 
@@ -1322,13 +1346,18 @@
                     }
                 }
             }
-            document.getElementById('birthdayModal').classList.add('show');
+            const bm = document.getElementById('birthdayModal');
+            if (bm) { bm.style.display = 'flex'; bm.classList.add('show'); }
             renderBirthdayCalendar();
         }
 
         function closeBirthdayModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('birthdayModal').classList.remove('show');
+                const bm = document.getElementById('birthdayModal');
+                if (bm) {
+                    bm.classList.remove('show');
+                    bm.style.display = 'none';
+                }
             }
         }
 
@@ -1512,11 +1541,27 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
+            // Asegurar que todos los modales estén estrictamente ocultos al cargar
+            document.querySelectorAll('.modal-overlay').forEach(modal => {
+                modal.classList.remove('show');
+                modal.style.display = 'none';
+            });
+
             loadBirthdays();
             loadDirectory();
             loadEvents();
             loadUserStats();
             loadNews();
+        });
+
+        // Cerrar cualquier modal abierto con la tecla Escape
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                document.querySelectorAll('.modal-overlay').forEach(modal => {
+                    modal.classList.remove('show');
+                    modal.style.display = 'none';
+                });
+            }
         });
     </script>
 
@@ -1595,7 +1640,8 @@
                 .then(data => {
                     if (data.success) {
                         renderDirectoryModal(data.data);
-                        document.getElementById('directoryModal').classList.add('show');
+                        const dm = document.getElementById('directoryModal');
+                        if (dm) { dm.style.display = 'flex'; dm.classList.add('show'); }
                     } else {
                         showToast('Error al cargar el directorio', 'error');
                     }
@@ -1640,7 +1686,11 @@
         // Close directory modal
         function closeDirectoryModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('directoryModal').classList.remove('show');
+                const dm = document.getElementById('directoryModal');
+                if (dm) {
+                    dm.classList.remove('show');
+                    dm.style.display = 'none';
+                }
             }
         }
 
@@ -1651,7 +1701,8 @@
             document.getElementById('directoryEditNombre').value = '';
             document.getElementById('directoryEditExtension').value = '';
             document.getElementById('directoryEditIcono').value = '📞';
-            document.getElementById('directoryEditModal').classList.add('show');
+            const dem = document.getElementById('directoryEditModal');
+            if (dem) { dem.style.display = 'flex'; dem.classList.add('show'); }
         }
 
         // Edit directory item
@@ -1664,16 +1715,22 @@
             document.getElementById('directoryEditNombre').value = item.nombre;
             document.getElementById('directoryEditExtension').value = item.extension;
             document.getElementById('directoryEditIcono').value = item.icono || '📞';
-            document.getElementById('directoryEditModal').classList.add('show');
+            const dem = document.getElementById('directoryEditModal');
+            if (dem) { dem.style.display = 'flex'; dem.classList.add('show'); }
 
             // Close directory modal if open
-            document.getElementById('directoryModal').classList.remove('show');
+            const dm = document.getElementById('directoryModal');
+            if (dm) { dm.classList.remove('show'); dm.style.display = 'none'; }
         }
 
         // Close edit modal
         function closeDirectoryEditModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('directoryEditModal').classList.remove('show');
+                const dem = document.getElementById('directoryEditModal');
+                if (dem) {
+                    dem.classList.remove('show');
+                    dem.style.display = 'none';
+                }
             }
         }
 
@@ -1717,16 +1774,22 @@
         // Delete directory item
         function deleteDirectoryItem(id) {
             document.getElementById('directoryDeleteId').value = id;
-            document.getElementById('directoryDeleteModal').classList.add('show');
+            const ddm = document.getElementById('directoryDeleteModal');
+            if (ddm) { ddm.style.display = 'flex'; ddm.classList.add('show'); }
 
             // Close directory modal if open
-            document.getElementById('directoryModal').classList.remove('show');
+            const dm = document.getElementById('directoryModal');
+            if (dm) { dm.classList.remove('show'); dm.style.display = 'none'; }
         }
 
         // Close delete modal
         function closeDirectoryDeleteModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('directoryDeleteModal').classList.remove('show');
+                const ddm = document.getElementById('directoryDeleteModal');
+                if (ddm) {
+                    ddm.classList.remove('show');
+                    ddm.style.display = 'none';
+                }
             }
         }
 
@@ -1941,12 +2004,17 @@
             document.getElementById('newsCategory').value = '';
             document.getElementById('newsContent').value = '';
             document.getElementById('newsImage').value = '';
-            document.getElementById('newsModal').classList.add('show');
+            const nm = document.getElementById('newsModal');
+            if (nm) { nm.style.display = 'flex'; nm.classList.add('show'); }
         }
 
         function closeNewsModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('newsModal').classList.remove('show');
+                const nm = document.getElementById('newsModal');
+                if (nm) {
+                    nm.classList.remove('show');
+                    nm.style.display = 'none';
+                }
             }
         }
 
@@ -2040,7 +2108,8 @@
                 </div>
             `;
 
-            document.getElementById('newsDetailsModal').classList.add('show');
+            const ndm = document.getElementById('newsDetailsModal');
+            if (ndm) { ndm.style.display = 'flex'; ndm.classList.add('show'); }
         }
 
         function editNews(id) {
@@ -2094,7 +2163,11 @@
         }
         function closeNewsDetailsModal(event) {
             if (!event || event.target === event.currentTarget) {
-                document.getElementById('newsDetailsModal').classList.remove('show');
+                const ndm = document.getElementById('newsDetailsModal');
+                if (ndm) {
+                    ndm.classList.remove('show');
+                    ndm.style.display = 'none';
+                }
             }
         }
 

@@ -29,7 +29,36 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
             $query->whereIn('salida_oficinas.id', array_filter($ids));
         }
 
-        // Aplicar filtros igual que en el índice
+        // Filtros directos
+        if (!empty($this->filters['articulo_id'])) {
+            $query->where('salida_oficinas.articulo_id', $this->filters['articulo_id']);
+        }
+        if (!empty($this->filters['gerencia_id'])) {
+            $query->where('salida_oficinas.gerencia_id', $this->filters['gerencia_id']);
+        }
+        if (!empty($this->filters['area_id'])) {
+            $query->where('salida_oficinas.area_id', $this->filters['area_id']);
+        }
+        if (!empty($this->filters['busqueda']) && empty($this->filters['filterType'])) {
+            $search = $this->filters['busqueda'];
+            $query->where(function($q) use ($search) {
+                $q->where('salida_oficinas.cantidad', 'like', '%' . $search . '%')
+                  ->orWhere('salida_oficinas.ajuste_inventario', 'like', '%' . $search . '%')
+                  ->orWhereHas('articulos', fn($subQ) => $subQ->where('articulo', 'like', '%' . $search . '%'))
+                  ->orWhereHas('gerencias', fn($subQ) => $subQ->where('gerencia', 'like', '%' . $search . '%'))
+                  ->orWhereHas('areas', fn($subQ) => $subQ->where('area', 'like', '%' . $search . '%'))
+                  ->orWhereHas('users', fn($subQ) => $subQ->where('name', 'like', '%' . $search . '%'));
+            });
+        }
+        if (!empty($this->filters['fecha_desde']) && !empty($this->filters['fecha_hasta']) && empty($this->filters['filterType'])) {
+            $query->whereBetween('fecha_salida', [$this->filters['fecha_desde'], $this->filters['fecha_hasta']]);
+        } elseif (!empty($this->filters['fecha_desde']) && empty($this->filters['filterType'])) {
+            $query->where('fecha_salida', '>=', $this->filters['fecha_desde']);
+        } elseif (!empty($this->filters['fecha_hasta']) && empty($this->filters['filterType'])) {
+            $query->where('fecha_salida', '<=', $this->filters['fecha_hasta']);
+        }
+
+        // Aplicar filtros heredados (compatibilidad)
         if (!empty($this->filters['filterType'])) {
             switch ($this->filters['filterType']) {
                 case 'fecha':

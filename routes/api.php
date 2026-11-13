@@ -11,6 +11,7 @@ use App\Http\Controllers\PermissionController;
 use App\Http\Controllers\BieneController;
 use App\Http\Controllers\InventarioOficController;
 use App\Http\Controllers\CartuchoController;
+use App\Http\Controllers\SalidaOficController;
 use App\Http\Controllers\DigitalizacioneController;
 use App\Http\Controllers\DocsController;
 use App\Http\Controllers\EstanteriaController;
@@ -75,6 +76,7 @@ Route::middleware(['web', 'auth'])->group(function () {
     Route::prefix('administracion')->group(function () {
         Route::get('/bienes_publicos', [BieneController::class, 'index'])->name('api.administracion.bienes_publicos.index');
         Route::get('/inventario_oficinas', [InventarioOficController::class, 'index'])->name('api.administracion.inventario_oficinas.index');
+        Route::get('/salida_oficinas', [SalidaOficController::class, 'index'])->name('api.administracion.salida_oficinas.index');
         Route::get('/consumibles', [CartuchoController::class, 'index'])->name('api.administracion.consumibles.index');
 
         // Documentos
