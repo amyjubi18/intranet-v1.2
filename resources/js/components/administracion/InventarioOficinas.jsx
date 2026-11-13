@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
 import { downloadWithProgress } from '../../utils/downloadWithProgress';
 import CameraScannerModal from '../ui/CameraScannerModal';
@@ -268,6 +269,18 @@ export default function InventarioOficinas() {
         n_factura: ''
     });
     const [formErrors, setFormErrors] = useState({});
+
+    // Bloquear scroll de fondo cuando el modal esté abierto
+    useEffect(() => {
+        if (modalOpen || cameraModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [modalOpen, cameraModalOpen]);
 
     // Estado del scanner de cámara
     const [cameraModalOpen, setCameraModalOpen] = useState(false);
@@ -1488,9 +1501,19 @@ export default function InventarioOficinas() {
             )}
 
             {/* Modal de Crear / Editar Inventario de Oficina (Diseño moderno con degradado corporativo y SearchableSelect) */}
-            {modalOpen && (
+            {modalOpen && createPortal(
                 <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
+                    className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        zIndex: 9999999
+                    }}
                     onClick={(e) => {
                         if (e.target === e.currentTarget && !submitting) {
                             handleCloseModal();
@@ -1746,7 +1769,8 @@ export default function InventarioOficinas() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Modal de Escaneo en Vivo con Cámara */}

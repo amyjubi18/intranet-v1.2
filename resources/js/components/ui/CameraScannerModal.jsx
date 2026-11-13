@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 // Carga perezosa (lazy load) para no sobrecargar el bundle principal de Vite
 let Html5QrcodeModule = null;
@@ -267,8 +268,20 @@ export default function CameraScannerModal({
 
     if (!isOpen) return null;
 
-    return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-3 sm:p-4 animate-modal-backdrop">
+    return createPortal(
+        <div
+            className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/75 backdrop-blur-sm p-3 sm:p-4 animate-modal-backdrop"
+            style={{
+                position: 'fixed',
+                top: 0,
+                left: 0,
+                right: 0,
+                bottom: 0,
+                width: '100vw',
+                height: '100vh',
+                zIndex: 9999999
+            }}
+        >
             <div className="bg-slate-900 border border-slate-700/80 rounded-3xl shadow-2xl max-w-md w-full overflow-hidden text-white flex flex-col animate-modal-expand">
                 {/* Cabecera */}
                 <div className="flex items-center justify-between p-4 sm:p-5 border-b border-slate-800">
@@ -465,6 +478,7 @@ export default function CameraScannerModal({
                     100% { top: 6%; opacity: 0.7; }
                 }
             `}</style>
-        </div>
+        </div>,
+        document.body
     );
 }

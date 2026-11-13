@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
 import JsBarcode from 'jsbarcode';
 import { downloadWithProgress } from '../../utils/downloadWithProgress';
@@ -568,6 +569,18 @@ export default function BienesPublicos() {
         }, 300);
         return () => clearTimeout(timer);
     }, [fetchBienes]);
+
+    // Bloquear scroll de fondo cuando haya un modal abierto
+    useEffect(() => {
+        if (modalOpen || qrModalOpen || quickColorModalOpen || cameraModalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [modalOpen, qrModalOpen, quickColorModalOpen, cameraModalOpen]);
 
     // Limpiar filtros
     const handleClearFilters = () => {
@@ -1871,8 +1884,20 @@ export default function BienesPublicos() {
             </div>
 
             {/* Modal de Código QR / Barras Ampliado */}
-            {qrModalOpen && selectedQrBien && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-modal-backdrop">
+            {qrModalOpen && selectedQrBien && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-modal-backdrop"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        zIndex: 9999999
+                    }}
+                >
                     <div className={`bg-white rounded-2xl shadow-2xl ${isBarcodeItem(selectedQrBien) ? 'max-w-lg' : 'max-w-sm'} w-full p-6 text-center border border-slate-200 animate-modal-expand`}>
                         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
                             <h3 className="text-sm font-bold text-blue-950 flex items-center gap-1.5">
@@ -1920,11 +1945,24 @@ export default function BienesPublicos() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
             {/* Modal de Crear / Editar Bien Público */}
-            {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+            {modalOpen && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        zIndex: 9999999
+                    }}
+                >
                     <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full my-8 p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-modal-expand">
                         {/* Cabecera del modal */}
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
@@ -2648,12 +2686,25 @@ export default function BienesPublicos() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* SUB-MODAL RÁPIDO PARA CREAR NUEVO COLOR (Z-INDEX SUPERIOR Z-[70]) */}
-            {quickColorModalOpen && (
-                <div className="fixed inset-0 z-[70] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+            {quickColorModalOpen && createPortal(
+                <div
+                    className="fixed inset-0 z-[99999999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        zIndex: 99999999
+                    }}
+                >
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 transition-all animate-modal-expand">
                         {/* Cabecera del sub-modal */}
                         <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200">
@@ -2814,7 +2865,8 @@ export default function BienesPublicos() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
 
             {/* Modal de Escaneo en Vivo con Cámara */}

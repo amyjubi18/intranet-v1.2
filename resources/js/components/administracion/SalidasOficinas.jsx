@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
 import { downloadWithProgress } from '../../utils/downloadWithProgress';
 
@@ -224,6 +225,18 @@ export default function SalidasOficinas() {
         ajuste_inventario: ''
     });
     const [formErrors, setFormErrors] = useState({});
+
+    // Bloquear scroll de fondo cuando el modal esté abierto
+    useEffect(() => {
+        if (modalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [modalOpen]);
 
     // Opciones formateadas de artículos
     const articulosOptions = useMemo(() => {
@@ -1465,9 +1478,19 @@ export default function SalidasOficinas() {
             </div>
 
             {/* Modal de Registrar Salida de Oficina (Diseño moderno con degradado corporativo y SearchableSelect) */}
-            {modalOpen && (
+            {modalOpen && createPortal(
                 <div
-                    className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
+                    className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        zIndex: 9999999
+                    }}
                     onClick={(e) => {
                         if (e.target === e.currentTarget && !submitting) {
                             setModalOpen(false);
@@ -1667,7 +1690,8 @@ export default function SalidasOficinas() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

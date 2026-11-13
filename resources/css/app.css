@@ -275,8 +275,8 @@ background-color: #ffffffbc;
   animation:fadeIn 0.3s ease-in-out;
 }
 @keyframes fadeIn{
-  from{ opacity:0; transform:translateY(10px); }
-  to{ opacity:1; transform:translateY(0); }
+  from{ opacity:0; }
+  to{ opacity:1; }
 }
 
 /* Calendario */
@@ -675,6 +675,17 @@ background-color: #ffffffbc;
 /* Clases utilitarias de Backdrop y Expansión */
 .modal-backdrop-animate,
 .animate-modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
   animation: modalBackdropFadeIn 320ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
 }
 
@@ -686,16 +697,37 @@ background-color: #ffffffbc;
 }
 
 /* Aplicación automática a modales Blade estándar (.modal-overlay / .modal-content) */
-.modal-overlay {
+.modal-overlay,
+.modal-backdrop,
+.modal-backdrop-fixed {
   display: none !important;
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  z-index: 9999999 !important;
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+  background: rgba(15, 23, 42, 0.65) !important;
 }
 
-.modal-overlay.show {
+.modal-overlay.show,
+.modal-backdrop.show,
+.modal-backdrop-fixed.show {
   display: flex !important;
   animation: modalBackdropFadeIn 320ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
 }
 
-.modal-overlay.show .modal-content {
+.modal-overlay.show .modal-content,
+.modal-backdrop.show .modal-content,
+.modal-backdrop-fixed.show .modal-content {
   animation: modalExpandIn 350ms cubic-bezier(0.4, 0.0, 0.2, 1) forwards !important;
   transform-origin: center center;
   will-change: transform, opacity, border-radius, box-shadow;
@@ -786,10 +818,27 @@ background-color: #ffffffbc;
 
 /* Reglas de máxima especificidad para el contenedor backdrop de SweetAlert2 */
 html body.swal2-shown .swal2-container,
-div.swal2-container {
+div.swal2-container,
+.swal2-container {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  min-width: 100vw !important;
+  min-height: 100vh !important;
+  margin: 0 !important;
+  box-sizing: border-box !important;
+  z-index: 99999999 !important;
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
   background: rgba(15, 23, 42, 0.65) !important;
+}
+
+html body.swal2-shown {
+  overflow: hidden !important;
 }
 
 div.swal2-container.swal2-backdrop-show,

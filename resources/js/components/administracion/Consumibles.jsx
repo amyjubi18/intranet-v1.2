@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function Consumibles() {
     const [cartuchos, setCartuchos] = useState([]);
@@ -386,8 +387,20 @@ export default function Consumibles() {
             </div>
 
             {/* Modal de Detalle */}
-            {detailModalOpen && selectedCartucho && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-modal-backdrop">
+            {detailModalOpen && selectedCartucho && createPortal(
+                <div
+                    className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-modal-backdrop"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100vw',
+                        height: '100vh',
+                        zIndex: 9999999
+                    }}
+                >
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-modal-expand">
                         <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50">
                             <h3 className="font-bold text-slate-800 text-sm flex items-center gap-2">
@@ -445,7 +458,8 @@ export default function Consumibles() {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
