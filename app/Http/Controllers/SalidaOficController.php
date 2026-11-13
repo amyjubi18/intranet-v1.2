@@ -184,7 +184,7 @@ class SalidaOficController extends Controller
                     ],
                     'permissions' => [
                         'can_create' => auth()->user()?->can('salidaofic_create') ?? false,
-                        'can_edit' => auth()->user()?->can('salidaofic_edit') ?? false,
+                        'can_edit' => false,
                         'can_destroy' => auth()->user()?->can('salidaofic_destroy') ?? false,
                         'can_export' => true,
                     ]

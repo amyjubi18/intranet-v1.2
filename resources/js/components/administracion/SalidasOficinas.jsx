@@ -938,9 +938,9 @@ export default function SalidasOficinas() {
     return (
         <div className="w-full space-y-6 animate-fadeIn pb-12">
             {/* Título Principal (Exacto como antes) */}
-            <h2 className="text-4xl font-semibold leading-tight text-center text-blue-900 mb-6">
+            {/* <h2 className="text-4xl font-semibold leading-tight text-center text-blue-900 mb-6">
                 Salida de Oficina
-            </h2>
+            </h2> */}
 
             {/* Tarjetas de estadísticas superiores */}
             <div className="px-2 sm:px-6 mb-8">
@@ -1360,17 +1360,6 @@ export default function SalidasOficinas() {
                                                             <p className="text-base text-blue-900 font-semibold mt-2">Solicitante</p>
                                                             <p className="text-sm font-semibold">{item.users ? (item.users.name || item.users.username) : 'N/A'}</p>
                                                             <div className="flex items-center gap-2 mt-4">
-                                                                {permissions.can_edit && (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => openEditModal(item)}
-                                                                        className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-bold text-blue-900 bg-blue-100 hover:bg-blue-200 rounded-xl transition-all cursor-pointer"
-                                                                        title="Editar salida en modal"
-                                                                    >
-                                                                        <span>✏️</span>
-                                                                        <span>Editar</span>
-                                                                    </button>
-                                                                )}
                                                                 {permissions.can_destroy && (
                                                                     <button
                                                                         type="button"
@@ -1475,7 +1464,7 @@ export default function SalidasOficinas() {
                 )}
             </div>
 
-            {/* Modal de Crear / Editar Salida de Oficina (Diseño moderno con degradado corporativo y SearchableSelect) */}
+            {/* Modal de Registrar Salida de Oficina (Diseño moderno con degradado corporativo y SearchableSelect) */}
             {modalOpen && (
                 <div
                     className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fadeIn"
@@ -1498,12 +1487,10 @@ export default function SalidasOficinas() {
                         >
                             <div>
                                 <h3 className="text-lg sm:text-xl font-black tracking-tight">
-                                    {modalMode === 'create' ? 'Registrar Salida de Oficina' : 'Editar Salida de Oficina'}
+                                    Registrar Salida de Oficina
                                 </h3>
                                 <p className="text-xs text-blue-100 mt-0.5">
-                                    {modalMode === 'create'
-                                        ? 'Complete los datos para despachar material desde almacén'
-                                        : `Actualizando despacho #${String(selectedSalida?.id).padStart(4, '0')}`}
+                                    Complete los datos para despachar material desde almacén
                                 </p>
                             </div>
                             <button
@@ -1673,7 +1660,7 @@ export default function SalidasOficinas() {
                                     ) : (
                                         <>
                                             <span>💾</span>
-                                            <span>{modalMode === 'create' ? 'Guardar Salida' : 'Actualizar Salida'}</span>
+                                            <span>Guardar Salida</span>
                                         </>
                                     )}
                                 </button>
