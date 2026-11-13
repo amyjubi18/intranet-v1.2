@@ -6,6 +6,7 @@ import NotificationCenter from './components/ui/NotificationCenter';
 import ActivityLog from './components/gtic/ActivityLog';
 import BienesPublicos from './components/administracion/BienesPublicos';
 import InventarioOficinas from './components/administracion/InventarioOficinas';
+import SalidasOficinas from './components/administracion/SalidasOficinas';
 import Consumibles from './components/administracion/Consumibles';
 import DigitalizacionDocumentos from './components/gestion_humana/DigitalizacionDocumentos';
 import UsersManagement from './components/gtic/UsersManagement';
@@ -128,9 +129,11 @@ function initReactRoots() {
     mountComponent('BienesPublicos', BienesPublicos);
     mountById('bienes-publicos-root', BienesPublicos);
 
-    // OGA: Inventario de Oficina y Consumibles
+    // OGA: Inventario de Oficina, Salidas y Consumibles
     mountComponent('InventarioOficinas', InventarioOficinas);
     mountById('inventario-oficinas-root', InventarioOficinas);
+    mountComponent('SalidasOficinas', SalidasOficinas);
+    mountById('salidas-oficinas-root', SalidasOficinas);
     mountComponent('Consumibles', Consumibles);
     mountById('consumibles-root', Consumibles);
 
@@ -195,6 +198,7 @@ if (typeof window !== 'undefined') {
         PermisosManagement,
         BienesPublicos,
         InventarioOficinas,
+        SalidasOficinas,
         Consumibles,
         DigitalizacionDocumentos,
         DocumentosManagement,
@@ -269,6 +273,7 @@ export default {
     PermisosManagement,
     BienesPublicos,
     InventarioOficinas,
+    SalidasOficinas,
     Consumibles,
     DigitalizacionDocumentos,
     DocumentosManagement,

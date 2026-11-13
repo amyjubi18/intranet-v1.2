@@ -77,6 +77,11 @@ Route::middleware(['web', 'auth'])->group(function () {
         Route::get('/bienes_publicos', [BieneController::class, 'index'])->name('api.administracion.bienes_publicos.index');
         Route::get('/inventario_oficinas', [InventarioOficController::class, 'index'])->name('api.administracion.inventario_oficinas.index');
         Route::get('/salida_oficinas', [SalidaOficController::class, 'index'])->name('api.administracion.salida_oficinas.index');
+        Route::post('/salida_oficinas', [SalidaOficController::class, 'store'])->name('api.administracion.salida_oficinas.store');
+        Route::put('/salida_oficinas/{id}', [SalidaOficController::class, 'update'])->name('api.administracion.salida_oficinas.update');
+        Route::delete('/salida_oficinas/{id}', [SalidaOficController::class, 'destroy'])->name('api.administracion.salida_oficinas.destroy');
+        Route::post('/salida_oficinas/destroy-multiple', [SalidaOficController::class, 'destroyMultiple'])->name('api.administracion.salida_oficinas.destroyMultiple');
+        Route::post('/salida_oficinas/destroy-all', [SalidaOficController::class, 'destroyAll'])->name('api.administracion.salida_oficinas.destroyAll');
         Route::get('/consumibles', [CartuchoController::class, 'index'])->name('api.administracion.consumibles.index');
 
         // Documentos

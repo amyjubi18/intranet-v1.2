@@ -34,7 +34,21 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
             $query->where('salida_oficinas.articulo_id', $this->filters['articulo_id']);
         }
         if (!empty($this->filters['gerencia_id'])) {
-            $query->where('salida_oficinas.gerencia_id', $this->filters['gerencia_id']);
+            $gerParam = $this->filters['gerencia_id'];
+            $ger = is_numeric($gerParam) ? \App\Models\Gerencia::with('area')->find($gerParam) : \App\Models\Gerencia::where('gerencia', $gerParam)->first();
+            if ($ger) {
+                $sameGerIds = \App\Models\Gerencia::where('gerencia', $ger->gerencia)->pluck('id')->toArray();
+                $sameGerAreaIds = \App\Models\Gerencia::where('gerencia', $ger->gerencia)->pluck('area_id')->filter()->toArray();
+                $query->where(function($q) use ($sameGerIds, $sameGerAreaIds) {
+                    $q->whereIn('salida_oficinas.gerencia_id', $sameGerIds)
+                      ->orWhere(function($subQ) use ($sameGerAreaIds) {
+                          $subQ->whereNull('salida_oficinas.gerencia_id')
+                               ->whereIn('salida_oficinas.area_id', $sameGerAreaIds);
+                      });
+                });
+            } else {
+                $query->where('salida_oficinas.gerencia_id', $gerParam);
+            }
         }
         if (!empty($this->filters['area_id'])) {
             $query->where('salida_oficinas.area_id', $this->filters['area_id']);
