@@ -8,15 +8,16 @@ let isCurrentlyDownloading = false;
  * Funciona tanto con URLs remotas del servidor como con Data URLs (Base64) y Blobs.
  *
  * @param {string} urlOrData - URL del archivo o Data URI (base64)
- * @param {Object} options - Opciones de descarga
+ * @param {Object|string} [options] - Opciones de descarga o nombre de archivo directo
  * @param {string} [options.filename] - Nombre de archivo personalizado
  * @param {'excel'|'pdf'|'image'|'file'} [options.type] - Tipo de archivo explícito
  * @param {string} [options.title] - Título personalizado para el modal
  * @param {Function} [options.onSuccess] - Callback ejecutado tras descarga exitosa
  * @param {Function} [options.onError] - Callback ejecutado en caso de error
+ * @param {string} [legacyType] - Tipo de archivo si se usa la firma clásica (url, filename, type)
  * @returns {Promise<void>}
  */
-export function downloadWithProgress(urlOrData, options = {}) {
+export function downloadWithProgress(urlOrData, options = {}, legacyType = null) {
     if (!urlOrData) return Promise.reject(new Error('URL o archivo no especificado'));
 
     // Evitar descargas duplicadas o modales concurrentes
@@ -26,13 +27,22 @@ export function downloadWithProgress(urlOrData, options = {}) {
     }
     isCurrentlyDownloading = true;
 
-    const {
-        filename: customFilename,
-        type: explicitType,
-        title: customTitle,
-        onSuccess,
-        onError
-    } = options;
+    let customFilename = null;
+    let explicitType = null;
+    let customTitle = null;
+    let onSuccess = null;
+    let onError = null;
+
+    if (typeof options === 'string') {
+        customFilename = options;
+        explicitType = legacyType ? String(legacyType).toLowerCase() : null;
+    } else if (options && typeof options === 'object') {
+        customFilename = options.filename;
+        explicitType = options.type;
+        customTitle = options.title;
+        onSuccess = options.onSuccess;
+        onError = options.onError;
+    }
 
     const isDataUri = typeof urlOrData === 'string' && (urlOrData.startsWith('data:') || urlOrData.startsWith('blob:'));
     const cleanUrl = isDataUri ? '' : urlOrData.split('?')[0].toLowerCase();
@@ -86,17 +96,9 @@ export function downloadWithProgress(urlOrData, options = {}) {
     const resolvedFilename = customFilename || (cleanUrl ? cleanUrl.split('/').pop() : defaultFilename) || defaultFilename;
 
     return new Promise((resolve, reject) => {
-        let t1 = null;
-        let t2 = null;
-        let tTrigger = null;
-        let tFinish = null;
-
-        const clearAllTimers = () => {
-            if (t1) clearTimeout(t1);
-            if (t2) clearTimeout(t2);
-            if (tTrigger) clearTimeout(tTrigger);
-            if (tFinish) clearTimeout(tFinish);
-        };
+        let progressInterval = null;
+        let isAborted = false;
+        const abortController = typeof AbortController !== 'undefined' ? new AbortController() : null;
 
         Swal.fire({
             title: `<div class="flex items-center justify-center gap-2 text-xl font-bold text-slate-800">
@@ -125,9 +127,10 @@ export function downloadWithProgress(urlOrData, options = {}) {
             customClass: { popup: 'rounded-2xl p-6 shadow-2xl' },
             didClose: () => {
                 isCurrentlyDownloading = false;
-                clearAllTimers();
+                if (progressInterval) clearInterval(progressInterval);
+                if (abortController) abortController.abort();
             },
-            didOpen: () => {
+            didOpen: async () => {
                 const bar = document.getElementById('global-export-progress-bar');
                 const percent = document.getElementById('global-export-progress-percent');
                 const status = document.getElementById('global-export-status-text');
@@ -135,28 +138,20 @@ export function downloadWithProgress(urlOrData, options = {}) {
 
                 // Si es un dataURI directo (como código QR o imagen en base64)
                 if (isDataUri) {
-                    if (bar) bar.style.width = '35%';
-                    if (percent) percent.innerText = '35%';
-                    if (status) status.innerText = 'Generando archivo de imagen...';
+                    if (bar) bar.style.width = '50%';
+                    if (percent) percent.innerText = '50%';
 
-                    t1 = setTimeout(() => {
-                        if (bar) bar.style.width = '80%';
-                        if (percent) percent.innerText = '80%';
-                        if (status) status.innerText = 'Preparando descarga...';
-                    }, 180);
-
-                    tFinish = setTimeout(() => {
-                        if (bar) bar.style.width = '100%';
-                        if (percent) percent.innerText = '100%';
-                        if (status) status.innerText = '¡Descarga completada!';
-                        if (step) step.innerText = 'Guardado';
-
+                    setTimeout(() => {
                         const a = document.createElement('a');
                         a.href = urlOrData;
                         a.download = resolvedFilename;
                         document.body.appendChild(a);
                         a.click();
                         a.remove();
+
+                        if (bar) bar.style.width = '100%';
+                        if (percent) percent.innerText = '100%';
+                        if (status) status.innerText = '¡Descarga completada!';
 
                         setTimeout(() => {
                             isCurrentlyDownloading = false;
@@ -171,53 +166,77 @@ export function downloadWithProgress(urlOrData, options = {}) {
                             if (onSuccess) onSuccess();
                             resolve();
                         }, 400);
-                    }, 400);
+                    }, 300);
                     return;
                 }
 
-                // Si es una petición a ruta del servidor (Excel, PDF, CSV, reportes)
-                t1 = setTimeout(() => {
-                    if (bar) bar.style.width = '45%';
-                    if (percent) percent.innerText = '45%';
-                    if (status) status.innerText = middleStep1;
-                    if (step) step.innerText = 'Consultando base de datos...';
-                }, 350);
+                // Simulación suave de progreso mientras se espera la respuesta HTTP real
+                let currentProgress = 20;
+                progressInterval = setInterval(() => {
+                    if (currentProgress < 85) {
+                        currentProgress += 5;
+                        if (bar) bar.style.width = `${currentProgress}%`;
+                        if (percent) percent.innerText = `${currentProgress}%`;
+                        if (currentProgress >= 45 && status) status.innerText = middleStep1;
+                        if (currentProgress >= 70 && status) status.innerText = middleStep2;
+                    }
+                }, 250);
 
-                t2 = setTimeout(() => {
-                    if (bar) bar.style.width = '75%';
-                    if (percent) percent.innerText = '75%';
-                    if (status) status.innerText = middleStep2;
-                    if (step) step.innerText = 'Compilando archivo...';
-                }, 750);
+                try {
+                    // Petición real al servidor para descargar el archivo
+                    const response = await fetch(urlOrData, {
+                        method: 'GET',
+                        signal: abortController ? abortController.signal : undefined,
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/pdf, application/vnd.openxmlformats-officedocument.spreadsheetml.sheet, */*'
+                        }
+                    });
 
-                // Disparar la descarga nativa del navegador mediante navegación directa
-                // Dado que el servidor responde con Content-Disposition: attachment,
-                // el navegador descarga el archivo de forma nativa sin perder la página ni el estado
-                tTrigger = setTimeout(() => {
+                    if (progressInterval) clearInterval(progressInterval);
+
+                    if (!response.ok) {
+                        let errorMessage = `El servidor respondió con código ${response.status} (${response.statusText || 'Error'})`;
+                        if (response.status === 502) {
+                            errorMessage = 'Error 502: Bad Gateway en el servidor. El proceso de exportación excedió el tiempo o memoria disponible.';
+                        } else if (response.status === 504) {
+                            errorMessage = 'Error 504: Gateway Timeout. La generación del archivo tomó demasiado tiempo.';
+                        } else if (response.status === 403) {
+                            errorMessage = 'No tienes permisos asignados para exportar estos datos.';
+                        } else if (response.status === 401) {
+                            window.location.href = '/login?timeout=1';
+                            return;
+                        }
+                        throw new Error(errorMessage);
+                    }
+
                     if (bar) bar.style.width = '95%';
                     if (percent) percent.innerText = '95%';
-                    if (status) status.innerText = 'Iniciando descarga en su equipo...';
-                    if (step) step.innerText = 'Empaquetando...';
+                    if (status) status.innerText = 'Descargando archivo...';
+                    if (step) step.innerText = 'Finalizando...';
 
-                    try {
-                        window.location.assign(urlOrData);
-                    } catch (e) {
-                        window.location.href = urlOrData;
-                    }
-                }, 1100);
+                    const blob = await response.blob();
+                    const blobUrl = window.URL.createObjectURL(blob);
 
-                tFinish = setTimeout(() => {
+                    const a = document.createElement('a');
+                    a.href = blobUrl;
+                    a.download = resolvedFilename;
+                    document.body.appendChild(a);
+                    a.click();
+                    a.remove();
+                    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1500);
+
                     if (bar) bar.style.width = '100%';
                     if (percent) percent.innerText = '100%';
-                    if (status) status.innerText = '¡Descarga iniciada exitosamente!';
-                    if (step) step.innerText = 'Descarga completada';
+                    if (status) status.innerText = '¡Descarga completada!';
+                    if (step) step.innerText = 'Guardado';
 
                     setTimeout(() => {
                         isCurrentlyDownloading = false;
                         Swal.fire({
                             icon: 'success',
-                            title: '¡Descarga Iniciada!',
-                            text: `El archivo ${resolvedFilename} se está descargando en tu equipo.`,
+                            title: '¡Descarga Completada!',
+                            text: `El archivo ${resolvedFilename} se ha descargado correctamente.`,
                             timer: 1800,
                             showConfirmButton: false,
                             customClass: { popup: 'rounded-2xl shadow-xl' }
@@ -225,7 +244,28 @@ export function downloadWithProgress(urlOrData, options = {}) {
                         if (onSuccess) onSuccess();
                         resolve();
                     }, 400);
-                }, 1600);
+
+                } catch (err) {
+                    if (progressInterval) clearInterval(progressInterval);
+                    isCurrentlyDownloading = false;
+
+                    if (err.name === 'AbortError') {
+                        resolve();
+                        return;
+                    }
+
+                    console.error('Error al exportar archivo:', err);
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error al exportar',
+                        text: err.message || 'Ocurrió un error inesperado al procesar la exportación.',
+                        confirmButtonColor: '#1e3a8a',
+                        customClass: { popup: 'rounded-2xl' }
+                    });
+
+                    if (onError) onError(err);
+                    reject(err);
+                }
             }
         });
     });

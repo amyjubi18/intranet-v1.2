@@ -886,9 +886,18 @@ export default function SalidasOficinas() {
     const handleExport = (type, scope) => {
         const params = new URLSearchParams();
         if (busqueda.trim()) params.append('busqueda', busqueda.trim());
-        if (filterGerencia) params.append('gerencia', filterGerencia);
-        if (filterArea) params.append('area', filterArea);
-        if (filterArticulo) params.append('articulo', filterArticulo);
+        if (filterGerencia) {
+            params.append('gerencia_id', filterGerencia);
+            params.append('gerencia', filterGerencia);
+        }
+        if (filterArea) {
+            params.append('area_id', filterArea);
+            params.append('area', filterArea);
+        }
+        if (filterArticulo) {
+            params.append('articulo_id', filterArticulo);
+            params.append('articulo', filterArticulo);
+        }
         if (fechaDesde) params.append('fecha_desde', fechaDesde);
         if (fechaHasta) params.append('fecha_hasta', fechaHasta);
         if (fechaIngresoDesde) params.append('fecha_ingreso_desde', fechaIngresoDesde);
@@ -913,7 +922,10 @@ export default function SalidasOficinas() {
 
         const filename = `salida_oficina_${new Date().toISOString().split('T')[0]}.${type === 'excel' ? 'xlsx' : 'pdf'}`;
 
-        downloadWithProgress(endpoint, filename, type === 'excel' ? 'Excel' : 'PDF');
+        downloadWithProgress(endpoint, {
+            filename,
+            type: type === 'excel' ? 'excel' : 'pdf'
+        });
     };
 
     // Agrupación de salidas por artículo para el diseño original idéntico a Blade
@@ -1224,8 +1236,8 @@ export default function SalidasOficinas() {
                                 </div>
 
                                 <div className="flex items-center justify-end gap-3 pt-2">
-                                    <button type="button" onClick={clearAllFilters} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800 transition-colors cursor-pointer">
-                                        Limpiar Todo
+                                    <button type="button" onClick={clearAllFilters} className="px-4 py-2 text-xs border border-blue-900 font-semibold text-slate-600 hover:text-slate-800 transition-colors cursor-pointer">
+                                       🗑️ Limpiar Todo
                                     </button>
                                 </div>
                             </div>

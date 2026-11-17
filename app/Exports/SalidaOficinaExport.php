@@ -30,11 +30,13 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
         }
 
         // Filtros directos
-        if (!empty($this->filters['articulo_id'])) {
-            $query->where('salida_oficinas.articulo_id', $this->filters['articulo_id']);
+        $articuloParam = $this->filters['articulo_id'] ?? $this->filters['articulo'] ?? null;
+        if (!empty($articuloParam)) {
+            $query->where('salida_oficinas.articulo_id', $articuloParam);
         }
-        if (!empty($this->filters['gerencia_id'])) {
-            $gerParam = $this->filters['gerencia_id'];
+
+        $gerParam = $this->filters['gerencia_id'] ?? $this->filters['gerencia'] ?? null;
+        if (!empty($gerParam)) {
             $ger = is_numeric($gerParam) ? \App\Models\Gerencia::with('area')->find($gerParam) : \App\Models\Gerencia::where('gerencia', $gerParam)->first();
             if ($ger) {
                 $sameGerIds = \App\Models\Gerencia::where('gerencia', $ger->gerencia)->pluck('id')->toArray();
@@ -50,8 +52,10 @@ class SalidaOficinaExport implements FromCollection, WithHeadings, WithMapping, 
                 $query->where('salida_oficinas.gerencia_id', $gerParam);
             }
         }
-        if (!empty($this->filters['area_id'])) {
-            $query->where('salida_oficinas.area_id', $this->filters['area_id']);
+
+        $areaParam = $this->filters['area_id'] ?? $this->filters['area'] ?? null;
+        if (!empty($areaParam)) {
+            $query->where('salida_oficinas.area_id', $areaParam);
         }
         if (!empty($this->filters['busqueda']) && empty($this->filters['filterType'])) {
             $search = $this->filters['busqueda'];

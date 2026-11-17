@@ -596,6 +596,9 @@ class SalidaOficController extends Controller
     {
         abort_if(Gate::denies('salidaofic_index'), 403);
 
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
+
         $filters = $request->all();
 
         return \Maatwebsite\Excel\Facades\Excel::download(
@@ -607,6 +610,9 @@ class SalidaOficController extends Controller
     public function exportPdf(Request $request)
     {
         abort_if(Gate::denies('salidaofic_index'), 403);
+
+        ini_set('memory_limit', '512M');
+        ini_set('max_execution_time', '300');
 
         $query = SalidaOficina::with(['articulos', 'gerencias', 'areas', 'unidad_medidas', 'users'])
             ->leftJoin('inventario_oficinas', 'salida_oficinas.inventario_oficina_id', '=', 'inventario_oficinas.id')
@@ -625,8 +631,22 @@ class SalidaOficController extends Controller
             $query->whereDate('fecha_salida', '<=', $request->fecha_hasta);
         }
 
-        if ($request->filled('gerencia_id')) {
-            $gerParam = $request->gerencia_id;
+        if ($request->filled('fecha_ingreso_desde') && $request->filled('fecha_ingreso_hasta')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->whereBetween('fecha_ingreso', [$request->fecha_ingreso_desde, $request->fecha_ingreso_hasta]);
+            });
+        } elseif ($request->filled('fecha_ingreso_desde')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->where('fecha_ingreso', '>=', $request->fecha_ingreso_desde);
+            });
+        } elseif ($request->filled('fecha_ingreso_hasta')) {
+            $query->whereHas('inventario_oficinas', function($q) use ($request) {
+                $q->where('fecha_ingreso', '<=', $request->fecha_ingreso_hasta);
+            });
+        }
+
+        $gerParam = $request->input('gerencia_id') ?: $request->input('gerencia');
+        if (!empty($gerParam)) {
             $ger = is_numeric($gerParam) ? Gerencia::with('area')->find($gerParam) : Gerencia::where('gerencia', $gerParam)->first();
             if ($ger) {
                 $sameGerIds = Gerencia::where('gerencia', $ger->gerencia)->pluck('id')->toArray();
@@ -643,12 +663,14 @@ class SalidaOficController extends Controller
             }
         }
 
-        if ($request->filled('area_id')) {
-            $query->where('salida_oficinas.area_id', $request->area_id);
+        $areaParam = $request->input('area_id') ?: $request->input('area');
+        if (!empty($areaParam)) {
+            $query->where('salida_oficinas.area_id', $areaParam);
         }
 
-        if ($request->filled('articulo_id')) {
-            $query->where('salida_oficinas.articulo_id', $request->articulo_id);
+        $artParam = $request->input('articulo_id') ?: $request->input('articulo');
+        if (!empty($artParam)) {
+            $query->where('salida_oficinas.articulo_id', $artParam);
         }
 
         if ($request->filled('busqueda')) {
@@ -667,31 +689,25 @@ class SalidaOficController extends Controller
         $totalRegistros = $salida_oficinas->count();
         $totalUnidades = $salida_oficinas->sum('cantidad');
 
-        $sumaUnidadesPorArticulo = [];
-        $articulos = Articulo::all();
-        foreach ($articulos as $articulo) {
-            $sumaUnidadesPorArticulo[$articulo->id] = InventarioOficina::where('articulo_id', $articulo->id)->sum('unidades');
-        }
-
-        $salida_oficinas->each(function ($item) use ($sumaUnidadesPorArticulo) {
+        $salida_oficinas->each(function ($item) {
             $item->stockHistorico = $item->historico_unidades_disponibles ?? 0;
             $item->stockRestante = max(0, $item->stockHistorico - $item->cantidad);
         });
 
-        $filtersApplied = $request->filled('articulo_id') || $request->filled('gerencia_id') || $request->filled('area_id') || $request->filled('busqueda') || $request->filled('fecha_desde');
+        $filtersApplied = !empty($artParam) || !empty($gerParam) || !empty($areaParam) || $request->filled('busqueda') || $request->filled('fecha_desde');
         $filterDescription = '';
         if ($filtersApplied) {
             $parts = [];
-            if ($request->filled('articulo_id')) {
-                $art = Articulo::find($request->articulo_id);
+            if (!empty($artParam)) {
+                $art = Articulo::find($artParam);
                 if ($art) $parts[] = 'Artículo: ' . $art->articulo;
             }
-            if ($request->filled('gerencia_id')) {
-                $ger = Gerencia::find($request->gerencia_id);
+            if (!empty($gerParam)) {
+                $ger = is_numeric($gerParam) ? Gerencia::find($gerParam) : Gerencia::where('gerencia', $gerParam)->first();
                 if ($ger) $parts[] = 'Gerencia: ' . $ger->gerencia;
             }
-            if ($request->filled('area_id')) {
-                $ar = Area::find($request->area_id);
+            if (!empty($areaParam)) {
+                $ar = Area::find($areaParam);
                 if ($ar) $parts[] = 'Área: ' . $ar->area;
             }
             if ($request->filled('busqueda')) {
@@ -708,9 +724,13 @@ class SalidaOficController extends Controller
             'totalRegistros',
             'totalUnidades',
             'filtersApplied',
-            'filterDescription',
-            'sumaUnidadesPorArticulo'
-        ));
+            'filterDescription'
+        ))->setPaper('a4', 'landscape')
+          ->setOptions([
+              'isHtml5ParserEnabled' => true,
+              'isRemoteEnabled' => false,
+              'defaultFont' => 'sans-serif'
+          ]);
 
         return $pdf->download('salida_oficina.pdf');
     }
