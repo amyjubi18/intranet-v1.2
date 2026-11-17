@@ -580,16 +580,20 @@ export default function GerenciasManagement() {
             {/* Modal de Crear / Editar usando createPortal con backdrop-blur completo */}
             {modalOpen && createPortal(
                 <div
-                    className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 transition-all duration-300"
+                    className="fixed inset-0 z-[99999999] bg-slate-900/65 backdrop-blur-md flex items-center justify-center p-4 animate-modal-backdrop"
                     style={{
                         position: 'fixed',
+                        inset: 0,
                         top: 0,
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        zIndex: 9999999,
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 99999999,
+                        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)',
                         overflowY: 'auto',
                         margin: 0
                     }}

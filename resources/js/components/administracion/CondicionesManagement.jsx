@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
 
 export default function CondicionesManagement() {
@@ -26,6 +27,18 @@ export default function CondicionesManagement() {
     const [formData, setFormData] = useState({ condicion: '' });
     const [formErrors, setFormErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+
+    // Bloquear scroll de fondo cuando el modal esté abierto
+    useEffect(() => {
+        if (modalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [modalOpen]);
 
     // Cargar datos desde la API
     const fetchCondiciones = useCallback(async (page = 1) => {
