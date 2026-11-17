@@ -1886,16 +1886,20 @@ export default function BienesPublicos() {
             {/* Modal de Código QR / Barras Ampliado */}
             {qrModalOpen && selectedQrBien && createPortal(
                 <div
-                    className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-modal-backdrop"
+                    className="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
                     style={{
                         position: 'fixed',
+                        inset: 0,
                         top: 0,
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        zIndex: 9999999
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 99999999,
+                        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)'
                     }}
                 >
                     <div className={`bg-white rounded-2xl shadow-2xl ${isBarcodeItem(selectedQrBien) ? 'max-w-lg' : 'max-w-sm'} w-full p-6 text-center border border-slate-200 animate-modal-expand`}>
@@ -1951,16 +1955,20 @@ export default function BienesPublicos() {
             {/* Modal de Crear / Editar Bien Público */}
             {modalOpen && createPortal(
                 <div
-                    className="fixed inset-0 z-[9999999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop"
+                    className="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md overflow-y-auto animate-modal-backdrop"
                     style={{
                         position: 'fixed',
+                        inset: 0,
                         top: 0,
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        zIndex: 9999999
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 99999999,
+                        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)'
                     }}
                 >
                     <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-2xl max-w-4xl w-full my-8 p-6 sm:p-8 max-h-[92vh] overflow-y-auto animate-modal-expand">
@@ -2693,16 +2701,20 @@ export default function BienesPublicos() {
             {/* SUB-MODAL RÁPIDO PARA CREAR NUEVO COLOR (Z-INDEX SUPERIOR Z-[70]) */}
             {quickColorModalOpen && createPortal(
                 <div
-                    className="fixed inset-0 z-[99999999] flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop"
+                    className="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md overflow-y-auto animate-modal-backdrop"
                     style={{
                         position: 'fixed',
+                        inset: 0,
                         top: 0,
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        zIndex: 99999999
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 99999999,
+                        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)'
                     }}
                 >
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border border-slate-200 transition-all animate-modal-expand">

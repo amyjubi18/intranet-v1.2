@@ -389,16 +389,20 @@ export default function Consumibles() {
             {/* Modal de Detalle */}
             {detailModalOpen && selectedCartucho && createPortal(
                 <div
-                    className="fixed inset-0 z-[9999999] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-modal-backdrop"
+                    className="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
                     style={{
                         position: 'fixed',
+                        inset: 0,
                         top: 0,
                         left: 0,
                         right: 0,
                         bottom: 0,
-                        width: '100vw',
-                        height: '100vh',
-                        zIndex: 9999999
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 99999999,
+                        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)'
                     }}
                 >
                     <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-200 animate-modal-expand">

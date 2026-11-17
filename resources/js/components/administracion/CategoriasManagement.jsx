@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
 
 export default function CategoriasManagement() {
@@ -26,6 +27,18 @@ export default function CategoriasManagement() {
     const [formData, setFormData] = useState({ name: '' });
     const [formErrors, setFormErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+
+    // Bloquear scroll de fondo cuando el modal esté abierto
+    useEffect(() => {
+        if (modalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [modalOpen]);
 
     // Cargar categorías desde la API
     const fetchCategorias = useCallback(async (page = 1) => {
@@ -402,8 +415,27 @@ export default function CategoriasManagement() {
             </div>
 
             {/* MODAL CREAR / EDITAR CATEGORÍA (Mantiene el diseño original exacto) */}
-            {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+            {modalOpen && createPortal(
+                <div
+                    className="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop overflow-y-auto"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 99999999,
+                        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)'
+                    }}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !submitting) handleCloseModal();
+                    }}
+                >
                     <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 sm:p-8 border border-slate-200 my-8 transition-all animate-modal-expand">
                         {/* Cabecera del modal */}
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
@@ -492,7 +524,8 @@ export default function CategoriasManagement() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

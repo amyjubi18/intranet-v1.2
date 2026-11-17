@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import Swal from 'sweetalert2';
 
 export default function EstanteriasManagement() {
@@ -28,6 +29,18 @@ export default function EstanteriasManagement() {
     const [imagePreview, setImagePreview] = useState(null);
     const [formErrors, setFormErrors] = useState({});
     const [submitting, setSubmitting] = useState(false);
+
+    // Bloquear scroll de fondo cuando el modal esté abierto
+    useEffect(() => {
+        if (modalOpen) {
+            document.body.style.overflow = 'hidden';
+        } else {
+            document.body.style.overflow = '';
+        }
+        return () => {
+            document.body.style.overflow = '';
+        };
+    }, [modalOpen]);
     const [isDragOver, setIsDragOver] = useState(false);
     const fileInputRef = useRef(null);
 
@@ -463,8 +476,27 @@ export default function EstanteriasManagement() {
             </div>
 
             {/* MODAL CREAR / EDITAR ESTANTERÍA (REPLICANDO EXACTO create.blade.php y edit.blade.php) */}
-            {modalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 overflow-y-auto animate-modal-backdrop">
+            {modalOpen && createPortal(
+                <div
+                    className="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop overflow-y-auto"
+                    style={{
+                        position: 'fixed',
+                        inset: 0,
+                        top: 0,
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        width: '100%',
+                        height: '100%',
+                        zIndex: 99999999,
+                        backgroundColor: 'rgba(15, 23, 42, 0.65)',
+                        backdropFilter: 'blur(8px)',
+                        WebkitBackdropFilter: 'blur(8px)'
+                    }}
+                    onClick={(e) => {
+                        if (e.target === e.currentTarget && !submitting) handleCloseModal();
+                    }}
+                >
                     <div className="glass rounded-2xl p-8 max-w-2xl w-full my-8 border border-white/20 shadow-2xl transition-all animate-modal-expand">
                         {/* Cabecera del modal */}
                         <div className="flex items-center justify-between pb-4 mb-6 border-b border-slate-200">
@@ -654,7 +686,8 @@ export default function EstanteriasManagement() {
                             </div>
                         </form>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
