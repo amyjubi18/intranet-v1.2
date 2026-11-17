@@ -7,7 +7,10 @@ import ActivityLog from './components/gtic/ActivityLog';
 import BienesPublicos from './components/administracion/BienesPublicos';
 import InventarioOficinas from './components/administracion/InventarioOficinas';
 import SalidasOficinas from './components/administracion/SalidasOficinas';
-import Consumibles from './components/administracion/Consumibles';
+import ConsumiblesManagement from './components/administracion/ConsumiblesManagement';
+import TipoConsumiblesManagement from './components/administracion/TipoConsumiblesManagement';
+import ImpresorasManagement from './components/administracion/ImpresorasManagement';
+import TipoImpresorasManagement from './components/administracion/TipoImpresorasManagement';
 import DigitalizacionDocumentos from './components/gestion_humana/DigitalizacionDocumentos';
 import UsersManagement from './components/gtic/UsersManagement';
 import RolesManagement from './components/gtic/RolesManagement';
@@ -139,8 +142,20 @@ function initReactRoots() {
     mountById('inventario-oficinas-root', InventarioOficinas);
     mountComponent('SalidasOficinas', SalidasOficinas);
     mountById('salidas-oficinas-root', SalidasOficinas);
-    mountComponent('Consumibles', Consumibles);
-    mountById('consumibles-root', Consumibles);
+
+    // OGA: Consumibles, Tipo Consumibles, Impresoras, Tipo Impresoras
+    mountComponent('ConsumiblesManagement', ConsumiblesManagement);
+    mountComponent('Consumibles', ConsumiblesManagement);
+    mountById('consumibles-root', ConsumiblesManagement);
+
+    mountComponent('TipoConsumiblesManagement', TipoConsumiblesManagement);
+    mountById('tipo-consumibles-root', TipoConsumiblesManagement);
+
+    mountComponent('ImpresorasManagement', ImpresorasManagement);
+    mountById('impresoras-root', ImpresorasManagement);
+
+    mountComponent('TipoImpresorasManagement', TipoImpresorasManagement);
+    mountById('tipo-impresoras-root', TipoImpresorasManagement);
 
     // OGA: Documentos, Estanterías y Categorías
     mountComponent('DocumentosManagement', DocumentosManagement);

@@ -759,6 +759,141 @@ export default function BienesPublicos() {
         }
     };
 
+    // Eliminar seleccionados con confirmación por contraseña
+    const handleDeleteSelected = async () => {
+        if (selectedIds.length === 0) return;
+
+        const { value: password } = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: `Se eliminarán ${selectedIds.length} bien(es) público(s) seleccionado(s). Ingresa tu contraseña para confirmar:`,
+            icon: 'warning',
+            input: 'password',
+            inputPlaceholder: 'Contraseña de confirmación',
+            inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+            showCancelButton: true,
+            confirmButtonColor: '#F52727',
+            cancelButtonColor: '#2780F5',
+            confirmButtonText: 'Sí, eliminar seleccionados',
+            cancelButtonText: 'Cancelar',
+            customClass: { popup: 'rounded-2xl' },
+            preConfirm: (val) => {
+                if (!val) {
+                    Swal.showValidationMessage('Debes ingresar tu contraseña');
+                    return false;
+                }
+                return val;
+            }
+        });
+
+        if (!password) return;
+
+        try {
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const res = await fetch('/administracion/bienes_publicos/destroy-multiple', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    ids: selectedIds,
+                    password
+                })
+            });
+
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(json.message || 'Error al eliminar bienes seleccionados');
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Eliminados',
+                text: json.message || `Se eliminaron ${selectedIds.length} bien(es) correctamente.`,
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: { popup: 'rounded-2xl' }
+            });
+            setSelectedIds([]);
+            fetchBienes(pagination.current_page);
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.message || 'No se pudieron eliminar los registros seleccionados.',
+                confirmButtonColor: '#1e3a8a',
+                customClass: { popup: 'rounded-2xl' }
+            });
+        }
+    };
+
+    // Eliminar todos con confirmación por contraseña
+    const handleDeleteAll = async () => {
+        const { value: password } = await Swal.fire({
+            title: '¿Estás seguro?',
+            text: 'Se eliminarán TODOS los bienes públicos registrados. Esta acción no se puede deshacer. Ingresa tu contraseña:',
+            icon: 'warning',
+            input: 'password',
+            inputPlaceholder: 'Contraseña de confirmación',
+            inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+            showCancelButton: true,
+            confirmButtonColor: '#F52727',
+            cancelButtonColor: '#2780F5',
+            confirmButtonText: 'Sí, eliminar todo',
+            cancelButtonText: 'Cancelar',
+            customClass: { popup: 'rounded-2xl' },
+            preConfirm: (val) => {
+                if (!val) {
+                    Swal.showValidationMessage('Debes ingresar tu contraseña');
+                    return false;
+                }
+                return val;
+            }
+        });
+
+        if (!password) return;
+
+        try {
+            const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+            const res = await fetch('/administracion/bienes_publicos/destroy-all', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': token || '',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ password })
+            });
+
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) {
+                throw new Error(json.message || 'Error al eliminar todos los bienes públicos');
+            }
+
+            Swal.fire({
+                icon: 'success',
+                title: 'Bienes Eliminados',
+                text: json.message || 'Se eliminaron todos los bienes públicos correctamente.',
+                timer: 2000,
+                showConfirmButton: false,
+                customClass: { popup: 'rounded-2xl' }
+            });
+            setSelectedIds([]);
+            fetchBienes(1);
+        } catch (err) {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: err.message || 'No se pudieron eliminar todos los bienes.',
+                confirmButtonColor: '#1e3a8a',
+                customClass: { popup: 'rounded-2xl' }
+            });
+        }
+    };
+
     // Cargar Usuarios Administrativos según Unidad Administrativa
     const fetchModalUsuariosAdministrativos = async (unidadId) => {
         if (!unidadId) {
@@ -1356,6 +1491,37 @@ export default function BienesPublicos() {
                                         </option>
                                     </optgroup>
                                 </select>
+
+                                {permissions.can_destroy && (
+                                    <>
+                                        <button
+                                            type="button"
+                                            onClick={handleDeleteSelected}
+                                            disabled={selectedIds.length === 0}
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
+                                                boxShadow: '0 4px 12px rgba(246, 59, 59, 0.377)',
+                                            }}
+                                        >
+                                            <span>🗑️</span>
+                                            <span>Eliminar Seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            onClick={handleDeleteAll}
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
+                                                boxShadow: '0 4px 12px rgba(246, 59, 59, 0.3)',
+                                            }}
+                                        >
+                                            <span>⚠️</span>
+                                            <span>Eliminar Todo</span>
+                                        </button>
+                                    </>
+                                )}
 
                                 {permissions.can_create && (
                                     <button

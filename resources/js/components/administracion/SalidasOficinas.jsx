@@ -1083,14 +1083,14 @@ export default function SalidasOficinas() {
                                 >
                                     <option value="" disabled>📤 Exportar</option>
                                     <optgroup label="Exportar Todos">
-                                        <option value="excel:all">📊 Excel - Todos los registros</option>
-                                        <option value="pdf:all">📄 PDF - Todos los registros</option>
+                                        <option className="text-gray-800" value="excel:all">📊 Excel - Todos los registros</option>
+                                        <option className="text-gray-800" value="pdf:all">📄 PDF - Todos los registros</option>
                                     </optgroup>
                                     <optgroup label="Exportar Seleccionados">
                                         <option value="excel:selected" disabled={selectedIds.length === 0}>
                                             📊 Excel - Solo seleccionados ({selectedIds.length})
                                         </option>
-                                        <option value="pdf:selected" disabled={selectedIds.length === 0}>
+                                        <option className="text-gray-800" value="pdf:selected" disabled={selectedIds.length === 0}>
                                             📄 PDF - Solo seleccionados ({selectedIds.length})
                                         </option>
                                     </optgroup>
@@ -1102,7 +1102,12 @@ export default function SalidasOficinas() {
                                         type="button"
                                         disabled={selectedIds.length === 0}
                                         onClick={handleDeleteMultiple}
-                                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-xs cursor-pointer"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
+                                    boxShadow: '0 4px 12px rgba(246, 59, 59, 0.377)',
+
+                                }}
                                     >
                                         <span>🗑️</span>
                                         <span>Eliminar Seleccionados</span>
@@ -1114,7 +1119,12 @@ export default function SalidasOficinas() {
                                     <button
                                         type="button"
                                         onClick={handleDeleteAll}
-                                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-gray-600 text-white hover:bg-gray-700 active:translate-y-0.5 text-sm shadow-xs cursor-pointer"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
+                                    boxShadow: '0 4px 12px rgba(246, 59, 59, 0.3)',
+
+                                }}
                                     >
                                         <span>⚠️</span>
                                         <span>Eliminar Todo</span>

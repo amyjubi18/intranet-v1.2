@@ -69,13 +69,18 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
     Route::get('/administracion/bienes_publicos/index', [ExportController::class, 'index'])->name('index');
     Route::get('/export', [ExportController::class, 'export'])->name('export');
 
-    Route::resource('administracion/bienes_publicos', BieneController::class)
-        ->names('administracion.bienes_publicos')
-        ->parameters(['bienes_publicos' => 'biene']);
+    Route::post('/administracion/bienes_publicos/destroy-multiple', [BieneController::class, 'destroyMultiple'])
+        ->name('administracion.bienes_publicos.destroyMultiple');
+    Route::post('/administracion/bienes_publicos/destroy-all', [BieneController::class, 'destroyAll'])
+        ->name('administracion.bienes_publicos.destroyAll');
     Route::get('/administracion/bienes_publicos/export/excel', [BieneController::class, 'exportExcel'])
         ->name('administracion.bienes_publicos.export.excel');
     Route::get('/administracion/bienes_publicos/export/pdf', [BieneController::class, 'exportPdf'])
         ->name('administracion.bienes_publicos.export.pdf');
+
+    Route::resource('administracion/bienes_publicos', BieneController::class)
+        ->names('administracion.bienes_publicos')
+        ->parameters(['bienes_publicos' => 'biene']);
 
     // QR Code
     Route::get('/bienes/qr/{n_interno_bien}', [BieneController::class, 'scanQrCode'])->name('bienes.qr.scan');

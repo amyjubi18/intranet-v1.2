@@ -1002,11 +1002,11 @@ export default function InventarioOficinas() {
                                 >
                                     <option value="" disabled>📤 Exportar...</option>
                                     <optgroup label="Exportar Todos (con filtros actuales)">
-                                        <option value="excel:all">📊 Excel - Todos los registros</option>
-                                        <option value="pdf:all">📄 PDF - Todos los registros</option>
+                                        <option className="text-gray-800" value="excel:all">📊 Excel - Todos los registros</option>
+                                        <option className="text-gray-800" value="pdf:all">📄 PDF - Todos los registros</option>
                                     </optgroup>
                                     <optgroup label={`Exportar Seleccionados (${selectedIds.length})`}>
-                                        <option value="excel:selected" disabled={selectedIds.length === 0}>
+                                        <option className="text-gray-800" value="excel:selected" disabled={selectedIds.length === 0}>
                                             📊 Excel - Solo seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : '(0)'}
                                         </option>
                                         <option value="pdf:selected" disabled={selectedIds.length === 0}>
@@ -1025,7 +1025,7 @@ export default function InventarioOficinas() {
                                             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
                                 style={{
                                     background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                                    boxShadow: '0 4px 12px rgba(246, 59, 59, 0.377)',
 
                                 }}
                                         >
@@ -1040,7 +1040,7 @@ export default function InventarioOficinas() {
                                             className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
                                 style={{
                                     background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                                    boxShadow: '0 4px 12px rgba(246, 59, 59, 0.3)',
 
                                 }}
                                         >

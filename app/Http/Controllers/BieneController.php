@@ -9,6 +9,7 @@ use App\Models\UnidadAdministrativa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use App\Exports\BienesExport;
 use Maatwebsite\Excel\Facades\Excel;
 use Barryvdh\DomPDF\Facade\Pdf as PDF;
@@ -654,6 +655,81 @@ class BieneController extends Controller
         }
 
         return redirect()->route('administracion.bienes_publicos.index')->with('datos', 'Registro eliminado');
+    }
+
+    public function destroyMultiple(Request $request)
+    {
+        abort_if(Gate::denies('bienes_destroy'), 403);
+
+        $request->validate([
+            'ids' => 'required',
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $ids = is_array($request->ids) ? $request->ids : json_decode($request->ids, true);
+        if (!is_array($ids) || count($ids) === 0) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No se seleccionaron registros para eliminar.'], 422);
+            }
+            return redirect()->back()->with('error', 'No se seleccionaron registros para eliminar.');
+        }
+
+        $count = count($ids);
+
+        try {
+            DB::transaction(function () use ($ids) {
+                Biene::whereIn('id', $ids)->delete();
+            });
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => "Se eliminaron {$count} bien(es) correctamente."]);
+            }
+            return redirect()->route('administracion.bienes_publicos.index')->with('datos', "Se eliminaron {$count} bien(es) correctamente.");
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Error al eliminar los bienes: ' . $e->getMessage()], 500);
+            }
+            return redirect()->route('administracion.bienes_publicos.index')->with('error', 'Error al eliminar los bienes: ' . $e->getMessage());
+        }
+    }
+
+    public function destroyAll(Request $request)
+    {
+        abort_if(Gate::denies('bienes_destroy'), 403);
+
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $count = Biene::count();
+
+        try {
+            DB::transaction(function () {
+                Biene::query()->delete();
+            });
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => "Se eliminaron todos los bienes públicos ({$count}) correctamente."]);
+            }
+            return redirect()->route('administracion.bienes_publicos.index')->with('datos', "Se eliminaron todos los bienes públicos ({$count}) correctamente.");
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Error al eliminar los bienes: ' . $e->getMessage()], 500);
+            }
+            return redirect()->route('administracion.bienes_publicos.index')->with('error', 'Error al eliminar los bienes: ' . $e->getMessage());
+        }
     }
 
     public function exportExcel(Request $request)
