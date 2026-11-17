@@ -1125,7 +1125,11 @@ export default function SalidasOficinas() {
                                 <button
                                     type="button"
                                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                    className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 text-sm shadow-xs cursor-pointer"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
                                 >
                                     <span>⚡</span>
                                     <span>Filtros Avanzados</span>
@@ -1276,7 +1280,11 @@ export default function SalidasOficinas() {
                             <button
                                 type="button"
                                 onClick={openCreateModal}
-                                className="inline-flex items-center gap-2 px-6 py-3 bg-blue-900 text-white rounded-xl font-semibold hover:bg-blue-800 transition-colors cursor-pointer shadow-sm"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
                             >
                                 <span>➕</span>
                                 <span>Nueva Salida</span>
