@@ -1,6 +1,6 @@
 {
   "node_modules/html5-qrcode/esm/index.js": {
-    "file": "assets/index-BmOTY4z3.js",
+    "file": "assets/index-Dcb669zu.js",
     "name": "index",
     "src": "node_modules/html5-qrcode/esm/index.js",
     "isDynamicEntry": true,
@@ -9,7 +9,7 @@
     ]
   },
   "resources/css/app.css": {
-    "file": "assets/app-UDkimNZ7.css",
+    "file": "assets/app-D3O9mrrt.css",
     "src": "resources/css/app.css",
     "isEntry": true,
     "name": "app",
@@ -18,7 +18,7 @@
     ]
   },
   "resources/js/app.js": {
-    "file": "assets/app-BgOS51CA.js",
+    "file": "assets/app-BeC0AUtk.js",
     "name": "app",
     "src": "resources/js/app.js",
     "isEntry": true,
