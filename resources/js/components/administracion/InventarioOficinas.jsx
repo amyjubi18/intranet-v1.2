@@ -1021,7 +1021,13 @@ export default function InventarioOficinas() {
                                             type="button"
                                             onClick={handleDeleteSelected}
                                             disabled={selectedIds.length === 0}
-                                            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-xs"
+                                            /* className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-xs" */
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+
+                                }}
                                         >
                                             <span>🗑️</span>
                                             <span>Eliminar Seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
@@ -1030,7 +1036,13 @@ export default function InventarioOficinas() {
                                         <button
                                             type="button"
                                             onClick={handleDeleteAll}
-                                            className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm shadow-xs"
+                                            /* className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm shadow-xs" */
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+
+                                }}
                                         >
                                             <span>⚠️</span>
                                             <span>Eliminar Todo</span>
@@ -1064,7 +1076,8 @@ export default function InventarioOficinas() {
                                     className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
                                 style={{
                                     background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+
                                 }}
                                 >
                                     <span>⚡ Filtros Avanzados</span>

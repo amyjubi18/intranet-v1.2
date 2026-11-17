@@ -601,9 +601,10 @@ class SalidaOficController extends Controller
 
         $filters = $request->all();
 
+        $filename = 'salida_oficina_' . date('Y-m-d') . '.xlsx';
         return \Maatwebsite\Excel\Facades\Excel::download(
             new \App\Exports\SalidaOficinaExport($filters),
-            'salida_oficina.xlsx'
+            $filename
         );
     }
 
@@ -732,6 +733,7 @@ class SalidaOficController extends Controller
               'defaultFont' => 'sans-serif'
           ]);
 
-        return $pdf->download('salida_oficina.pdf');
+        $filename = 'salida_oficina_' . date('Y-m-d') . '.pdf';
+        return $pdf->download($filename);
     }
 }
