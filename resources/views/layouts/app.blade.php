@@ -1038,7 +1038,7 @@
             @else
                 @yield('content')
             @endif
-        </main>
+        </div>
     </main>
 
     <!-- Toast de Notificaciones -->

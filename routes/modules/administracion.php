@@ -140,15 +140,15 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
         ->names('administracion.gerencias')
         ->parameters(['gerencias' => 'gerencia']);
 
-    Route::resource('/administracion/salida_oficina', SalidaOficController::class)->names('administracion.salida_oficina');
-    Route::post('/administracion/salida_oficina/destroy-multiple', [SalidaOficController::class, 'destroyMultiple'])
-        ->name('administracion.salida_oficina.destroyMultiple');
-    Route::post('/administracion/salida_oficina/destroy-all', [SalidaOficController::class, 'destroyAll'])
-        ->name('administracion.salida_oficina.destroyAll');
     Route::get('/administracion/salida_oficina/export/excel', [SalidaOficController::class, 'exportExcel'])
         ->name('administracion.salida_oficina.export.excel');
     Route::get('/administracion/salida_oficina/export/pdf', [SalidaOficController::class, 'exportPdf'])
         ->name('administracion.salida_oficina.export.pdf');
+    Route::post('/administracion/salida_oficina/destroy-multiple', [SalidaOficController::class, 'destroyMultiple'])
+        ->name('administracion.salida_oficina.destroyMultiple');
+    Route::post('/administracion/salida_oficina/destroy-all', [SalidaOficController::class, 'destroyAll'])
+        ->name('administracion.salida_oficina.destroyAll');
+    Route::resource('/administracion/salida_oficina', SalidaOficController::class)->names('administracion.salida_oficina');
 
 
     /* =========================================================================

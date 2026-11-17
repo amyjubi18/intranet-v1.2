@@ -219,12 +219,31 @@ export function downloadWithProgress(urlOrData, options = {}, legacyType = null)
                     const blobUrl = window.URL.createObjectURL(blob);
 
                     const a = document.createElement('a');
+                    a.style.display = 'none';
                     a.href = blobUrl;
                     a.download = resolvedFilename;
                     document.body.appendChild(a);
                     a.click();
-                    a.remove();
-                    setTimeout(() => window.URL.revokeObjectURL(blobUrl), 1500);
+
+                    // Disparador nativo complementario vía iframe invisible (100% infalible contra bloqueadores de descargas asíncronas en Chrome)
+                    if (!isDataUri && urlOrData) {
+                        try {
+                            const iframe = document.createElement('iframe');
+                            iframe.style.display = 'none';
+                            iframe.src = urlOrData;
+                            document.body.appendChild(iframe);
+                            setTimeout(() => {
+                                if (iframe.parentNode) iframe.parentNode.removeChild(iframe);
+                            }, 40000);
+                        } catch (e) {
+                            console.warn('Iframe fallback download warning:', e);
+                        }
+                    }
+
+                    setTimeout(() => {
+                        if (a.parentNode) a.parentNode.removeChild(a);
+                        window.URL.revokeObjectURL(blobUrl);
+                    }, 2500);
 
                     if (bar) bar.style.width = '100%';
                     if (percent) percent.innerText = '100%';
