@@ -202,6 +202,10 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
         ->name('administracion.almacenamiento_impresoras.export.excel');
     Route::get('/administracion/almacenamiento_impresoras/export/pdf', [AlmacenamientoImpresoraController::class, 'exportPdf'])
         ->name('administracion.almacenamiento_impresoras.export.pdf');
+    Route::post('/administracion/almacenamiento_impresoras/destroy-multiple', [AlmacenamientoImpresoraController::class, 'destroyMultiple'])
+        ->name('administracion.almacenamiento_impresoras.destroyMultiple');
+    Route::post('/administracion/almacenamiento_impresoras/destroy-all', [AlmacenamientoImpresoraController::class, 'destroyAll'])
+        ->name('administracion.almacenamiento_impresoras.destroyAll');
 
     Route::resource('/administracion/distribucion_almacenamiento_impresoras', DistribucionAlmacenamientoImpresoraController::class)
         ->names('administracion.distribucion_almacenamiento_impresoras')
@@ -210,6 +214,10 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
         ->name('administracion.distribucion_almacenamiento_impresoras.export.excel');
     Route::get('/administracion/distribucion_almacenamiento_impresoras/export/pdf', [DistribucionAlmacenamientoImpresoraController::class, 'exportPdf'])
         ->name('administracion.distribucion_almacenamiento_impresoras.export.pdf');
+    Route::post('/administracion/distribucion_almacenamiento_impresoras/destroy-multiple', [DistribucionAlmacenamientoImpresoraController::class, 'destroyMultiple'])
+        ->name('administracion.distribucion_almacenamiento_impresoras.destroyMultiple');
+    Route::post('/administracion/distribucion_almacenamiento_impresoras/destroy-all', [DistribucionAlmacenamientoImpresoraController::class, 'destroyAll'])
+        ->name('administracion.distribucion_almacenamiento_impresoras.destroyAll');
 
     // Reportes Unificados de Inventario
     Route::get('/administracion/reportes', [UnifiedInventoryController::class, 'index'])->name('administracion.reportes.index');

@@ -536,6 +536,73 @@
             #menuToggle { display: inline-flex !important; }
         }
 
+        /* =====================================================
+           SISTEMA RESPONSIVO GLOBAL - Adaptación a cualquier resolución
+           ===================================================== */
+
+        /* Contenedor principal del contenido: nunca desbordar */
+        .main-content {
+            max-width: 100vw;
+            overflow-x: hidden;
+        }
+
+        /* Toolbar principal: búsqueda + botones de acción */
+        /* Forzar que la barra de herramientas haga wrap en resoluciones intermedias */
+        .toolbar-row,
+        .bg-white .flex.flex-col.lg\:flex-row {
+            flex-wrap: wrap !important;
+        }
+
+        /* Buscador: quitar max-width fijo para que sea fluido */
+        .toolbar-row form,
+        .bg-white form.flex-1 {
+            max-width: 100% !important;
+            min-width: 200px;
+        }
+
+        /* Botones de acción: siempre hacer wrap */
+        .toolbar-actions,
+        .bg-white .flex.flex-wrap.items-center.justify-end {
+            flex-wrap: wrap !important;
+        }
+
+        /* Badges de filtros activos: siempre hacer wrap */
+        .filter-badges,
+        .flex.flex-wrap.items-center.gap-2.text-xs {
+            flex-wrap: wrap !important;
+        }
+
+        /* Tarjetas de estadísticas responsivas */
+        @media (max-width: 1400px) {
+            .grid.xl\:grid-cols-5 {
+                grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .grid.xl\:grid-cols-5,
+            .grid.lg\:grid-cols-4 {
+                grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+            }
+        }
+
+        @media (max-width: 900px) {
+            .grid.xl\:grid-cols-5,
+            .grid.lg\:grid-cols-4,
+            .grid.lg\:grid-cols-3 {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+        }
+
+        @media (max-width: 640px) {
+            .grid.xl\:grid-cols-5,
+            .grid.lg\:grid-cols-4,
+            .grid.lg\:grid-cols-3,
+            .grid.sm\:grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
         /* Responsive para pantallas pequeñas (500px) */
         @media (max-width: 640px) {
             .glass .flex.items-center.justify-between {
@@ -549,6 +616,152 @@
             .glass .flex.items-center.justify-between .flex.items-center.gap-2 {
                 width: 100%;
                 justify-content: flex-end;
+            }
+        }
+
+        /* =====================================================
+           RESPONSIVE TOOLBAR - Para pantallas 1200px-1920px+
+           Estos son los breakpoints donde el sidebar + contenido
+           causan problemas (1920-280=1640px contenido efectivo)
+           ===================================================== */
+
+        /* Forzar que los botones inline-flex hagan wrap correctamente */
+        .inline-flex {
+            white-space: nowrap;
+        }
+
+        /* Toolbar: en resoluciones intermedias, hacer que el buscador y acciones se apilen */
+        @media (max-width: 1280px) {
+            /* Las filas del toolbar deben fluir verticalmente si no caben */
+            .bg-white .flex.flex-col.lg\:flex-row {
+                flex-direction: column !important;
+                align-items: stretch !important;
+            }
+
+            /* Buscador toma todo el ancho */
+            .bg-white form.flex-1.max-w-xl,
+            form.flex-1.max-w-xl {
+                max-width: 100% !important;
+                width: 100% !important;
+            }
+
+            /* Acciones van debajo y se extienden */
+            .bg-white .flex.flex-wrap.items-center.justify-end.gap-3 {
+                width: 100%;
+                justify-content: flex-start !important;
+            }
+        }
+
+        /* En pantallas muy grandes (1920+), mantener todo en línea */
+        @media (min-width: 1281px) {
+            .bg-white form.flex-1.max-w-xl,
+            form.flex-1.max-w-xl {
+                max-width: none !important;
+                flex: 1 1 0% !important;
+            }
+        }
+
+        /* Tarjetas de registros: grid responsivo para contenido */
+        @media (max-width: 1024px) {
+            .grid.lg\:grid-cols-4 {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .grid.lg\:grid-cols-4,
+            .grid.md\:grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Record cards: no escalar tanto en hover para evitar desbordamiento */
+        @media (max-width: 1400px) {
+            .hover\:scale-105:hover {
+                transform: scale(1.02) !important;
+            }
+        }
+        @media (max-width: 768px) {
+            .hover\:scale-105:hover {
+                transform: none !important;
+            }
+        }
+
+        /* Filtros avanzados: grid responsivo para los selects */
+        @media (max-width: 768px) {
+            .grid.lg\:grid-cols-3 {
+                grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+            }
+        }
+        @media (max-width: 500px) {
+            .grid.lg\:grid-cols-3,
+            .grid.sm\:grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Presets de fecha: hacer wrap en pantallas pequeñas */
+        @media (max-width: 640px) {
+            .flex.items-center.gap-1\.5 {
+                flex-wrap: wrap !important;
+            }
+        }
+
+        /* =====================================================
+           REACT COMPONENTS - Correcciones responsivas para los
+           componentes React que usan los mismos patrones
+           ===================================================== */
+
+        /* React toolbar: búsqueda + acciones */
+        @media (max-width: 1280px) {
+            [data-react-component] .flex.flex-wrap.items-center.justify-between {
+                flex-direction: column !important;
+                align-items: stretch !important;
+                gap: 0.75rem !important;
+            }
+            [data-react-component] .flex.flex-wrap.items-center.justify-between > .relative.flex-1 {
+                width: 100% !important;
+                max-width: 100% !important;
+            }
+            [data-react-component] .flex.items-center.gap-3,
+            [data-react-component] .flex.items-center.gap-1 {
+                flex-wrap: wrap !important;
+            }
+        }
+
+        /* React: acciones del lado derecho */
+        @media (max-width: 1280px) {
+            [data-react-component] .flex.items-center.gap-1.ml-auto {
+                margin-left: 0 !important;
+                width: 100% !important;
+                justify-content: flex-start !important;
+                flex-wrap: wrap !important;
+            }
+        }
+
+        /* React: Contenedor de registros tipo card */
+        @media (max-width: 768px) {
+            [data-react-component] .grid.grid-cols-2 {
+                grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* Paginación responsiva */
+        @media (max-width: 640px) {
+            .flex.items-center.gap-1\.5 button,
+            .flex.items-center.gap-1\.5 a {
+                padding: 0.375rem 0.625rem !important;
+                font-size: 0.75rem !important;
+            }
+        }
+
+        /* =====================================================
+           HEADER / TOPBAR - Responsivo
+           ===================================================== */
+        @media (max-width: 768px) {
+            .main-content > header .flex {
+                flex-wrap: wrap !important;
+                gap: 0.5rem !important;
             }
         }
     </style>

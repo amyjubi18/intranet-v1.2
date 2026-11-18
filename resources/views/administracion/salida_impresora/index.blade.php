@@ -76,9 +76,9 @@
         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
             <div class="flex flex-col gap-4">
                 <!-- Fila Superior: Buscador Rápido + Acciones (Exportar, Nuevo) -->
-                <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                <div class="flex flex-wrap items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
                     <!-- Buscador general -->
-                    <form method="GET" action="{{ route('administracion.salida_impresora.index') }}" class="flex-1 max-w-xl">
+                    <form method="GET" action="{{ route('administracion.salida_impresora.index') }}" class="flex-1 min-w-[280px]">
                         @if(request('cartucho_id')) <input type="hidden" name="cartucho_id" value="{{ request('cartucho_id') }}"> @endif
                         @if(request('colore_id')) <input type="hidden" name="colore_id" value="{{ request('colore_id') }}"> @endif
                         @if(request('impresora_id')) <input type="hidden" name="impresora_id" value="{{ request('impresora_id') }}"> @endif

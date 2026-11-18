@@ -964,7 +964,7 @@ export default function InventarioOficinas() {
                         {/* Fila superior: Buscador a la izquierda + Exportar y Acciones a la derecha */}
                         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
                             {/* Buscador en tiempo real de los registros existentes */}
-                            <div className="relative flex-1 min-w-[260px] max-w-md">
+                            <div className="relative flex-1 min-w-[260px]">
                                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                     🔍
                                 </span>

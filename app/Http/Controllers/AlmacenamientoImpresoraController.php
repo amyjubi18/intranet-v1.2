@@ -10,6 +10,7 @@ use App\Models\Fabricante;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Exception;
 use App\Http\Livewire;
 use App\Models\AlmacenamientoImpresora;
@@ -415,8 +416,88 @@ return $pdf->download('almacenamiento_impresoras.pdf');
     public function destroy($id)
     {
         abort_if(Gate::denies('almacen_inv_destroy'), 403);
-        $almacenamiento_impresora = AlmacenamientoImpresora::find($id);
+        $almacenamiento_impresora = AlmacenamientoImpresora::findOrFail($id);
         $almacenamiento_impresora->delete();
-        return redirect()->route('administracion.almacenamiento_impresoras.index')->with('Fila eliminada');
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Registro eliminado correctamente.']);
+        }
+
+        return redirect()->route('administracion.almacenamiento_impresoras.index')->with('success', 'Registro eliminado correctamente.');
+    }
+
+    public function destroyMultiple(Request $request)
+    {
+        abort_if(Gate::denies('almacen_inv_destroy'), 403);
+
+        $request->validate([
+            'ids' => 'required',
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $ids = is_array($request->ids) ? $request->ids : json_decode($request->ids, true);
+        if (!is_array($ids) || count($ids) === 0) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No se seleccionaron registros para eliminar.'], 422);
+            }
+            return redirect()->back()->with('error', 'No se seleccionaron registros para eliminar.');
+        }
+
+        $count = count($ids);
+
+        try {
+            DB::transaction(function () use ($ids) {
+                AlmacenamientoImpresora::whereIn('id', $ids)->delete();
+            });
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => "Se eliminaron {$count} registro(s) correctamente."]);
+            }
+            return redirect()->route('administracion.almacenamiento_impresoras.index')->with('datos', "Se eliminaron {$count} registro(s) correctamente.");
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Error al eliminar los registros: ' . $e->getMessage()], 500);
+            }
+            return redirect()->route('administracion.almacenamiento_impresoras.index')->with('error', 'Error al eliminar los registros: ' . $e->getMessage());
+        }
+    }
+
+    public function destroyAll(Request $request)
+    {
+        abort_if(Gate::denies('almacen_inv_destroy'), 403);
+
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $count = AlmacenamientoImpresora::count();
+
+        try {
+            DB::transaction(function () {
+                AlmacenamientoImpresora::query()->delete();
+            });
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => "Se eliminaron todos los registros ({$count}) correctamente."]);
+            }
+            return redirect()->route('administracion.almacenamiento_impresoras.index')->with('datos', "Se eliminaron todos los registros ({$count}) correctamente.");
+        } catch (\Exception $e) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Error al eliminar los registros: ' . $e->getMessage()], 500);
+            }
+            return redirect()->route('administracion.almacenamiento_impresoras.index')->with('error', 'Error al eliminar los registros: ' . $e->getMessage());
+        }
     }
 }

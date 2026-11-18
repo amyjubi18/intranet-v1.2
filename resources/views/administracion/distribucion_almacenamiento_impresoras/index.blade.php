@@ -29,7 +29,7 @@
 
     <!-- Tarjetas superiores de estadísticas -->
     <div class="px-6 mb-8">
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 animate-fadeIn">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-fadeIn">
             <!-- Total Distribuciones -->
             <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -120,9 +120,9 @@
         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
             <div class="flex flex-col gap-4">
                 <!-- Fila Superior: Buscador Rápido + Acciones (Exportar, Nuevo) -->
-                <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                <div class="flex flex-wrap items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
                     <!-- Buscador general -->
-                    <form method="GET" action="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}" class="flex-1 max-w-xl">
+                    <form method="GET" action="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}" class="flex-1 min-w-[280px]">
                         @if(request('gerencia')) <input type="hidden" name="gerencia" value="{{ request('gerencia') }}"> @endif
                         @if(request('area')) <input type="hidden" name="area" value="{{ request('area') }}"> @endif
                         @if(request('cartucho')) <input type="hidden" name="cartucho" value="{{ request('cartucho') }}"> @endif
@@ -158,8 +158,32 @@
                             </optgroup>
                         </select>
 
+                        @can('dist_almac_destroy')
+                        <button
+                            type="button"
+                            id="btnDeleteSelectedDist"
+                            onclick="handleDistDeleteSelected()"
+                            disabled
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer opacity-50 cursor-not-allowed"
+                            style="background: linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%); box-shadow: 0 4px 12px rgba(246, 59, 59, 0.377);"
+                        >
+                            <span>🗑️</span>
+                            <span id="btnDeleteSelectedDistText">Eliminar Seleccionados</span>
+                        </button>
+
+                        <button
+                            type="button"
+                            onclick="handleDistDeleteAll()"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                            style="background: linear-gradient(135deg, #5e0e0e 0%, #b41818 100%); box-shadow: 0 4px 12px rgba(246, 59, 59, 0.3);"
+                        >
+                            <span>⚠️</span>
+                            <span>Eliminar Todo</span>
+                        </button>
+                        @endcan
+
                         @can('dist_almac_create')
-                        <a href="{{ route('administracion.distribucion_almacenamiento_impresoras.create') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs">
+                        <a href="{{ route('administracion.distribucion_almacenamiento_impresoras.create') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                             <span>➕</span>
                             <span>Nueva Distribución</span>
                         </a>
@@ -173,7 +197,8 @@
                         <button
                             type="button"
                             @click="openFilters = !openFilters"
-                            class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-all duration-300 cursor-pointer"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                            style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);"
                         >
                             <span>⚡ Filtros Avanzados</span>
                             @if($activeFiltersCount > 0)
@@ -414,6 +439,9 @@
                         </div>
                     @endif
                     <div class="flex items-center gap-4">
+                        <div class="flex-shrink-0">
+                            <input type="checkbox" title="Seleccionar todos de esta impresora" class="dist-printer-group-checkbox w-5 h-5 text-blue-600 bg-white/20 border-white/40 rounded focus:ring-blue-400 cursor-pointer" onchange="toggleDistPrinterGroup(this, {{ $printerId ?: 0 }})">
+                        </div>
                         <div class="w-20 h-20 rounded-xl bg-white/20 flex items-center justify-center">
                             @if($printer && $printer->imagen)
                                 <img src="{{ asset('storage/' . $printer->imagen) }}" alt="Impresora" class="w-18 h-18 object-cover rounded-xl">
@@ -435,7 +463,7 @@
             <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 hover:scale-105 transition-transform duration-200">
                 <div class="flex flex-col md:flex-row items-start gap-4 md:gap-6">
                     <div class="flex-shrink-0 pt-2">
-                        <input type="checkbox" class="record-checkbox w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" value="{{ $distribucion->id }}" onchange="updateDistribucionSelection()">
+                        <input type="checkbox" class="record-checkbox dist-printer-group-item-{{ $printerId ?: 0 }} w-5 h-5 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 cursor-pointer" value="{{ $distribucion->id }}" onchange="updateDistribucionSelection()">
                     </div>
                     <!-- Imagen de la impresora -->
                     <div class="w-20 h-20 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 flex items-center justify-center flex-shrink-0 self-center md:self-start">
@@ -742,6 +770,14 @@
             }
         }
 
+        function toggleDistPrinterGroup(masterCb, printerId) {
+            const checkboxes = document.querySelectorAll('.dist-printer-group-item-' + printerId);
+            checkboxes.forEach(cb => {
+                cb.checked = masterCb.checked;
+            });
+            updateDistribucionSelection();
+        }
+
         function updateDistribucionSelection() {
             const ck = document.querySelectorAll('.record-checkbox:checked');
             const count = ck.length;
@@ -755,6 +791,144 @@
             if (optPdf) {
                 optPdf.disabled = count === 0;
                 optPdf.textContent = `📄 PDF - Solo seleccionados ${count > 0 ? `(${count})` : '(0)'}`;
+            }
+
+            const btnDeleteSelected = document.getElementById('btnDeleteSelectedDist');
+            const btnDeleteSelectedText = document.getElementById('btnDeleteSelectedDistText');
+            if (btnDeleteSelected) {
+                btnDeleteSelected.disabled = count === 0;
+                if (count === 0) {
+                    btnDeleteSelected.classList.add('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btnDeleteSelected.classList.remove('opacity-50', 'cursor-not-allowed');
+                }
+            }
+            if (btnDeleteSelectedText) {
+                btnDeleteSelectedText.textContent = `Eliminar Seleccionados ${count > 0 ? `(${count})` : ''}`;
+            }
+        }
+
+        async function handleDistDeleteSelected() {
+            const selectedIds = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) return;
+
+            const { value: password } = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: `Se eliminarán ${selectedIds.length} distribución(es) seleccionadas. Ingresa tu contraseña para confirmar:`,
+                icon: 'warning',
+                input: 'password',
+                inputPlaceholder: 'Contraseña de confirmación',
+                inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+                showCancelButton: true,
+                confirmButtonColor: '#F52727',
+                cancelButtonColor: '#2780F5',
+                confirmButtonText: 'Sí, eliminar seleccionados',
+                cancelButtonText: 'Cancelar',
+                preConfirm: (val) => {
+                    if (!val) {
+                        Swal.showValidationMessage('Debes ingresar tu contraseña');
+                        return false;
+                    }
+                    return val;
+                }
+            });
+
+            if (!password) return;
+
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch('{{ route("administracion.distribucion_almacenamiento_impresoras.destroyMultiple") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token || '',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        ids: selectedIds,
+                        password: password
+                    })
+                });
+
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(json.message || 'Error al eliminar distribuciones seleccionadas');
+                }
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Eliminados',
+                    text: json.message || `Se eliminaron ${selectedIds.length} distribución(es) correctamente.`,
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                window.location.reload();
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: err.message || 'No se pudieron eliminar las distribuciones.'
+                });
+            }
+        }
+
+        async function handleDistDeleteAll() {
+            const { value: password } = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Se eliminarán TODAS las distribuciones de almacenamiento. Esta acción no se puede deshacer. Ingresa tu contraseña:',
+                icon: 'warning',
+                input: 'password',
+                inputPlaceholder: 'Contraseña de confirmación',
+                inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+                showCancelButton: true,
+                confirmButtonColor: '#F52727',
+                cancelButtonColor: '#2780F5',
+                confirmButtonText: 'Sí, eliminar todo',
+                cancelButtonText: 'Cancelar',
+                preConfirm: (val) => {
+                    if (!val) {
+                        Swal.showValidationMessage('Debes ingresar tu contraseña');
+                        return false;
+                    }
+                    return val;
+                }
+            });
+
+            if (!password) return;
+
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch('{{ route("administracion.distribucion_almacenamiento_impresoras.destroyAll") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token || '',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(json.message || 'Error al eliminar todas las distribuciones');
+                }
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Distribuciones Vaciadas',
+                    text: json.message || 'Se eliminaron todas las distribuciones correctamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                window.location.reload();
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: err.message || 'No se pudieron eliminar todas las distribuciones.'
+                });
             }
         }
 
@@ -965,21 +1139,32 @@
 
 
     <script>
-        function confirmDelete(id) {
-            Swal.fire({
-                title: "¿Estás seguro?",
-                text: "No podrás revertir esto!",
-                icon: "warning",
+        async function confirmDelete(id) {
+            const { value: password } = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Se eliminará este registro de distribución. Ingresa tu contraseña para confirmar:',
+                icon: 'warning',
+                input: 'password',
+                inputPlaceholder: 'Ingresa tu contraseña...',
+                inputAttributes: {
+                    autocapitalize: 'off',
+                    autocorrect: 'off'
+                },
                 showCancelButton: true,
-                confirmButtonColor: "#3085d6",
-                cancelButtonColor: "#d33",
-                confirmButtonText: "Sí, eliminar!",
-                cancelButtonText: "Cancelar"
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    document.getElementById("delete-form-" + id).submit();
+                confirmButtonColor: '#F52727',
+                cancelButtonColor: '#2780F5',
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                inputValidator: (value) => {
+                    if (!value) {
+                        return 'Debes ingresar tu contraseña';
+                    }
                 }
             });
+
+            if (!password) return;
+
+            document.getElementById("delete-form-" + id).submit();
         }
     </script>
 

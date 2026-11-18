@@ -1439,7 +1439,7 @@ export default function BienesPublicos() {
                         {/* Fila superior: Buscar, Exportar, Nuevo */}
                         <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
                             {/* Campo Buscar */}
-                            <div className="relative flex-1 min-w-[240px] max-w-md">
+                            <div className="relative flex-1 min-w-[240px]">
                                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                     🔍
                                 </span>
