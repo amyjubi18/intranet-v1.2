@@ -1362,8 +1362,8 @@
     </div>
 
     <script>
-        window.cartuchosMetadata = @json($cartuchos);
-        window.almacenItems = @json($impresorasAlmacenadas->keyBy('id'));
+        window.cartuchosMetadata = @json($cartuchos ?? []);
+        window.almacenItems = @json(($almacenamiento_impresoras ?? $impresorasAlmacenadas ?? collect())->keyBy('id'));
 
         function onAlmacenCartuchoChange(cartuchoId, prefix) {
             if (!cartuchoId) return;

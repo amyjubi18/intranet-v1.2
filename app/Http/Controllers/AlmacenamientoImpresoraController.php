@@ -166,8 +166,10 @@ class AlmacenamientoImpresoraController extends Controller
         $fabricantes = Fabricante::all();
         $proveedores = Proveedore::all();
 
+        $impresorasAlmacenadas = $almacenamiento_impresoras;
+
         return view('administracion.almacenamiento_impresoras.index', compact(
-            'almacenamiento_impresoras', 'totalMateriales', 'totalConsumiblesRegistrados', 'porcentajeConsumibles', 'consumiblesEsteMes', 'stockBajo', 'stockBajoItems', 'totalImpresoras', 'ultimasFechas', 'impresorasEsteMes',
+            'almacenamiento_impresoras', 'impresorasAlmacenadas', 'totalMateriales', 'totalConsumiblesRegistrados', 'porcentajeConsumibles', 'consumiblesEsteMes', 'stockBajo', 'stockBajoItems', 'totalImpresoras', 'ultimasFechas', 'impresorasEsteMes',
             'cartuchos', 'colores', 'impresoras', 'fabricantes', 'proveedores', 'unidadesDisponiblesBajoStock', 'totalesPorImpresoraColor'
         ));
     }

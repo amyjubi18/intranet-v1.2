@@ -867,7 +867,7 @@
 
     <script>
         window.distGerencias = @json($gerencias ?? []);
-        window.distItems = @json($distribuciones->keyBy('id'));
+        window.distItems = @json(($distribuciones ?? collect())->keyBy('id'));
         window.distAreas = @json($areas ?? []);
         window.distAlmacenamientos = @json($almacenamientos ?? []);
 
