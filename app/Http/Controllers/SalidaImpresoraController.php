@@ -13,6 +13,7 @@ use App\Models\InventarioImpresora;
 use App\Models\Proveedore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Hash;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\SalidaImpresoraExport;
 use Illuminate\Support\Facades\DB;
@@ -126,7 +127,8 @@ class SalidaImpresoraController extends Controller
             });
         }
 
-        $salida_impresoras = $query->paginate(5)->appends($request->all());
+        $perPage = $request->get('per_page', 10);
+        $salida_impresoras = $query->paginate($perPage)->appends($request->all());
 
         // Calculate stats
         $totalSalidas = SalidaImpresora::sum('cantidad');
@@ -138,7 +140,7 @@ class SalidaImpresoraController extends Controller
         // Get latest entry date (last date in d/m format)
         $ultimasFechasSalida = SalidaImpresora::orderBy('fecha_salida', 'desc')->limit(1)->pluck('fecha_salida')->map(function($date) {
             return \Carbon\Carbon::parse($date)->format('d/m');
-        })->implode('');
+        })->implode('') ?: 'N/A';
 
         // Fetch filter options
         $cartuchos = Cartucho::with('colore', 'impresora', 'fabricante')->get();
@@ -147,6 +149,36 @@ class SalidaImpresoraController extends Controller
         $fabricantes = Fabricante::all();
         $areas = Area::all();
         $gerencias = Gerencia::with('area')->get();
+        $inventario_impresoras = InventarioImpresora::with('impresoras', 'cartuchos', 'colores', 'fabricantes', 'areas', 'gerencias')->where('unidades_disponibles', '>', 0)->get();
+
+        if ($request->wantsJson() || $request->ajax() || $request->is('api/*')) {
+            return response()->json([
+                'success' => true,
+                'data' => $salida_impresoras,
+                'metrics' => [
+                    'totalSalidas' => $totalSalidas,
+                    'totalSalidasRegistradas' => $totalSalidasRegistradas,
+                    'salidasEsteMes' => $salidasEsteMes,
+                    'totalItemsSalidos' => $totalItemsSalidos,
+                    'salidasBajoStock' => $salidasBajoStock,
+                    'ultimasFechasSalida' => $ultimasFechasSalida,
+                ],
+                'catalogs' => [
+                    'cartuchos' => $cartuchos,
+                    'colores' => $colores,
+                    'impresoras' => $impresoras,
+                    'fabricantes' => $fabricantes,
+                    'areas' => $areas,
+                    'gerencias' => $gerencias,
+                    'inventario_impresoras' => $inventario_impresoras,
+                ],
+                'permissions' => [
+                    'can_create' => Gate::allows('salidaimpre_create'),
+                    'can_edit' => Gate::allows('salidaimpre_edit'),
+                    'can_destroy' => Gate::allows('salidaimpre_destroy'),
+                ]
+            ]);
+        }
 
         return view('administracion.salida_impresora.index', compact(
             'salida_impresoras', 'totalSalidas', 'totalSalidasRegistradas', 'salidasEsteMes', 'totalItemsSalidos', 'salidasBajoStock', 'ultimasFechasSalida',
@@ -299,6 +331,9 @@ class SalidaImpresoraController extends Controller
         }
 
         if ($inventario->unidades_disponibles < $request->cantidad) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No hay suficientes unidades disponibles.'], 422);
+            }
             return redirect()->back()->withErrors(['cantidad' => 'No hay suficientes unidades disponibles']);
         }
 
@@ -320,13 +355,24 @@ class SalidaImpresoraController extends Controller
         $inventario->unidades_disponibles -= $request->cantidad;
         $inventario->save();
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Salida de consumible registrada exitosamente.', 'data' => $salida_impresora]);
+        }
+
         return redirect()->route('administracion.salida_impresora.index')->with('datos', 'Registro exitoso');
     }
- public function edit($id)
+    public function edit($id)
     {
         abort_if(Gate::denies('salidaimpre_edit'), 403);
 
         $salida_impresora = SalidaImpresora::find($id);
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'data' => $salida_impresora
+            ]);
+        }
 
         return view('administracion.salida_impresora.edit', [
             'salida_impresora' => $salida_impresora,
@@ -340,18 +386,27 @@ class SalidaImpresoraController extends Controller
         ]);
     }
 
-     public function update(Request $request, $id)
+    public function update(Request $request, $id)
     {
         $request->validate([
             'fecha_salida' => 'required',
             'inventario_impresora_id' => 'required',
-            'cantidad' => 'required',
+            'cantidad' => 'required|numeric|min:1',
         ]);
 
         $salida_impresora = SalidaImpresora::find($id);
-        $inventario = InventarioImpresora::find($request->inventario_impresora_id);
+        if (!$salida_impresora) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Registro no encontrado.'], 404);
+            }
+            return redirect()->back()->withErrors(['id' => 'Registro no encontrado']);
+        }
 
+        $inventario = InventarioImpresora::find($request->inventario_impresora_id);
         if (!$inventario) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Inventario no encontrado.'], 404);
+            }
             return redirect()->back()->withErrors(['inventario_impresora_id' => 'Inventario no encontrado']);
         }
 
@@ -360,6 +415,10 @@ class SalidaImpresoraController extends Controller
 
         // Verificar si hay suficientes unidades después del cambio
         if ($inventario->unidades_disponibles < $request->cantidad) {
+            $inventario->unidades_disponibles -= $salida_impresora->cantidad; // revertir
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No hay suficientes unidades disponibles.'], 422);
+            }
             return redirect()->back()->withErrors(['cantidad' => 'No hay suficientes unidades disponibles']);
         }
 
@@ -380,13 +439,24 @@ class SalidaImpresoraController extends Controller
         $inventario->unidades_disponibles -= $request->cantidad;
         $inventario->save();
 
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Salida de consumible actualizada correctamente.', 'data' => $salida_impresora]);
+        }
+
         return redirect()->route('administracion.salida_impresora.index')->with('success', 'Registro actualizado correctamente');
     }
+
     public function destroy($id)
     {
         abort_if(Gate::denies('salidaimpre_destroy'), 403);
 
         $salida_impresora = SalidaImpresora::find($id);
+        if (!$salida_impresora) {
+            if (request()->wantsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Registro no encontrado.'], 404);
+            }
+            return redirect()->route('administracion.salida_impresora.index')->with('error', 'Registro no encontrado');
+        }
 
         // Restaurar unidades al inventario
         $inventario = InventarioImpresora::find($salida_impresora->inventario_impresora_id);
@@ -396,6 +466,84 @@ class SalidaImpresoraController extends Controller
         }
 
         $salida_impresora->delete();
+
+        if (request()->wantsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Registro eliminado correctamente.']);
+        }
+
         return redirect()->route('administracion.salida_impresora.index')->with('success', 'Registro eliminado correctamente');
+    }
+
+    public function destroyMultiple(Request $request)
+    {
+        abort_if(Gate::denies('salidaimpre_destroy'), 403);
+
+        $request->validate([
+            'ids' => 'required',
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $ids = is_array($request->ids) ? $request->ids : json_decode($request->ids, true);
+        if (!is_array($ids) || count($ids) === 0) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'No se seleccionaron registros para eliminar.'], 422);
+            }
+            return redirect()->back()->with('error', 'No se seleccionaron registros para eliminar.');
+        }
+
+        $salidas = SalidaImpresora::whereIn('id', $ids)->get();
+        foreach ($salidas as $s) {
+            $inv = InventarioImpresora::find($s->inventario_impresora_id);
+            if ($inv) {
+                $inv->unidades_disponibles += $s->cantidad;
+                $inv->save();
+            }
+            $s->delete();
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => count($salidas) . ' registros eliminados correctamente.']);
+        }
+
+        return redirect()->route('administracion.salida_impresora.index')->with('success', count($salidas) . ' registros eliminados correctamente.');
+    }
+
+    public function destroyAll(Request $request)
+    {
+        abort_if(Gate::denies('salidaimpre_destroy'), 403);
+
+        $request->validate([
+            'password' => 'required|string',
+        ]);
+
+        if (!Hash::check($request->password, auth()->user()->password)) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'La contraseña ingresada es incorrecta.'], 422);
+            }
+            return redirect()->back()->with('error', 'La contraseña ingresada es incorrecta.');
+        }
+
+        $salidas = SalidaImpresora::all();
+        foreach ($salidas as $s) {
+            $inv = InventarioImpresora::find($s->inventario_impresora_id);
+            if ($inv) {
+                $inv->unidades_disponibles += $s->cantidad;
+                $inv->save();
+            }
+            $s->delete();
+        }
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Todos los registros de salida fueron eliminados.']);
+        }
+
+        return redirect()->route('administracion.salida_impresora.index')->with('success', 'Todos los registros de salida fueron eliminados.');
     }
 }

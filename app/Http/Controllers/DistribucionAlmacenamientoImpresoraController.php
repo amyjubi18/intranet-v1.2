@@ -107,7 +107,7 @@ class DistribucionAlmacenamientoImpresoraController extends Controller
         $distribuciones = $query->paginate(10)->appends($request->all());
 
         // Get options for filters
-        $almacenamientos = AlmacenamientoImpresora::with('cartuchos')->get();
+        $almacenamientos = AlmacenamientoImpresora::with('cartuchos', 'impresoras', 'colores', 'fabricantes')->get();
         $gerencias = Gerencia::with('area')->get();
         $areas = Area::all();
         $cartuchos = Cartucho::all();

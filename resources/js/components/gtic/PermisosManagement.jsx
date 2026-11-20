@@ -203,39 +203,48 @@ export default function PermisosManagement() {
 
     return (
         <div className="w-full">
-            {/* Barra Superior de Filtros y Controles Original */}
-            <div className="px-6 mb-6">
-                <div className="p-6 bg-white/80 border border-slate-200 backdrop-blur-md rounded-2xl shadow-sm">
+            {/* Barra Superior de Filtros y Controles estilo Proveedores */}
+            <div className="sticky top-0 z-10 px-6 mb-6">
+                <div className="p-6 bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-4">
                         <div className="flex flex-wrap items-center gap-4">
+                            {/* Buscador */}
                             <div className="relative">
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Buscar permiso..."
-                                    className="w-64 px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500/50 text-slate-800"
+                                    placeholder="🔍 Buscar permiso..."
+                                    className="w-64 px-4 py-2 text-sm bg-blue-100 border border-white/20 backdrop-blur-md rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                                 />
+                                {search && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearch('')}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold"
+                                    >
+                                        ✕
+                                    </button>
+                                )}
                             </div>
 
                             {search && (
                                 <button
                                     type="button"
                                     onClick={() => setSearch('')}
-                                    className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl font-semibold bg-blue-900 text-white hover:bg-blue-800 text-sm transition-all"
+                                    className="inline-flex items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm cursor-pointer"
                                 >
-                                    <span>🗑️</span>
-                                    <span>Limpiar</span>
+                                    🗑️ Limpiar
                                 </button>
                             )}
 
                             {/* Selector de ordenamiento */}
                             <div className="flex items-center gap-1 ml-2">
-                                <span className="text-xs text-gray-500 font-medium">Ordenar por:</span>
+                                <span className="text-xs text-gray-500">Ordenar por:</span>
                                 <button
                                     type="button"
                                     onClick={toggleSort}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg bg-blue-100 text-blue-800 font-semibold hover:bg-blue-200 transition-colors"
+                                    className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold bg-blue-100 text-blue-900 hover:bg-blue-200 transition-colors cursor-pointer"
                                 >
                                     <span>Nombre</span>
                                     <span>{direction === 'asc' ? '⬆️' : '⬇️'}</span>
@@ -243,21 +252,23 @@ export default function PermisosManagement() {
                             </div>
                         </div>
 
-                        {/* Botón Nuevo */}
-                        {authPermissions.can_create && (
-                            <button
-                                type="button"
-                                onClick={openCreateModal}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                                }}
-                            >
-                                <span>➕</span>
-                                <span>Nuevo</span>
-                            </button>
-                        )}
+                        {/* Botón Añadir Permiso */}
+                        <div className="flex items-center gap-3">
+                            {authPermissions.can_create && (
+                                <button
+                                    type="button"
+                                    onClick={openCreateModal}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                    }}
+                                >
+                                    <span>➕</span>
+                                    <span>Añadir Permiso</span>
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

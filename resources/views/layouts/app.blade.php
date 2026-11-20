@@ -554,11 +554,10 @@
             flex-wrap: wrap !important;
         }
 
-        /* Buscador: quitar max-width fijo para que sea fluido */
+        /* Buscador: quitar max-width fijo para que sea fluido en toolbars */
         .toolbar-row form,
-        .toolbar-row div.flex-1,
-        .bg-white form.flex-1,
-        .bg-white div.flex-1 {
+        .toolbar-row div.search-container,
+        .toolbar-search {
             max-width: 100% !important;
             min-width: 220px;
         }
@@ -633,10 +632,10 @@
             white-space: nowrap;
         }
 
-        /* Buscador fluido tanto en Blade como en React */
-        .bg-white form.flex-1,
-        .bg-white div.flex-1,
-        [data-react-component] .flex-1 {
+        /* Buscador fluido tanto en Blade como en React dentro de barras de herramientas */
+        .toolbar-row form.flex-1,
+        .toolbar-row div.flex-1,
+        .search-container.flex-1 {
             min-width: 240px;
         }
 

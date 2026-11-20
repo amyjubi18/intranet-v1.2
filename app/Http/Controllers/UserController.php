@@ -58,6 +58,17 @@ class UserController extends Controller
             }
         }
 
+        // Filtros directos por rol y status
+        if ($request->filled('rol') && $request->rol != '') {
+            $rolVal = $request->rol;
+            $users->whereHas('roles', function($q) use ($rolVal) {
+                $q->where('id', $rolVal)->orWhere('name', $rolVal);
+            });
+        }
+        if ($request->filled('status') && $request->status !== '') {
+            $users->where('status', $request->status);
+        }
+
         // Búsqueda general en múltiples campos
         if ($request->filled('busqueda')) {
             $busqueda = $request->busqueda;

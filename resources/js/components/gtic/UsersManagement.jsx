@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Swal from 'sweetalert2';
 
 const DEPARTAMENTOS_LIST = [
@@ -49,13 +49,29 @@ export default function UsersManagement() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    // Filtros y ordenamiento
+    // Filtros y ordenamiento estilo Inventario Oficinas
     const [search, setSearch] = useState('');
     const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
-    const [filterType, setFilterType] = useState('');
-    const [filterValue, setFilterValue] = useState('');
+    const [filterRol, setFilterRol] = useState('');
+    const [filterDepartamento, setFilterDepartamento] = useState('');
+    const [filterStatus, setFilterStatus] = useState('');
+    const [filterCedula, setFilterCedula] = useState('');
+    const [filterUsername, setFilterUsername] = useState('');
+    const [filterEmail, setFilterEmail] = useState('');
     const [sortField, setSortField] = useState('name');
     const [sortDirection, setSortDirection] = useState('asc');
+
+    // Conteo de filtros avanzados activos
+    const activeFiltersCount = useMemo(() => {
+        let count = 0;
+        if (filterRol) count++;
+        if (filterDepartamento) count++;
+        if (filterStatus !== '') count++;
+        if (filterCedula) count++;
+        if (filterUsername) count++;
+        if (filterEmail) count++;
+        return count;
+    }, [filterRol, filterDepartamento, filterStatus, filterCedula, filterUsername, filterEmail]);
 
     // Modales
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -85,13 +101,12 @@ export default function UsersManagement() {
             const params = new URLSearchParams();
             params.append('page', page);
             if (search) params.append('search', search);
-            if (filterType && filterValue) {
-                if (filterType === 'rol') params.append('secondFilter', filterValue);
-                else if (filterType === 'status') params.append('secondFilter', filterValue);
-                else if (filterType === 'busqueda') params.append('busqueda', filterValue);
-                else params.append('textFilter', filterValue);
-                params.append('filterType', filterType);
-            }
+            if (filterRol) params.append('rol', filterRol);
+            if (filterDepartamento) params.append('departamento', filterDepartamento);
+            if (filterStatus !== '') params.append('status', filterStatus);
+            if (filterCedula) params.append('cedula', filterCedula);
+            if (filterUsername) params.append('username', filterUsername);
+            if (filterEmail) params.append('correo', filterEmail);
             if (sortField) params.append('sort', sortField);
             if (sortDirection) params.append('direction', sortDirection);
 
@@ -158,7 +173,7 @@ export default function UsersManagement() {
         } finally {
             setLoading(false);
         }
-    }, [search, filterType, filterValue, sortField, sortDirection]);
+    }, [search, filterRol, filterDepartamento, filterStatus, filterCedula, filterUsername, filterEmail, sortField, sortDirection]);
 
     useEffect(() => {
         fetchUsers(1);
@@ -167,10 +182,12 @@ export default function UsersManagement() {
     // Limpiar todos los filtros
     const handleClearFilters = () => {
         setSearch('');
-        setFilterType('');
-        setFilterValue('');
-        setSortField('name');
-        setSortDirection('asc');
+        setFilterRol('');
+        setFilterDepartamento('');
+        setFilterStatus('');
+        setFilterCedula('');
+        setFilterUsername('');
+        setFilterEmail('');
     };
 
     // Alternar dirección de ordenamiento
@@ -458,140 +475,254 @@ export default function UsersManagement() {
 
     return (
         <div className="w-full">
-            {/* Barra de Filtros y Controles Original */}
-            <div className="px-4 sm:px-6 pb-4">
-                <div className="bg-white/80 border border-blue-500/15 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-sm mb-6">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap items-center gap-3">
-                            {/* Botón para mostrar filtros avanzados */}
-                            <button
-                                type="button"
-                                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                                }}
-                            >
-                                <span>🔍</span>
-                                <span>Filtros</span>
-                            </button>
-
-                            {/* Filtro principal - Tipo de campo */}
-                            {showAdvancedFilters && (
-                                <>
-                                    <select
-                                        value={filterType}
-                                        onChange={(e) => {
-                                            setFilterType(e.target.value);
-                                            setFilterValue('');
-                                        }}
-                                        className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
+            {/* Barra de Acciones y Filtros Avanzados (Estilo Inventario Oficinas) */}
+            <div className="px-4 sm:px-6 mb-6 relative z-30">
+                <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm relative z-30 overflow-visible">
+                    <div className="flex flex-col gap-4">
+                        {/* Fila 1: Buscador fluido a la izquierda + Botón Añadir Usuario a la derecha */}
+                        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 sm:gap-4 pb-4 border-b border-gray-100">
+                            {/* Buscador rápido */}
+                            <div className="relative flex-1 min-w-[260px] max-w-2xl search-container">
+                                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    🔍
+                                </span>
+                                <input
+                                    type="text"
+                                    value={search}
+                                    onChange={(e) => setSearch(e.target.value)}
+                                    placeholder="Buscar por nombre, cédula, usuario, correo, departamento o rol..."
+                                    className="w-full pl-10 pr-10 py-2.5 bg-blue-100/70 border border-transparent rounded-xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-xs"
+                                />
+                                {search && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setSearch('')}
+                                        className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 font-bold cursor-pointer"
+                                        title="Limpiar búsqueda"
                                     >
-                                        <option value="">Seleccionar filtro</option>
-                                        <option value="nombre">Nombre</option>
-                                        <option value="cedula">Cédula</option>
-                                        <option value="correo">Correo</option>
-                                        <option value="username">Username</option>
-                                        <option value="departamento">Departamento</option>
-                                        <option value="rol">Rol</option>
-                                        <option value="status">Estado</option>
-                                        <option value="busqueda">Búsqueda General</option>
-                                    </select>
+                                        ✕
+                                    </button>
+                                )}
+                            </div>
 
-                                    {/* Segundo filtro según tipo */}
-                                    {filterType === 'rol' && (
-                                        <select
-                                            value={filterValue}
-                                            onChange={(e) => setFilterValue(e.target.value)}
-                                            className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                        >
-                                            <option value="">Todos los roles</option>
-                                            {(roles || []).map(r => (
-                                                <option key={r.id} value={r.id}>{r.name}</option>
-                                            ))}
-                                        </select>
-                                    )}
-
-                                    {filterType === 'status' && (
-                                        <select
-                                            value={filterValue}
-                                            onChange={(e) => setFilterValue(e.target.value)}
-                                            className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                        >
-                                            <option value="">Todos los estados</option>
-                                            <option value="1">Activo</option>
-                                            <option value="0">Inactivo</option>
-                                        </select>
-                                    )}
-
-                                    {['nombre', 'cedula', 'correo', 'username', 'departamento', 'busqueda'].includes(filterType) && (
-                                        <input
-                                            type="text"
-                                            value={filterValue}
-                                            onChange={(e) => setFilterValue(e.target.value)}
-                                            placeholder="Valor del filtro..."
-                                            className="bg-blue-50 border border-blue-200 text-blue-900 rounded-xl px-3 py-1.5 text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none"
-                                        />
-                                    )}
-                                </>
-                            )}
-
-                            {/* Botón para limpiar filtros */}
-                            <button
-                                type="button"
-                                onClick={handleClearFilters}
-                                className="inline-flex items-center gap-1 px-3 py-2 text-xs font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all active:translate-y-0.5"
-                            >
-                                <span>🗑️</span>
-                                <span>Limpiar</span>
-                            </button>
-
-                            {/* Selector de Ordenamiento */}
-                            <div className="flex items-center gap-1 ml-2 border-l pl-3 border-slate-300">
-                                <span className="text-xs text-slate-500 font-medium">Ordenar:</span>
-                                <button
-                                    type="button"
-                                    onClick={toggleSort}
-                                    className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-blue-100 hover:bg-blue-200 transition-colors text-xs font-semibold text-blue-900"
-                                >
-                                    <span>{sortDirection === 'asc' ? '↑' : '↓'}</span>
-                                    <span>{sortField === 'name' ? 'Nombre' : sortField}</span>
-                                </button>
+                            {/* Acciones: Botón Añadir Usuario */}
+                            <div className="flex flex-wrap items-center justify-start xl:justify-end gap-2.5 sm:gap-3 shrink-0">
+                                {permissions.can_create && (
+                                    <button
+                                        type="button"
+                                        onClick={openCreateModal}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer shrink-0"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                        }}
+                                    >
+                                        <span>➕</span>
+                                        <span>Añadir Usuario</span>
+                                    </button>
+                                )}
                             </div>
                         </div>
 
-                        <div className="flex items-center gap-3">
-                            {/* Búsqueda rápida con debounce */}
-                            <div className="relative">
-                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="absolute left-2.5 top-1/2 transform -translate-y-1/2 text-slate-400">
-                                    <circle cx="10" cy="10" r="7"/>
-                                    <path d="M21 21l-4.35-4.35"/>
-                                </svg>
-                                <input
-                                    type="search"
-                                    value={search}
-                                    onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Búsqueda rápida..."
-                                    className="w-48 sm:w-56 pl-8 pr-3 py-1.5 text-xs rounded-xl border border-blue-200 bg-white/90 text-blue-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                />
-                            </div>
-
-                            {/* Botón Añadir Usuario Modal */}
-                            {permissions.can_create && (
+                        {/* Fila 2: Control de Filtros Avanzados + Badges de Filtros Activos */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                                 <button
                                     type="button"
-                                    onClick={openCreateModal}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                                }}
+                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                    }}
                                 >
-                                    <span>➕</span>
-                                    <span>Añadir</span>
+                                    <span>⚡ Filtros Avanzados</span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                                            {activeFiltersCount}
+                                        </span>
+                                    )}
+                                    <svg
+                                        className={`w-3.5 h-3.5 transition-transform duration-300 transform ${showAdvancedFilters ? 'rotate-180' : 'rotate-0'}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                    </svg>
                                 </button>
-                            )}
+
+                                {activeFiltersCount > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={handleClearFilters}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                                    >
+                                        <span>✕</span>
+                                        <span>Limpiar Filtros ({activeFiltersCount})</span>
+                                    </button>
+                                )}
+
+                                {/* Selector de ordenamiento */}
+                                <div className="flex items-center gap-1 ml-1 sm:ml-2">
+                                    <span className="text-xs text-slate-500 font-medium">Ordenar:</span>
+                                    <button
+                                        type="button"
+                                        onClick={toggleSort}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs rounded-lg font-semibold bg-blue-100 text-blue-900 hover:bg-blue-200 transition-colors cursor-pointer"
+                                    >
+                                        <span>Nombre</span>
+                                        <span>{sortDirection === 'asc' ? '⬆️' : '⬇️'}</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            {/* Badges de filtros activos en horizontal */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {filterRol && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Rol: {(roles || []).find(r => String(r.id) === String(filterRol) || r.name === filterRol)?.name || filterRol}</span>
+                                        <button type="button" onClick={() => setFilterRol('')} className="hover:text-red-600 font-bold ml-1 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                                {filterDepartamento && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Depto: {filterDepartamento}</span>
+                                        <button type="button" onClick={() => setFilterDepartamento('')} className="hover:text-red-600 font-bold ml-1 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                                {filterStatus !== '' && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Estado: {filterStatus === '1' || filterStatus === 1 ? 'Activo' : 'Inactivo'}</span>
+                                        <button type="button" onClick={() => setFilterStatus('')} className="hover:text-red-600 font-bold ml-1 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                                {filterCedula && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Cédula: {filterCedula}</span>
+                                        <button type="button" onClick={() => setFilterCedula('')} className="hover:text-red-600 font-bold ml-1 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                                {filterUsername && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>User: @{filterUsername}</span>
+                                        <button type="button" onClick={() => setFilterUsername('')} className="hover:text-red-600 font-bold ml-1 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                                {filterEmail && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Correo: {filterEmail}</span>
+                                        <button type="button" onClick={() => setFilterEmail('')} className="hover:text-red-600 font-bold ml-1 cursor-pointer">✕</button>
+                                    </span>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Fila 3: Cajón colapsable animado con CSS Grid */}
+                        <div
+                            className={`grid transition-all duration-500 ease-in-out ${
+                                showAdvancedFilters
+                                    ? 'grid-rows-[1fr] opacity-100 mt-3 visible'
+                                    : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none'
+                            }`}
+                        >
+                            <div className={`${showAdvancedFilters ? 'overflow-visible' : 'overflow-hidden'} transition-all duration-300`}>
+                                <div className="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3.5">
+                                        {/* Rol */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-blue-900 mb-1">
+                                                🛡️ Rol
+                                            </label>
+                                            <select
+                                                value={filterRol}
+                                                onChange={(e) => setFilterRol(e.target.value)}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+                                            >
+                                                <option value="">Todos los roles</option>
+                                                {(roles || []).map(r => (
+                                                    <option key={r.id} value={r.id}>{r.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Departamento */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-blue-900 mb-1">
+                                                🏢 Departamento
+                                            </label>
+                                            <select
+                                                value={filterDepartamento}
+                                                onChange={(e) => setFilterDepartamento(e.target.value)}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+                                            >
+                                                <option value="">Todos los departamentos</option>
+                                                {(departamentos || []).map((dep, idx) => (
+                                                    <option key={idx} value={dep}>{dep}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+
+                                        {/* Estado */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-blue-900 mb-1">
+                                                ⚡ Estado
+                                            </label>
+                                            <select
+                                                value={filterStatus}
+                                                onChange={(e) => setFilterStatus(e.target.value)}
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+                                            >
+                                                <option value="">Todos los estados</option>
+                                                <option value="1">Activo</option>
+                                                <option value="0">Inactivo</option>
+                                            </select>
+                                        </div>
+
+                                        {/* Cédula */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-blue-900 mb-1">
+                                                🪪 Cédula
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={filterCedula}
+                                                onChange={(e) => setFilterCedula(e.target.value)}
+                                                placeholder="Ej: 12.345.678"
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+                                            />
+                                        </div>
+
+                                        {/* Username */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-blue-900 mb-1">
+                                                👤 Usuario
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={filterUsername}
+                                                onChange={(e) => setFilterUsername(e.target.value)}
+                                                placeholder="Ej: jperez"
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+                                            />
+                                        </div>
+
+                                        {/* Correo */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-blue-900 mb-1">
+                                                ✉️ Correo
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={filterEmail}
+                                                onChange={(e) => setFilterEmail(e.target.value)}
+                                                placeholder="Ej: correo@codecyt.gob.ve"
+                                                className="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-600 shadow-xs"
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -626,7 +757,7 @@ export default function UsersManagement() {
                         {users.map(u => (
                             <div
                                 key={u.id}
-                                className="bg-white/85 border border-blue-500/15 backdrop-blur-md rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/10 flex flex-col justify-between"
+                                className="bg-white/85 border border-blue-500/15 backdrop-blur-md rounded-2xl p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-blue-900/10 flex flex-col justify-between overflow-hidden"
                             >
                                 <div>
                                     {/* Header de la tarjeta */}
@@ -730,26 +861,26 @@ export default function UsersManagement() {
                                 </div>
 
                                 {/* Botones de acción inferiores */}
-                                <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-slate-100">
+                                <div className="flex items-center gap-1.5 mt-3 pt-3 border-t border-slate-100 w-full overflow-hidden">
                                     <button
                                         type="button"
                                         onClick={() => openDetailModal(u)}
-                                        className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center justify-center gap-1"
+                                        className="flex-1 min-w-0 py-1.5 px-2 text-[11px] font-bold rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors flex items-center justify-center gap-1 cursor-pointer"
                                         title="Ver Detalles"
                                     >
                                         <span>👁️</span>
-                                        <span>Ver</span>
+                                        <span className="truncate">Ver</span>
                                     </button>
 
                                     {permissions.can_edit && (
                                         <button
                                             type="button"
                                             onClick={() => openEditModal(u)}
-                                            className="flex-1 py-1.5 px-2 text-[11px] font-semibold rounded-xl bg-green-600 hover:bg-green-700 text-white transition-colors flex items-center justify-center gap-1"
+                                            className="flex-1 min-w-0 py-1.5 px-2 text-[11px] font-bold rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white transition-colors flex items-center justify-center gap-1 cursor-pointer"
                                             title="Editar Usuario"
                                         >
                                             <span>✏️</span>
-                                            <span>Editar</span>
+                                            <span className="truncate">Editar</span>
                                         </button>
                                     )}
 
@@ -758,7 +889,7 @@ export default function UsersManagement() {
                                             type="button"
                                             onClick={() => handleDeleteUser(u)}
                                             disabled={currentUserId && u.id === currentUserId}
-                                            className="py-1.5 px-2 text-[11px] font-semibold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-40 flex items-center justify-center"
+                                            className="w-8 h-8 shrink-0 text-[11px] font-bold rounded-xl bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-40 flex items-center justify-center cursor-pointer"
                                             title="Eliminar Usuario"
                                         >
                                             <span>🗑️</span>

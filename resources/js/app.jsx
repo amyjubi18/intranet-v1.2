@@ -30,6 +30,7 @@ import ProveedoresManagement from './components/administracion/ProveedoresManage
 import UnidadesMedidaManagement from './components/administracion/UnidadesMedidaManagement';
 import AreasManagement from './components/administracion/AreasManagement';
 import GerenciasManagement from './components/administracion/GerenciasManagement';
+import SalidaImpresorasManagement from './components/administracion/SalidaImpresorasManagement';
 import { downloadWithProgress } from './utils/downloadWithProgress';
 
 // Interceptor global para cualquier enlace o select de descarga/exportación (PDF, Excel, Imagen)
@@ -156,6 +157,9 @@ function initReactRoots() {
 
     mountComponent('TipoImpresorasManagement', TipoImpresorasManagement);
     mountById('tipo-impresoras-root', TipoImpresorasManagement);
+
+    mountComponent('SalidaImpresorasManagement', SalidaImpresorasManagement);
+    mountById('salida-impresoras-root', SalidaImpresorasManagement);
 
     // OGA: Documentos, Estanterías y Categorías
     mountComponent('DocumentosManagement', DocumentosManagement);

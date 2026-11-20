@@ -206,37 +206,73 @@ class AlmacenamientoImpresoraController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'fecha_ingreso.*' =>'required|date|before_or_equal:today',
-            'cartucho_id.*' => 'required',
-            'colore_id.*' => 'required',
-            'impresora_id.*' => 'required',
-            'fabricante_id.*' => 'required',
-            'proveedore_id.*' => 'required',
-            'unidades.*' => 'required|integer|min:1',
-            'n_factura.*' => 'required',
-            'registro_tipo.*' => 'required|in:impresora,consumible',
-        ]);
+        if (is_array($request->fecha_ingreso)) {
+            $request->validate([
+                'fecha_ingreso.*' =>'required|date|before_or_equal:today',
+                'cartucho_id.*' => 'required',
+                'colore_id.*' => 'required',
+                'impresora_id.*' => 'required',
+                'fabricante_id.*' => 'required',
+                'proveedore_id.*' => 'required',
+                'unidades.*' => 'required|integer|min:1',
+                'n_factura.*' => 'required',
+            ]);
 
-        $records = [];
-        foreach ($request->fecha_ingreso as $index => $fecha) {
-            $almacenamiento_impresora = new AlmacenamientoImpresora;
-            $almacenamiento_impresora->fecha_ingreso = $fecha;
-            $almacenamiento_impresora->cartucho_id = $request->cartucho_id[$index];
-            $almacenamiento_impresora->colore_id = $request->colore_id[$index];
-            $almacenamiento_impresora->impresora_id = $request->impresora_id[$index];
-            $almacenamiento_impresora->fabricante_id = $request->fabricante_id[$index];
-            $almacenamiento_impresora->proveedore_id = $request->proveedore_id[$index];
+            $records = [];
+            foreach ($request->fecha_ingreso as $index => $fecha) {
+                $almacenamiento_impresora = new AlmacenamientoImpresora;
+                $almacenamiento_impresora->fecha_ingreso = $fecha;
+                $almacenamiento_impresora->cartucho_id = $request->cartucho_id[$index];
+                $almacenamiento_impresora->colore_id = $request->colore_id[$index];
+                $almacenamiento_impresora->impresora_id = $request->impresora_id[$index];
+                $almacenamiento_impresora->fabricante_id = $request->fabricante_id[$index];
+                $almacenamiento_impresora->proveedore_id = $request->proveedore_id[$index];
 
-            $almacenamiento_impresora->unidades = $request->unidades[$index];
-            $almacenamiento_impresora->unidades_disponibles = $request->unidades[$index];
-            $almacenamiento_impresora->n_factura = $request->n_factura[$index];
-            $almacenamiento_impresora->user_id = auth()->id();
-            $almacenamiento_impresora->save();
-            $records[] = $almacenamiento_impresora;
+                $almacenamiento_impresora->unidades = $request->unidades[$index];
+                $almacenamiento_impresora->unidades_disponibles = $request->unidades[$index];
+                $almacenamiento_impresora->n_factura = $request->n_factura[$index];
+                $almacenamiento_impresora->user_id = auth()->id();
+                $almacenamiento_impresora->save();
+                $records[] = $almacenamiento_impresora;
+            }
+
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Registros creados exitosamente: ' . count($records)]);
+            }
+
+            return redirect()->route('administracion.almacenamiento_impresoras.index')->with('datos', 'Registros exitosos: ' . count($records));
         }
 
-        return redirect()->route('administracion.almacenamiento_impresoras.index')->with('datos', 'Registros exitosos: ' . count($records));
+        // Registro individual desde Modal
+        $request->validate([
+            'fecha_ingreso' =>'required|date|before_or_equal:today',
+            'cartucho_id' => 'required',
+            'colore_id' => 'required',
+            'impresora_id' => 'required',
+            'fabricante_id' => 'required',
+            'proveedore_id' => 'required',
+            'unidades' => 'required|integer|min:1',
+            'n_factura' => 'required',
+        ]);
+
+        $almacenamiento_impresora = new AlmacenamientoImpresora;
+        $almacenamiento_impresora->fecha_ingreso = $request->fecha_ingreso;
+        $almacenamiento_impresora->cartucho_id = $request->cartucho_id;
+        $almacenamiento_impresora->colore_id = $request->colore_id;
+        $almacenamiento_impresora->impresora_id = $request->impresora_id;
+        $almacenamiento_impresora->fabricante_id = $request->fabricante_id;
+        $almacenamiento_impresora->proveedore_id = $request->proveedore_id;
+        $almacenamiento_impresora->unidades = $request->unidades;
+        $almacenamiento_impresora->unidades_disponibles = $request->unidades;
+        $almacenamiento_impresora->n_factura = $request->n_factura;
+        $almacenamiento_impresora->user_id = auth()->id();
+        $almacenamiento_impresora->save();
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Almacenamiento registrado exitosamente.', 'data' => $almacenamiento_impresora]);
+        }
+
+        return redirect()->route('administracion.almacenamiento_impresoras.index')->with('success', 'Almacenamiento registrado exitosamente.');
     }
 
     /**
@@ -305,7 +341,11 @@ class AlmacenamientoImpresoraController extends Controller
 
         $almacenamiento_impresora->save();
 
-        return redirect()->route('administracion.almacenamiento_impresoras.index', $almacenamiento_impresora->id)->with('success', 'Registro actualizado correctamente');
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json(['success' => true, 'message' => 'Registro actualizado correctamente.', 'data' => $almacenamiento_impresora]);
+        }
+
+        return redirect()->route('administracion.almacenamiento_impresoras.index')->with('success', 'Registro actualizado correctamente');
     }
 
     /**

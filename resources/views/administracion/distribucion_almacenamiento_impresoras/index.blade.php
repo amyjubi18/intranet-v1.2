@@ -27,6 +27,22 @@
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.min.js"></script>
 
+    <div x-data="{
+        openFilters: false,
+        createModalOpen: false,
+        editModalOpen: false,
+        editData: { id: null, almacenamiento_impresora_id: '', gerencia_id: '', unidades_asignadas: 1 },
+        openEdit(item) {
+            this.editData = {
+                id: item.id,
+                almacenamiento_impresora_id: item.almacenamiento_impresora_id || '',
+                gerencia_id: item.gerencia_id || '',
+                unidades_asignadas: item.unidades_asignadas || 1
+            };
+            this.editModalOpen = true;
+        }
+    }">
+
     <!-- Tarjetas superiores de estadísticas -->
     <div class="px-6 mb-8">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-fadeIn">
@@ -116,7 +132,7 @@
     @endphp
 
     <!-- Panel de Búsqueda y Filtros Avanzados Animados -->
-    <div class="px-6 mb-6 relative z-30 overflow-visible" x-data="{ openFilters: {{ $activeFiltersCount > 0 ? 'true' : 'false' }} }">
+    <div class="px-6 mb-6 relative z-30 overflow-visible">
         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
             <div class="flex flex-col gap-4">
                 <!-- Fila Superior: Buscador Rápido + Acciones (Exportar, Nuevo) -->
@@ -183,10 +199,10 @@
                         @endcan
 
                         @can('dist_almac_create')
-                        <a href="{{ route('administracion.distribucion_almacenamiento_impresoras.create') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                        <button type="button" @click="createModalOpen = true" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer shrink-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                             <span>➕</span>
                             <span>Nueva Distribución</span>
-                        </a>
+                        </button>
                         @endcan
                     </div>
                 </div>
@@ -296,7 +312,7 @@
                         <form method="GET" action="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}">
                             @if(request('busqueda')) <input type="hidden" name="busqueda" value="{{ request('busqueda') }}"> @endif
                             <div class="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible space-y-4">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
                                     <!-- Gerencia -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🏢 Gerencia</label>
@@ -537,10 +553,10 @@
                         <!-- Acciones -->
                         <div class="flex flex-wrap justify-center md:justify-end gap-2">
                             @can('dist_almac_edit')
-                            <a href="{{ route('administracion.distribucion_almacenamiento_impresoras.edit', $distribucion->id) }}" class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs">
+                            <button type="button" @click="openEdit({{ json_encode($distribucion) }})" class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer">
                                 <span>✏️</span>
                                 Editar
-                            </a>
+                            </button>
                             @endcan
                             @can('dist_almac_destroy')
                             <form id="delete-form-{{ $distribucion->id }}" action="{{ route('administracion.distribucion_almacenamiento_impresoras.destroy', $distribucion->id) }}" method="POST" class="inline">
@@ -1167,6 +1183,222 @@
             document.getElementById("delete-form-" + id).submit();
         }
     </script>
+
+    <!-- Modal de Creación de Distribución -->
+    <div
+        x-show="createModalOpen"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
+        style="display: none;"
+    >
+        <div
+            @click.away="createModalOpen = false"
+            class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto"
+        >
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shadow-sm">
+                        <span>📤</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-blue-700 to-blue-500">
+                            Nueva Distribución de Consumible
+                        </h3>
+                        <p class="text-xs text-slate-500">Asigna consumibles en almacén a una gerencia o área</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    @click="createModalOpen = false"
+                    class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center text-sm transition-all cursor-pointer"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <form action="{{ route('administracion.distribucion_almacenamiento_impresoras.store') }}" method="POST" class="space-y-4">
+                @csrf
+
+                <div>
+                    <label class="block text-xs font-bold text-blue-900 mb-1">
+                        🖨️ Consumible / Impresora en Almacén <span class="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="almacenamiento_impresora_id"
+                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                        required
+                    >
+                        <option value="">Seleccione Consumible Disponible</option>
+                        @foreach ($almacenamientos as $almacen)
+                            <option value="{{ $almacen->id }}">
+                                {{ $almacen->impresoras?->impresora ?? 'Impresora' }} - {{ $almacen->cartuchos?->cartucho ?? 'Consumible' }} ({{ $almacen->colores?->colore ?? 'N/A' }}) — Disp: {{ $almacen->unidades_disponibles }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-blue-900 mb-1">
+                        🏢 Gerencia / Área Destino <span class="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="gerencia_id"
+                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                        required
+                    >
+                        <option value="">Seleccione Gerencia</option>
+                        @foreach ($gerencias as $gerencia)
+                            <option value="{{ $gerencia->id }}">
+                                {{ $gerencia->gerencia }} ({{ $gerencia->area?->area ?? 'Sin Área' }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-blue-900 mb-1">
+                        📦 Unidades a Asignar <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        name="unidades_asignadas"
+                        min="1"
+                        value="1"
+                        class="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                        required
+                    />
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                    <button
+                        type="button"
+                        @click="createModalOpen = false"
+                        class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer"
+                        style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
+                    >
+                        <span>📤</span>
+                        <span>Guardar Distribución</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal de Edición de Distribución -->
+    <div
+        x-show="editModalOpen"
+        x-cloak
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
+        style="display: none;"
+    >
+        <div
+            @click.away="editModalOpen = false"
+            class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto"
+        >
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-sm">
+                        <span>✏️</span>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-blue-700 to-blue-500">
+                            Editar Distribución de Consumible
+                        </h3>
+                        <p class="text-xs text-slate-500">Modifica los datos de la distribución seleccionada</p>
+                    </div>
+                </div>
+                <button
+                    type="button"
+                    @click="editModalOpen = false"
+                    class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center text-sm transition-all cursor-pointer"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <form :action="'{{ url('administracion/distribucion_almacenamiento_impresoras') }}/' + editData.id" method="POST" class="space-y-4">
+                @csrf
+                @method('PUT')
+
+                <div>
+                    <label class="block text-xs font-bold text-blue-900 mb-1">
+                        🖨️ Consumible / Impresora en Almacén <span class="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="almacenamiento_impresora_id"
+                        x-model="editData.almacenamiento_impresora_id"
+                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                        required
+                    >
+                        <option value="">Seleccione Consumible Disponible</option>
+                        @foreach ($almacenamientos as $almacen)
+                            <option value="{{ $almacen->id }}">
+                                {{ $almacen->impresoras?->impresora ?? 'Impresora' }} - {{ $almacen->cartuchos?->cartucho ?? 'Consumible' }} ({{ $almacen->colores?->colore ?? 'N/A' }}) — Disp: {{ $almacen->unidades_disponibles }}
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-blue-900 mb-1">
+                        🏢 Gerencia / Área Destino <span class="text-red-500">*</span>
+                    </label>
+                    <select
+                        name="gerencia_id"
+                        x-model="editData.gerencia_id"
+                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                        required
+                    >
+                        <option value="">Seleccione Gerencia</option>
+                        @foreach ($gerencias as $gerencia)
+                            <option value="{{ $gerencia->id }}">
+                                {{ $gerencia->gerencia }} ({{ $gerencia->area?->area ?? 'Sin Área' }})
+                            </option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-blue-900 mb-1">
+                        📦 Unidades Asignadas <span class="text-red-500">*</span>
+                    </label>
+                    <input
+                        type="number"
+                        name="unidades_asignadas"
+                        min="1"
+                        x-model="editData.unidades_asignadas"
+                        class="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                        required
+                    />
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                    <button
+                        type="button"
+                        @click="editModalOpen = false"
+                        class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
+                    >
+                        Regresar
+                    </button>
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer"
+                        style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
+                    >
+                        <span>💾</span>
+                        <span>Actualizar Distribución</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
 
 </x-app-layout>
 @endcan

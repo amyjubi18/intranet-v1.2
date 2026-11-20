@@ -187,6 +187,10 @@ Route::middleware(['auth', 'session.timeout', 'prevent.concurrent'])->group(func
         ->name('administracion.salida_impresora.export.excel');
     Route::get('/administracion/salida_impresora/export/pdf', [SalidaImpresoraController::class, 'exportPdf'])
         ->name('administracion.salida_impresora.export.pdf');
+    Route::post('/administracion/salida_impresora/destroy-multiple', [SalidaImpresoraController::class, 'destroyMultiple'])
+        ->name('administracion.salida_impresora.destroyMultiple');
+    Route::post('/administracion/salida_impresora/destroy-all', [SalidaImpresoraController::class, 'destroyAll'])
+        ->name('administracion.salida_impresora.destroyAll');
 
     Route::resource('/administracion/salida_almacen', SalidaAlmacenamientoImpresoraController::class)
         ->names('administracion.salida_almacen');

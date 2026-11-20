@@ -27,6 +27,27 @@
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.min.js"></script>
 
+    <div x-data="{
+        openFilters: false,
+        createModalOpen: false,
+        editModalOpen: false,
+        editData: { id: null, fecha_ingreso: '', cartucho_id: '', colore_id: '', impresora_id: '', fabricante_id: '', proveedore_id: '', n_factura: '', unidades: 1 },
+        openEdit(item) {
+            this.editData = {
+                id: item.id,
+                fecha_ingreso: item.fecha_ingreso ? item.fecha_ingreso.split('T')[0] : '',
+                cartucho_id: item.cartucho_id || '',
+                colore_id: item.colore_id || '',
+                impresora_id: item.impresora_id || '',
+                fabricante_id: item.fabricante_id || '',
+                proveedore_id: item.proveedore_id || '',
+                n_factura: item.n_factura || '',
+                unidades: item.unidades || 1
+            };
+            this.editModalOpen = true;
+        }
+    }">
+
     <!-- Tarjetas superiores de estadísticas -->
     <div class="px-6 mb-8">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-fadeIn">
@@ -132,7 +153,7 @@
     @endphp
 
     <!-- Panel de Búsqueda y Filtros Avanzados Animados -->
-    <div class="px-6 mb-6 relative z-30 overflow-visible" x-data="{ openFilters: {{ $activeFiltersCount > 0 ? 'true' : 'false' }} }">
+    <div class="px-6 mb-6 relative z-30 overflow-visible">
         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
             <div class="flex flex-col gap-4">
                 <!-- Fila Superior: Buscador Rápido + Acciones (Exportar, Nuevo) -->
@@ -200,10 +221,10 @@
                         @endcan
 
                         @can('almacen_inv_create')
-                        <a href="/administracion/almacenamiento_impresoras/create" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                        <button type="button" @click="createModalOpen = true" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer shrink-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                             <span>➕</span>
                             <span>Nuevo</span>
-                        </a>
+                        </button>
                         @endcan
                     </div>
                 </div>
@@ -312,7 +333,7 @@
                         <form method="GET" action="{{ route('administracion.almacenamiento_impresoras.index') }}">
                             @if(request('busqueda')) <input type="hidden" name="busqueda" value="{{ request('busqueda') }}"> @endif
                             <div class="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible space-y-4">
-                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
                                     <!-- Consumible -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🖨️ Consumible</label>
@@ -552,10 +573,10 @@
                                 <!-- Acciones -->
                                 <div class="flex flex-wrap justify-center md:justify-end gap-2">
                                     @can('almacen_inv_edit')
-                                    <a href="{{ route('administracion.almacenamiento_impresoras.edit', $item->id) }}" class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs">
+                                    <button type="button" @click="openEdit({{ json_encode($item) }})" class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer">
                                         <span>✏️</span>
                                         Editar
-                                    </a>
+                                    </button>
                                     @endcan
                                     @can('almacen_inv_destroy')
                                     <form id="delete-form-{{ $item->id }}" action="{{ route('administracion.almacenamiento_impresoras.destroy', $item->id) }}" method="POST" class="inline">
@@ -1208,5 +1229,371 @@
             document.getElementById("delete-form-" + id).submit();
         }
     </script>
+    {{-- Modal de Crear Almacenamiento (Estilo Inventario Oficinas) --}}
+    <div
+        x-show="createModalOpen"
+        x-cloak
+        class="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
+        style="position: fixed; inset: 0; z-index: 99999999; background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+        @click.self="createModalOpen = false"
+    >
+        <div
+            class="modal-content animate-modal-expand bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] overflow-y-auto"
+            @click.stop
+        >
+            <div
+                class="p-5 sm:p-6 text-white rounded-t-3xl flex items-center justify-between relative overflow-hidden"
+                style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
+            >
+                <div>
+                    <h3 class="text-lg sm:text-xl font-black tracking-tight">Registrar Almacenamiento de Consumibles</h3>
+                    <p class="text-xs text-blue-100 mt-0.5">Completa los datos de la factura e ingreso al almacén</p>
+                </div>
+                <button
+                    type="button"
+                    @click="createModalOpen = false"
+                    class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
+                    title="Cerrar modal"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <form action="{{ route('administracion.almacenamiento_impresoras.store') }}" method="POST" class="p-5 sm:p-6 space-y-4">
+                @csrf
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            📅 Fecha de Factura / Ingreso <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="date"
+                            name="fecha_ingreso"
+                            value="{{ date('Y-m-d') }}"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            📄 Número de Factura <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="n_factura"
+                            placeholder="Ej: FAC-00123"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🖨️ Impresora <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="impresora_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Impresora</option>
+                            @foreach ($impresoras->sortBy('impresora') as $impresora)
+                                <option value="{{ $impresora->id }}">{{ $impresora->impresora }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🗃️ Consumible <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="cartucho_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Consumible</option>
+                            @foreach ($cartuchos->sortBy('cartucho') as $cartucho)
+                                <option value="{{ $cartucho->id }}">{{ $cartucho->cartucho }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🎨 Tipo de Consumible (Color) <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="colore_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Color</option>
+                            @foreach ($colores as $color)
+                                <option value="{{ $color->id }}">{{ $color->colore }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🏭 Tipo de Impresora (Fabricante) <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="fabricante_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Tipo</option>
+                            @foreach ($fabricantes as $fabricante)
+                                <option value="{{ $fabricante->id }}">{{ $fabricante->fabricante }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🏢 Proveedor <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="proveedore_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Proveedor</option>
+                            @foreach ($proveedores as $proveedore)
+                                <option value="{{ $proveedore->id }}">{{ $proveedore->proveedor }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            📦 Cantidad de Unidades <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="number"
+                            name="unidades"
+                            min="1"
+                            value="1"
+                            class="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                    <button
+                        type="button"
+                        @click="createModalOpen = false"
+                        class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
+                    >
+                        Regresar
+                    </button>
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer"
+                        style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
+                    >
+                        <span>💾</span>
+                        <span>Guardar Ingreso</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal de Editar Almacenamiento (Estilo Inventario Oficinas) --}}
+    <div
+        x-show="editModalOpen"
+        x-cloak
+        class="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
+        style="position: fixed; inset: 0; z-index: 99999999; background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+        @click.self="editModalOpen = false"
+    >
+        <div
+            class="modal-content animate-modal-expand bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] overflow-y-auto"
+            @click.stop
+        >
+            <div
+                class="p-5 sm:p-6 text-white rounded-t-3xl flex items-center justify-between relative overflow-hidden"
+                style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
+            >
+                <div>
+                    <h3 class="text-lg sm:text-xl font-black tracking-tight">Editar Almacenamiento de Consumibles</h3>
+                    <p class="text-xs text-blue-100 mt-0.5" x-text="'Actualizando registro #' + editData.id + ' — Factura #' + (editData.n_factura || 'S/N')"></p>
+                </div>
+                <button
+                    type="button"
+                    @click="editModalOpen = false"
+                    class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
+                    title="Cerrar modal"
+                >
+                    ✕
+                </button>
+            </div>
+
+            <form :action="'/administracion/almacenamiento_impresoras/' + editData.id" method="POST" class="p-5 sm:p-6 space-y-4">
+                @csrf
+                @method('PUT')
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            📅 Fecha de Factura / Ingreso <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="date"
+                            name="fecha_ingreso"
+                            x-model="editData.fecha_ingreso"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            📄 Número de Factura <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            name="n_factura"
+                            x-model="editData.n_factura"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🖨️ Impresora <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="impresora_id"
+                            x-model="editData.impresora_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Impresora</option>
+                            @foreach ($impresoras->sortBy('impresora') as $impresora)
+                                <option value="{{ $impresora->id }}">{{ $impresora->impresora }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🗃️ Consumible <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="cartucho_id"
+                            x-model="editData.cartucho_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Consumible</option>
+                            @foreach ($cartuchos->sortBy('cartucho') as $cartucho)
+                                <option value="{{ $cartucho->id }}">{{ $cartucho->cartucho }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🎨 Tipo de Consumible (Color) <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="colore_id"
+                            x-model="editData.colore_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Color</option>
+                            @foreach ($colores as $color)
+                                <option value="{{ $color->id }}">{{ $color->colore }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🏭 Tipo de Impresora (Fabricante) <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="fabricante_id"
+                            x-model="editData.fabricante_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Tipo</option>
+                            @foreach ($fabricantes as $fabricante)
+                                <option value="{{ $fabricante->id }}">{{ $fabricante->fabricante }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🏢 Proveedor <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="proveedore_id"
+                            x-model="editData.proveedore_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        >
+                            <option value="">Seleccione Proveedor</option>
+                            @foreach ($proveedores as $proveedore)
+                                <option value="{{ $proveedore->id }}">{{ $proveedore->proveedor }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            📦 Cantidad de Unidades <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="number"
+                            name="unidades"
+                            min="1"
+                            x-model="editData.unidades"
+                            class="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            required
+                        />
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
+                    <button
+                        type="button"
+                        @click="editModalOpen = false"
+                        class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
+                    >
+                        Regresar
+                    </button>
+                    <button
+                        type="submit"
+                        class="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer"
+                        style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
+                    >
+                        <span>💾</span>
+                        <span>Actualizar Registro</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    </div>
 </x-app-layout>
 @endcan
