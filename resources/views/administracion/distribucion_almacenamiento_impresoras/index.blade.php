@@ -292,7 +292,7 @@
                     id="drawerDistFilters"
                     class="grid transition-all duration-500 ease-in-out grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none"
                 >
-                    <div class="overflow-visible transition-all duration-300">
+                    <div class="min-h-0 overflow-hidden transition-all duration-300">
                         <form method="GET" action="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}">
                             @if(request('busqueda')) <input type="hidden" name="busqueda" value="{{ request('busqueda') }}"> @endif
                             <div class="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible space-y-4">
@@ -871,6 +871,220 @@
         window.distAreas = @json($areas ?? []);
         window.distAlmacenamientos = @json($almacenamientos ?? []);
 
+        function toggleDistPrinterGroup(masterCb, printerId) {
+            const items = document.querySelectorAll('.dist-printer-group-item-' + printerId);
+            items.forEach(cb => {
+                cb.checked = masterCb.checked;
+            });
+            updateDistribucionSelection();
+        }
+
+        function updateDistribucionSelection() {
+            const checkedBoxes = document.querySelectorAll('.record-checkbox:checked');
+            const count = checkedBoxes.length;
+            const btnDeleteSelected = document.getElementById('btnDeleteSelectedDist');
+            const btnDeleteSelectedText = document.getElementById('btnDeleteSelectedDistText');
+            const optExcelSelected = document.getElementById('distOptExcelSelected');
+            const optPdfSelected = document.getElementById('distOptPdfSelected');
+
+            if (btnDeleteSelected) {
+                if (count > 0) {
+                    btnDeleteSelected.removeAttribute('disabled');
+                    btnDeleteSelected.classList.remove('opacity-50', 'cursor-not-allowed');
+                } else {
+                    btnDeleteSelected.setAttribute('disabled', 'disabled');
+                    btnDeleteSelected.classList.add('opacity-50', 'cursor-not-allowed');
+                }
+            }
+
+            if (btnDeleteSelectedText) {
+                btnDeleteSelectedText.textContent = 'Eliminar Seleccionados ' + (count > 0 ? '(' + count + ')' : '');
+            }
+
+            if (optExcelSelected) {
+                optExcelSelected.disabled = count === 0;
+                optExcelSelected.textContent = '📊 Excel - Solo seleccionados ' + (count > 0 ? '(' + count + ')' : '(0)');
+            }
+            if (optPdfSelected) {
+                optPdfSelected.disabled = count === 0;
+                optPdfSelected.textContent = '📄 PDF - Solo seleccionados ' + (count > 0 ? '(' + count + ')' : '(0)');
+            }
+        }
+
+        async function handleDistDeleteSelected() {
+            const selectedIds = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+            if (selectedIds.length === 0) return;
+
+            const { value: password } = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Se eliminarán ' + selectedIds.length + ' registro(s) de distribución seleccionados. Ingresa tu contraseña para confirmar:',
+                icon: 'warning',
+                input: 'password',
+                inputPlaceholder: 'Ingresa tu contraseña...',
+                inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+                showCancelButton: true,
+                confirmButtonColor: '#F52727',
+                cancelButtonColor: '#2780F5',
+                confirmButtonText: 'Sí, eliminar seleccionados',
+                cancelButtonText: 'Cancelar',
+                inputValidator: (value) => {
+                    if (!value) return 'Debes ingresar tu contraseña';
+                }
+            });
+
+            if (!password) return;
+
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch('{{ route("administracion.distribucion_almacenamiento_impresoras.destroyMultiple") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token || '',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({
+                        ids: selectedIds,
+                        password: password
+                    })
+                });
+
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(json.message || 'Error al eliminar distribuciones seleccionadas');
+                }
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Eliminados',
+                    text: json.message || ('Se eliminaron ' + selectedIds.length + ' distribución(es) correctamente.'),
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                window.location.reload();
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: err.message || 'No se pudieron eliminar los registros.'
+                });
+            }
+        }
+
+        async function handleDistDeleteAll() {
+            const { value: password } = await Swal.fire({
+                title: '¿Estás seguro?',
+                text: 'Se eliminarán TODAS las distribuciones de consumibles. Esta acción no se puede deshacer. Ingresa tu contraseña:',
+                icon: 'warning',
+                input: 'password',
+                inputPlaceholder: 'Contraseña de confirmación',
+                inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
+                showCancelButton: true,
+                confirmButtonColor: '#F52727',
+                cancelButtonColor: '#2780F5',
+                confirmButtonText: 'Sí, eliminar todo',
+                cancelButtonText: 'Cancelar',
+                inputValidator: (value) => {
+                    if (!value) return 'Debes ingresar tu contraseña';
+                }
+            });
+
+            if (!password) return;
+
+            try {
+                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+                const res = await fetch('{{ route("administracion.distribucion_almacenamiento_impresoras.destroyAll") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': token || '',
+                        'X-Requested-With': 'XMLHttpRequest'
+                    },
+                    body: JSON.stringify({ password: password })
+                });
+
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(json.message || 'Error al eliminar todas las distribuciones');
+                }
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Distribuciones Eliminadas',
+                    text: json.message || 'Se eliminaron todas las distribuciones correctamente.',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+                window.location.reload();
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: err.message || 'No se pudieron eliminar las distribuciones.'
+                });
+            }
+        }
+
+        function handleDistExport(select) {
+            const val = select.value;
+            if (!val) return;
+            select.value = '';
+
+            const parts = val.split(':');
+            const format = parts[0];
+            const scope = parts[1];
+            const baseUrl = format === 'excel'
+                ? '{{ route("administracion.distribucion_almacenamiento_impresoras.export.excel") }}'
+                : '{{ route("administracion.distribucion_almacenamiento_impresoras.export.pdf") }}';
+
+            const params = new URLSearchParams(window.location.search);
+            if (scope === 'selected') {
+                const selectedIds = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
+                if (selectedIds.length === 0) {
+                    alert('Selecciona al menos un registro para exportar.');
+                    return;
+                }
+                params.set('selected_ids', selectedIds.join(','));
+            } else {
+                params.delete('selected_ids');
+            }
+
+            window.location.href = baseUrl + (params.toString() ? '?' + params.toString() : '');
+        }
+
+        function setDistDatePreset(preset) {
+            const today = new Date();
+            let from = '';
+            let to = today.toISOString().split('T')[0];
+
+            if (preset === 'today') {
+                from = to;
+            } else if (preset === 'week') {
+                const d = new Date(today);
+                d.setDate(d.getDate() - 7);
+                from = d.toISOString().split('T')[0];
+            } else if (preset === 'month') {
+                const d = new Date(today.getFullYear(), today.getMonth(), 1);
+                from = d.toISOString().split('T')[0];
+            } else if (preset === 'year') {
+                const d = new Date(today.getFullYear(), 0, 1);
+                from = d.toISOString().split('T')[0];
+            }
+
+            const fromInput = document.getElementById('dist_fecha_desde');
+            const toInput = document.getElementById('dist_fecha_hasta');
+            if (fromInput) fromInput.value = from;
+            if (toInput) toInput.value = to;
+        }
+
+        function clearSpecificFilter(filterType) {
+            const url = new URL(window.location.href);
+            url.searchParams.delete(filterType);
+            window.location.href = url.toString();
+        }
+
         function onDistAlmacenChange(almacenId, prefix) {
             const item = (window.distAlmacenamientos || []).find(x => String(x.id) === String(almacenId));
             const badge = document.getElementById(prefix + 'stock_badge');
@@ -1002,5 +1216,6 @@
             }
         }
     </script>
+</script>
 </x-app-layout>
 @endcan

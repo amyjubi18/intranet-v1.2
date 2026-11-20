@@ -306,9 +306,9 @@
                 <!-- Acordeón Animado con CSS Grid auto-height -->
                 <div
                     id="drawerAlmacenFilters"
-                    class="grid transition-all duration-500 ease-in-out {{ $activeFiltersCount > 0 ? 'grid-rows-[1fr] opacity-100 mt-3 visible' : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none' }}"
+                    class="grid transition-all duration-500 ease-in-out grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none"
                 >
-                    <div class="overflow-visible transition-all duration-300">
+                    <div class="min-h-0 overflow-hidden transition-all duration-300">
                         <form method="GET" action="{{ route('administracion.almacenamiento_impresoras.index') }}">
                             @if(request('busqueda')) <input type="hidden" name="busqueda" value="{{ request('busqueda') }}"> @endif
                             <div class="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible space-y-4">
@@ -554,7 +554,7 @@
                                     @can('almacen_inv_edit')
                                     <button
                                         type="button"
-                                        onclick='openAlmacenEdit(@json($item))'
+                                        onclick="openAlmacenEdit({{ $item->id }})"
                                         class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer"
                                     >
                                         <span>✏️</span>
@@ -591,148 +591,6 @@
     </div>
 
     <script>
-        // Funciones para filtros
-        const filterOptions = {
-            item: {{ ($almacenamiento_impresoras ?? collect())->pluck('descripcion', 'id')->toJson() }},
-            proveedor: {{ ($proveedores ?? collect())->pluck('proveedor', 'id')->toJson() }}        };
-
-        function updateSecondFilter() {
-            const filterType = document.getElementById('filterType').value;
-            const secondFilterContainer = document.getElementById('secondFilterContainer');
-            const secondFilter = document.getElementById('secondFilter');
-            const dateRangeFilter = document.getElementById('dateRangeFilter');
-            const textFilter = document.getElementById('textFilter');
-            const generalSearch = document.getElementById('generalSearch');
-
-            // Hide all
-            secondFilterContainer.style.display = 'none';
-            dateRangeFilter.style.display = 'none';
-            textFilter.style.display = 'none';
-            generalSearch.style.display = 'none';
-
-            // Show based on selection
-            if (filterType === 'fecha_ingreso') {
-                dateRangeFilter.style.display = 'block';
-            } else if (filterType === 'n_factura') {
-                textFilter.style.display = 'block';
-                secondFilter.style.display = 'none';
-
-            } else if (filterType !== '') {
-                    secondFilterContainer.style.display = 'block';
-                    // Populate options based on filterType
-                    populateSecondFilter(filterType);
-            }
-
-            // Hide filterType select after selection
-            if (filterType !== '') {
-                document.getElementById('filterType').style.display = 'none';
-            }
-        }
-
-        function populateSecondFilter(type) {
-            const secondFilter = document.getElementById('secondFilter');
-            secondFilter.innerHTML = '<option value="">-----</option>';
-
-            let options = [];
-            if (type === 'cartucho_id') {
-                options = @json(($cartuchos ?? collect())->map(function($item) { return ['id' => $item->id, 'name' => $item->cartucho ?? 'Cartucho ' . $item->id]; }));
-            } else if (type === 'colore_id') {
-                options = @json(($colores ?? collect())->map(function($item) { return ['id' => $item->id, 'name' => $item->colore]; }));
-            } else if (type === 'impresora_id') {
-                options = @json(($impresoras ?? collect())->map(function($item) { return ['id' => $item->id, 'name' => $item->impresora]; }));
-            } else if (type === 'proveedore_id') {
-                options = @json(($proveedores ?? collect())->map(function($item) { return ['id' => $item->id, 'name' => $item->proveedor]; }));
-
-            } else if (type === 'fabricante_id') {
-                options = @json(($fabricantes ?? collect())->map(function($item) { return ['id' => $item->id, 'name' => $item->fabricante]; }));
-            }
-
-            options.forEach(option => {
-                const optionElement = document.createElement('option');
-                optionElement.value = option.id;
-                optionElement.textContent = option.name;
-                secondFilter.appendChild(optionElement);
-            });
-        }
-
-        function selectFilterOption(type, id, name) {
-            document.getElementById('searchableFilterText').textContent = name;
-            // Aquí puedes implementar la lógica de filtrado real
-            console.log(`Filtrando por ${type}: ${name} (${id})`);
-        }
-
-        function clearFilters() {
-            document.getElementById('filterType').value = '';
-            document.getElementById('secondFilter').value = '';
-            // Reset other filters
-            updateSecondFilter();
-        }
-
-        // Modal functions
-        function showAddModal() {
-            document.getElementById('addModal').classList.remove('hidden');
-        }
-
-        function hideAddModal() {
-            document.getElementById('addModal').classList.add('hidden');
-        }
-
-        // Inicializar filtros
-        document.addEventListener('DOMContentLoaded', () => {
-            updateSecondFilter();
-            // Ocultar la opción inicial si no se ha presionado el botón de filtros avanzados
-            const filterType = document.getElementById('filterType');
-            const secondFilter = document.getElementById('secondFilter');
-            if (filterType.value === '') {
-                secondFilter.innerHTML = '';
-            }
-        });
-
-        // Toggle theme (optional, since maintaining current)
-        function toggleTheme() {
-            document.body.classList.toggle('light');
-            localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
-        }
-
-        // Load theme
-        if (localStorage.getItem('theme') === 'dark') {
-            document.body.classList.add('light'); // Wait, adjust based on default
-        }
-
-        // Logout function
-        function logout() {
-            // Create a form to POST to logout route
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '{{ route("logout") }}';
-            // Add CSRF token if needed
-            const csrf = document.querySelector('meta[name="csrf-token"]');
-            if (csrf) {
-                const input = document.createElement('input');
-                input.type = 'hidden';
-                input.name = '_token';
-                input.value = csrf.getAttribute('content');
-                form.appendChild(input);
-            }
-            document.body.appendChild(form);
-            form.submit();
-        }
-
-        // Toggle export menu
-        function toggleExportMenu() {
-            const menu = document.getElementById('exportMenu');
-            menu.classList.toggle('hidden');
-        }
-
-        // Close export menu when clicking outside
-        document.addEventListener('click', function(event) {
-            const button = document.getElementById('exportMenuButton');
-            const menu = document.getElementById('exportMenu');
-            if (!button.contains(event.target) && !menu.contains(event.target)) {
-                menu.classList.add('hidden');
-            }
-        });
-
         function togglePrinterGroup(masterCb, printerId) {
             const checkboxes = document.querySelectorAll('.printer-group-item-' + printerId);
             checkboxes.forEach(cb => {
@@ -1123,15 +981,14 @@
     </script>
     {{-- Modal de Crear Almacenamiento (Estilo Inventario Oficinas) --}}
     <div
-        x-show="createModalOpen"
-        x-cloak
-        class="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
+        id="modalCrearAlmacenamiento"
+        class="fixed inset-0 z-[99999999] hidden items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
         style="display: none;"
-        @click.self="createModalOpen = false"
+        onclick="if(event.target === this) closeAlmacenCreate()"
     >
         <div
             class="modal-content animate-modal-expand bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] overflow-y-auto"
-            @click.stop
+            onclick="event.stopPropagation()"
         >
             <div
                 class="p-5 sm:p-6 text-white rounded-t-3xl flex items-center justify-between relative overflow-hidden"
@@ -1143,7 +1000,7 @@
                 </div>
                 <button
                     type="button"
-                    @click="createModalOpen = false"
+                    onclick="closeAlmacenCreate()"
                     class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
                     title="Cerrar modal"
                 >
@@ -1183,32 +1040,40 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-blue-900 mb-1">
-                            🖨️ Impresora <span class="text-red-500">*</span>
+                            🖨️ Impresora Compatible <span class="text-red-500">*</span>
                         </label>
                         <select
                             name="impresora_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="create_almacen_impresora_id"
+                            onchange="onAlmacenImpresoraChange(this.value, 'create_almacen_')"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
                             <option value="">Seleccione Impresora</option>
-                            @foreach ($impresoras->sortBy('impresora') as $impresora)
-                                <option value="{{ $impresora->id }}">{{ $impresora->impresora }}</option>
+                            @foreach ($impresoras as $impresora)
+                                <option value="{{ $impresora->id }}">
+                                    {{ str_pad($impresora->id, 4, '0', STR_PAD_LEFT) }} - {{ $impresora->impresora }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-blue-900 mb-1">
-                            🗃️ Consumible <span class="text-red-500">*</span>
+                            📦 Consumible / Cartucho <span class="text-red-500">*</span>
                         </label>
                         <select
                             name="cartucho_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="create_almacen_cartucho_id"
+                            onchange="onAlmacenCartuchoChange(this.value, 'create_almacen_')"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
                             <option value="">Seleccione Consumible</option>
-                            @foreach ($cartuchos->sortBy('cartucho') as $cartucho)
-                                <option value="{{ $cartucho->id }}">{{ $cartucho->cartucho }}</option>
+                            @foreach ($cartuchos as $cartucho)
+                                <option value="{{ $cartucho->id }}" data-impresora="{{ $cartucho->impresora_id }}" data-color="{{ $cartucho->colore_id }}" data-fabricante="{{ $cartucho->fabricante_id }}">
+                                    {{ $cartucho->cartucho }} ({{ $cartucho->colores?->colore ?? 'N/A' }})
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -1221,26 +1086,28 @@
                         </label>
                         <select
                             name="colore_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="create_almacen_colore_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
                             <option value="">Seleccione Color</option>
-                            @foreach ($colores as $color)
-                                <option value="{{ $color->id }}">{{ $color->colore }}</option>
+                            @foreach ($colores as $colore)
+                                <option value="{{ $colore->id }}">{{ $colore->colore }}</option>
                             @endforeach
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-blue-900 mb-1">
-                            🏭 Tipo de Impresora (Fabricante) <span class="text-red-500">*</span>
+                            🏷️ Tipo de Impresora (Fabricante) <span class="text-red-500">*</span>
                         </label>
                         <select
                             name="fabricante_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="create_almacen_fabricante_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
-                            <option value="">Seleccione Tipo</option>
+                            <option value="">Seleccione Fabricante</option>
                             @foreach ($fabricantes as $fabricante)
                                 <option value="{{ $fabricante->id }}">{{ $fabricante->fabricante }}</option>
                             @endforeach
@@ -1255,7 +1122,8 @@
                         </label>
                         <select
                             name="proveedore_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="create_almacen_proveedore_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
                             <option value="">Seleccione Proveedor</option>
@@ -1272,6 +1140,7 @@
                         <input
                             type="number"
                             name="unidades"
+                            id="create_almacen_unidades"
                             min="1"
                             value="1"
                             class="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
@@ -1283,7 +1152,7 @@
                 <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
                     <button
                         type="button"
-                        @click="createModalOpen = false"
+                        onclick="closeAlmacenCreate()"
                         class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
                     >
                         Regresar
@@ -1293,8 +1162,8 @@
                         class="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold text-white rounded-xl shadow-md hover:shadow-lg transition-all cursor-pointer"
                         style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
                     >
-                        <span>💾</span>
-                        <span>Guardar Ingreso</span>
+                        <span>📥</span>
+                        <span>Registrar Almacenamiento</span>
                     </button>
                 </div>
             </form>
@@ -1303,15 +1172,14 @@
 
     {{-- Modal de Editar Almacenamiento (Estilo Inventario Oficinas) --}}
     <div
-        x-show="editModalOpen"
-        x-cloak
-        class="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
+        id="modalEditarAlmacenamiento"
+        class="fixed inset-0 z-[99999999] hidden items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
         style="display: none;"
-        @click.self="editModalOpen = false"
+        onclick="if(event.target === this) closeAlmacenEdit()"
     >
         <div
             class="modal-content animate-modal-expand bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-2xl max-h-[92vh] overflow-y-auto"
-            @click.stop
+            onclick="event.stopPropagation()"
         >
             <div
                 class="p-5 sm:p-6 text-white rounded-t-3xl flex items-center justify-between relative overflow-hidden"
@@ -1319,11 +1187,11 @@
             >
                 <div>
                     <h3 class="text-lg sm:text-xl font-black tracking-tight">Editar Almacenamiento de Consumibles</h3>
-                    <p class="text-xs text-blue-100 mt-0.5" x-text="'Actualizando registro #' + editData.id + ' — Factura #' + (editData.n_factura || 'S/N')"></p>
+                    <p id="edit_almacen_title_detail" class="text-xs text-blue-100 mt-0.5"></p>
                 </div>
                 <button
                     type="button"
-                    @click="editModalOpen = false"
+                    onclick="closeAlmacenEdit()"
                     class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
                     title="Cerrar modal"
                 >
@@ -1331,7 +1199,7 @@
                 </button>
             </div>
 
-            <form :action="'/administracion/almacenamiento_impresoras/' + editData.id" method="POST" class="p-5 sm:p-6 space-y-4">
+            <form id="formEditarAlmacenamiento" action="" method="POST" class="p-5 sm:p-6 space-y-4">
                 @csrf
                 @method('PUT')
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1342,7 +1210,7 @@
                         <input
                             type="date"
                             name="fecha_ingreso"
-                            x-model="editData.fecha_ingreso"
+                            id="edit_almacen_fecha_ingreso"
                             class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
                             required
                         />
@@ -1354,7 +1222,7 @@
                         <input
                             type="text"
                             name="n_factura"
-                            x-model="editData.n_factura"
+                            id="edit_almacen_n_factura"
                             class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
                             required
                         />
@@ -1364,34 +1232,40 @@
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-bold text-blue-900 mb-1">
-                            🖨️ Impresora <span class="text-red-500">*</span>
+                            🖨️ Impresora Compatible <span class="text-red-500">*</span>
                         </label>
                         <select
                             name="impresora_id"
-                            x-model="editData.impresora_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="edit_almacen_impresora_id"
+                            onchange="onAlmacenImpresoraChange(this.value, 'edit_almacen_')"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
                             <option value="">Seleccione Impresora</option>
-                            @foreach ($impresoras->sortBy('impresora') as $impresora)
-                                <option value="{{ $impresora->id }}">{{ $impresora->impresora }}</option>
+                            @foreach ($impresoras as $impresora)
+                                <option value="{{ $impresora->id }}">
+                                    {{ str_pad($impresora->id, 4, '0', STR_PAD_LEFT) }} - {{ $impresora->impresora }}
+                                </option>
                             @endforeach
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-blue-900 mb-1">
-                            🗃️ Consumible <span class="text-red-500">*</span>
+                            📦 Consumible / Cartucho <span class="text-red-500">*</span>
                         </label>
                         <select
                             name="cartucho_id"
-                            x-model="editData.cartucho_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="edit_almacen_cartucho_id"
+                            onchange="onAlmacenCartuchoChange(this.value, 'edit_almacen_')"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
                             <option value="">Seleccione Consumible</option>
-                            @foreach ($cartuchos->sortBy('cartucho') as $cartucho)
-                                <option value="{{ $cartucho->id }}">{{ $cartucho->cartucho }}</option>
+                            @foreach ($cartuchos as $cartucho)
+                                <option value="{{ $cartucho->id }}" data-impresora="{{ $cartucho->impresora_id }}" data-color="{{ $cartucho->colore_id }}" data-fabricante="{{ $cartucho->fabricante_id }}">
+                                    {{ $cartucho->cartucho }} ({{ $cartucho->colores?->colore ?? 'N/A' }})
+                                </option>
                             @endforeach
                         </select>
                     </div>
@@ -1404,28 +1278,28 @@
                         </label>
                         <select
                             name="colore_id"
-                            x-model="editData.colore_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="edit_almacen_colore_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
                             <option value="">Seleccione Color</option>
-                            @foreach ($colores as $color)
-                                <option value="{{ $color->id }}">{{ $color->colore }}</option>
+                            @foreach ($colores as $colore)
+                                <option value="{{ $colore->id }}">{{ $colore->colore }}</option>
                             @endforeach
                         </select>
                     </div>
 
                     <div>
                         <label class="block text-xs font-bold text-blue-900 mb-1">
-                            🏭 Tipo de Impresora (Fabricante) <span class="text-red-500">*</span>
+                            🏷️ Tipo de Impresora (Fabricante) <span class="text-red-500">*</span>
                         </label>
                         <select
                             name="fabricante_id"
-                            x-model="editData.fabricante_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="edit_almacen_fabricante_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
-                            <option value="">Seleccione Tipo</option>
+                            <option value="">Seleccione Fabricante</option>
                             @foreach ($fabricantes as $fabricante)
                                 <option value="{{ $fabricante->id }}">{{ $fabricante->fabricante }}</option>
                             @endforeach
@@ -1440,8 +1314,8 @@
                         </label>
                         <select
                             name="proveedore_id"
-                            x-model="editData.proveedore_id"
-                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                            id="edit_almacen_proveedore_id"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                             required
                         >
                             <option value="">Seleccione Proveedor</option>
@@ -1458,8 +1332,8 @@
                         <input
                             type="number"
                             name="unidades"
+                            id="edit_almacen_unidades"
                             min="1"
-                            x-model="editData.unidades"
                             class="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
                             required
                         />
@@ -1469,7 +1343,7 @@
                 <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
                     <button
                         type="button"
-                        @click="editModalOpen = false"
+                        onclick="closeAlmacenEdit()"
                         class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
                     >
                         Regresar
@@ -1486,6 +1360,117 @@
             </form>
         </div>
     </div>
-    </div>
+
+    <script>
+        window.cartuchosMetadata = @json($cartuchos);
+        window.almacenItems = @json($impresorasAlmacenadas->keyBy('id'));
+
+        function onAlmacenCartuchoChange(cartuchoId, prefix) {
+            if (!cartuchoId) return;
+            const c = (window.cartuchosMetadata || []).find(x => String(x.id) === String(cartuchoId));
+            if (!c) return;
+            const colSel = document.getElementById(prefix + 'colore_id');
+            const impSel = document.getElementById(prefix + 'impresora_id');
+            const fabSel = document.getElementById(prefix + 'fabricante_id');
+            if (colSel && c.colore_id) colSel.value = c.colore_id;
+            if (impSel && c.impresora_id) impSel.value = c.impresora_id;
+            if (fabSel && c.fabricante_id) fabSel.value = c.fabricante_id;
+        }
+
+        function onAlmacenImpresoraChange(impresoraId, prefix) {
+            const cartSel = document.getElementById(prefix + 'cartucho_id');
+            if (!cartSel) return;
+            let currentStillValid = false;
+            Array.from(cartSel.options).forEach(opt => {
+                if (!opt.value) return;
+                const c = (window.cartuchosMetadata || []).find(x => String(x.id) === String(opt.value));
+                const match = !impresoraId || (c && String(c.impresora_id) === String(impresoraId));
+                opt.hidden = !match;
+                opt.disabled = !match;
+                if (match && opt.value === cartSel.value) currentStillValid = true;
+            });
+            if (impresoraId && !currentStillValid && cartSel.value) {
+                cartSel.value = '';
+            }
+        }
+
+        function openAlmacenCreate() {
+            const m = document.getElementById('modalCrearAlmacenamiento');
+            if (m) {
+                m.classList.remove('hidden');
+                m.classList.add('flex');
+                m.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeAlmacenCreate() {
+            const m = document.getElementById('modalCrearAlmacenamiento');
+            if (m) {
+                m.classList.remove('flex');
+                m.classList.add('hidden');
+                m.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        function openAlmacenEdit(target) {
+            const m = document.getElementById('modalEditarAlmacenamiento');
+            const item = typeof target === 'object' && target !== null ? target : (window.almacenItems ? window.almacenItems[target] : null);
+            if (!m || !item) return;
+
+            document.getElementById('formEditarAlmacenamiento').action = '/administracion/almacenamiento_impresoras/' + item.id;
+            const detail = document.getElementById('edit_almacen_title_detail');
+            if (detail) {
+                detail.textContent = 'Actualizando registro #' + item.id + ' — Factura #' + (item.n_factura || 'S/N');
+            }
+
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val !== undefined && val !== null ? val : '';
+            };
+
+            setVal('edit_almacen_fecha_ingreso', item.fecha_ingreso ? item.fecha_ingreso.split('T')[0] : '');
+            setVal('edit_almacen_n_factura', item.n_factura);
+            setVal('edit_almacen_impresora_id', item.impresora_id);
+            setVal('edit_almacen_cartucho_id', item.cartucho_id);
+            setVal('edit_almacen_colore_id', item.colore_id);
+            setVal('edit_almacen_fabricante_id', item.fabricante_id);
+            setVal('edit_almacen_proveedore_id', item.proveedore_id);
+            setVal('edit_almacen_unidades', item.unidades);
+
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            m.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeAlmacenEdit() {
+            const m = document.getElementById('modalEditarAlmacenamiento');
+            if (m) {
+                m.classList.remove('flex');
+                m.classList.add('hidden');
+                m.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        function toggleAlmacenFilters() {
+            const drawer = document.getElementById('drawerAlmacenFilters');
+            const arrow = document.getElementById('arrowAlmacenFilters');
+            if (!drawer) return;
+
+            const isOpen = drawer.classList.contains('grid-rows-[1fr]');
+            if (isOpen) {
+                drawer.classList.remove('grid-rows-[1fr]', 'opacity-100', 'mt-3', 'visible');
+                drawer.classList.add('grid-rows-[0fr]', 'opacity-0', 'invisible', 'mt-0', 'pointer-events-none');
+                if (arrow) arrow.classList.remove('rotate-180');
+            } else {
+                drawer.classList.remove('grid-rows-[0fr]', 'opacity-0', 'invisible', 'mt-0', 'pointer-events-none');
+                drawer.classList.add('grid-rows-[1fr]', 'opacity-100', 'mt-3', 'visible');
+                if (arrow) arrow.classList.add('rotate-180');
+            }
+        }
+    </script>
 </x-app-layout>
 @endcan
