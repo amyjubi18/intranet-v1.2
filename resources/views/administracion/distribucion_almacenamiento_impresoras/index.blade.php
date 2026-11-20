@@ -27,22 +27,6 @@
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.min.js"></script>
 
-    <div x-data="{
-        openFilters: false,
-        createModalOpen: false,
-        editModalOpen: false,
-        editData: { id: null, almacenamiento_impresora_id: '', gerencia_id: '', unidades_asignadas: 1 },
-        openEdit(item) {
-            this.editData = {
-                id: item.id,
-                almacenamiento_impresora_id: item.almacenamiento_impresora_id || '',
-                gerencia_id: item.gerencia_id || '',
-                unidades_asignadas: item.unidades_asignadas || 1
-            };
-            this.editModalOpen = true;
-        }
-    }">
-
     <!-- Tarjetas superiores de estadísticas -->
     <div class="px-6 mb-8">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-fadeIn">
@@ -199,7 +183,7 @@
                         @endcan
 
                         @can('dist_almac_create')
-                        <button type="button" @click="createModalOpen = true" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer shrink-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                        <button type="button" onclick="openDistCreate()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer shrink-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                             <span>➕</span>
                             <span>Nueva Distribución</span>
                         </button>
@@ -212,7 +196,7 @@
                     <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                         <button
                             type="button"
-                            @click="openFilters = !openFilters"
+                            onclick="toggleDistFilters()"
                             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
                             style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);"
                         >
@@ -223,8 +207,8 @@
                                 </span>
                             @endif
                             <svg
+                                id="arrowDistFilters"
                                 class="w-3.5 h-3.5 transition-transform duration-300 transform"
-                                :class="openFilters ? 'rotate-180' : 'rotate-0'"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -305,10 +289,10 @@
 
                 <!-- Acordeón Animado con CSS Grid auto-height -->
                 <div
-                    class="grid transition-all duration-500 ease-in-out"
-                    :class="openFilters ? 'grid-rows-[1fr] opacity-100 mt-3 visible' : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none'"
+                    id="drawerDistFilters"
+                    class="grid transition-all duration-500 ease-in-out grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none"
                 >
-                    <div :class="openFilters ? 'overflow-visible' : 'overflow-hidden'" class="transition-all duration-300">
+                    <div class="overflow-visible transition-all duration-300">
                         <form method="GET" action="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}">
                             @if(request('busqueda')) <input type="hidden" name="busqueda" value="{{ request('busqueda') }}"> @endif
                             <div class="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible space-y-4">
@@ -316,7 +300,7 @@
                                     <!-- Gerencia -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🏢 Gerencia</label>
-                                        <select name="gerencia" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="gerencia" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todas las gerencias</option>
                                             @foreach($gerencias->sortBy('gerencia') as $g)
                                                 <option value="{{ $g->id }}" {{ request('gerencia') == $g->id ? 'selected' : '' }}>
@@ -329,7 +313,7 @@
                                     <!-- Área -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">📂 Área</label>
-                                        <select name="area" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="area" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todas las áreas</option>
                                             @foreach($areas->sortBy('area') as $a)
                                                 <option value="{{ $a->id }}" {{ request('area') == $a->id ? 'selected' : '' }}>
@@ -342,7 +326,7 @@
                                     <!-- Consumible -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">📦 Consumible</label>
-                                        <select name="cartucho" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="cartucho" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todos los consumibles</option>
                                             @foreach($cartuchos as $c)
                                                 <option value="{{ $c->id }}" {{ request('cartucho') == $c->id ? 'selected' : '' }}>
@@ -355,7 +339,7 @@
                                     <!-- Impresora -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🖨️ Impresora</label>
-                                        <select name="impresora" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="impresora" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todas las impresoras</option>
                                             @foreach($impresoras as $imp)
                                                 <option value="{{ $imp->id }}" {{ request('impresora') == $imp->id ? 'selected' : '' }}>
@@ -368,7 +352,7 @@
                                     <!-- Color -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🎨 Color</label>
-                                        <select name="colore" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="colore" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todos los colores</option>
                                             @foreach($colores as $col)
                                                 <option value="{{ $col->id }}" {{ request('colore') == $col->id ? 'selected' : '' }}>
@@ -381,7 +365,7 @@
                                     <!-- Tipo de Impresora (Fabricante) -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🏷️ Tipo de Impresora</label>
-                                        <select name="fabricante" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="fabricante" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todos los fabricantes</option>
                                             @foreach($tiposConsumible as $tc)
                                                 <option value="{{ $tc->id }}" {{ request('fabricante') == $tc->id ? 'selected' : '' }}>
@@ -555,12 +539,7 @@
                             @can('dist_almac_edit')
                             <button
                                 type="button"
-                                @click="openEdit({
-                                    id: {{ $distribucion->id }},
-                                    almacenamiento_impresora_id: '{{ $distribucion->almacenamiento_impresora_id }}',
-                                    gerencia_id: '{{ $distribucion->gerencia_id }}',
-                                    unidades_asignadas: {{ $distribucion->unidades_asignadas ?? 1 }}
-                                })"
+                                onclick="openDistEdit({{ $distribucion->id }})"
                                 class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer"
                             >
                                 <span>✏️</span>
@@ -597,573 +576,6 @@
     </div>
 
     <script>
-        // Sistema de filtros dinámicos para distribución de almacenamiento de impresoras
-        const filterData = {
-            'gerencia': {
-                type: 'select',
-                options: [
-                    { value: '', text: 'Todas las gerencias' },
-                    @foreach($gerencias->sortBy('gerencia') as $gerencia)
-                    { value: '{{ $gerencia->id }}', text: '{{ $gerencia->gerencia }} ({{ $gerencia->area->area ?? "N/A" }})' },
-                    @endforeach
-                ]
-            },
-            'area': {
-                type: 'select',
-                options: [
-                    { value: '', text: 'Todas las áreas' },
-                    @foreach($areas as $area)
-                    { value: '{{ $area->id }}', text: '{{ $area->area }}' },
-                    @endforeach
-                ]
-            },
-            'cartucho': {
-                type: 'select',
-                options: [
-                    { value: '', text: 'Todos los consumibles' },
-                    @foreach($cartuchos as $cartucho)
-                    { value: '{{ $cartucho->id }}', text: '{{ $cartucho->cartucho }}' },
-                    @endforeach
-                ]
-            },
-            'impresora': {
-                type: 'select',
-                options: [
-                    { value: '', text: 'Todas las impresoras' },
-                    @foreach($impresoras as $impresora)
-                    { value: '{{ $impresora->id }}', text: '{{ $impresora->impresora }}' },
-                    @endforeach
-                ]
-            },
-            'colore': {
-                type: 'select',
-                options: [
-                    { value: '', text: 'Todos los colores' },
-                    @foreach($colores as $colore)
-                    { value: '{{ $colore->id }}', text: '{{ $colore->colore }}' },
-                    @endforeach
-                ]
-            },
-            'fabricante': {
-                type: 'select',
-                options: [
-                    { value: '', text: 'Todos los tipos' },
-                    @foreach($tiposConsumible as $fabricante)
-                    { value: '{{ $fabricante->id }}', text: '{{ $fabricante->fabricante }}' },
-                    @endforeach
-                ]
-            },
-
-            'created_at': {
-                type: 'date'
-            }
-        };
-
-        function updateSecondFilter() {
-            const filterType = document.getElementById('filterType').value;
-            const secondFilter = document.getElementById('secondFilter');
-            const searchableFilter = document.getElementById('searchableFilter');
-            const dateRangeFilter = document.getElementById('dateRangeFilter');
-            const textFilter = document.getElementById('textFilter');
-
-            // Ocultar todos los filtros secundarios
-            secondFilter.classList.add('hidden');
-            searchableFilter.classList.add('hidden');
-            dateRangeFilter.classList.add('hidden');
-            textFilter.classList.add('hidden');
-
-            // Cerrar dropdown si está abierto
-            closeSearchableDropdown();
-
-            if (!filterType) {
-                secondFilter.disabled = true;
-                secondFilter.innerHTML = '<option value="">Primero selecciona un filtro</option>';
-                secondFilter.classList.remove('hidden');
-                return;
-            }
-
-            const filterConfig = filterData[filterType];
-
-            if (filterConfig.type === 'select') {
-                // Mostrar select normal con opciones
-                secondFilter.disabled = false;
-                secondFilter.innerHTML = '';
-                filterConfig.options.forEach(option => {
-                    const optionElement = document.createElement('option');
-                    optionElement.value = option.value;
-                    optionElement.textContent = option.text;
-                    secondFilter.appendChild(optionElement);
-                });
-                secondFilter.classList.remove('hidden');
-
-            } else if (filterConfig.type === 'searchable-select') {
-                // Mostrar filtro con buscador personalizado
-                setupSearchableFilter(filterConfig);
-                searchableFilter.classList.remove('hidden');
-
-            } else if (filterConfig.type === 'date') {
-                // Mostrar filtro de fecha
-                dateRangeFilter.classList.remove('hidden');
-
-            } else if (filterConfig.type === 'text') {
-                // Mostrar input de texto
-                textFilter.classList.remove('hidden');
-                textFilter.addEventListener('input', applyTextFilter);
-            }
-
-            showToast(`Filtro por ${filterType} seleccionado`, 'info');
-        }
-
-
-
-        // Funciones para filtros con buscador
-        let currentSearchableOptions = [];
-        let selectedSearchableValue = '';
-
-        function setupSearchableFilter(filterConfig) {
-            const button = document.getElementById('searchableFilterButton');
-            const text = document.getElementById('searchableFilterText');
-            const input = document.getElementById('searchableFilterInput');
-            const optionsContainer = document.getElementById('searchableFilterOptions');
-
-            currentSearchableOptions = filterConfig.options;
-            selectedSearchableValue = '';
-
-            // Limpiar opciones previas
-            optionsContainer.innerHTML = '';
-
-            // Crear opciones
-            filterConfig.options.forEach(option => {
-                const optionEl = document.createElement('div');
-                optionEl.classList.add('searchable-select-option');
-                optionEl.textContent = option.text;
-                optionEl.dataset.value = option.value;
-                optionEl.addEventListener('click', () => {
-                    selectedSearchableValue = option.value;
-                    text.textContent = option.text;
-                    closeSearchableDropdown();
-                    // Aplicar filtro redirigiendo con parámetro
-                    const filterType = document.getElementById('filterType').value;
-                    if (option.value) {
-                        window.location.href = '{{ route("administracion.distribucion_almacenamiento_impresoras.index") }}?' + filterType + '=' + option.value;
-                    } else {
-                        window.location.href = '{{ route("administracion.distribucion_almacenamiento_impresoras.index") }}';
-                    }
-                });
-                optionsContainer.appendChild(optionEl);
-            });
-
-            // Mostrar texto inicial
-            text.textContent = filterConfig.options[0].text;
-
-            // Abrir dropdown al hacer click en el botón
-            button.onclick = () => {
-                toggleSearchableDropdown();
-            };
-
-            // Filtrar opciones al escribir
-            input.oninput = () => {
-                const filterText = input.value.toLowerCase();
-                const optionEls = optionsContainer.querySelectorAll('.searchable-select-option');
-                optionEls.forEach(el => {
-                    if (el.textContent.toLowerCase().includes(filterText)) {
-                        el.classList.remove('hidden');
-                    } else {
-                        el.classList.add('hidden');
-                    }
-                });
-            };
-        }
-
-        function toggleSearchableDropdown() {
-            const dropdown = document.getElementById('searchableFilterDropdown');
-            dropdown.classList.toggle('open');
-        }
-
-        function closeSearchableDropdown() {
-            const dropdown = document.getElementById('searchableFilterDropdown');
-            dropdown.classList.remove('open');
-        }
-
-        function applySelectFilter() {
-            const filterType = document.getElementById('filterType').value;
-            const filterValue = document.getElementById('secondFilter').value;
-            if (filterValue) {
-                window.location.href = '{{ route("administracion.distribucion_almacenamiento_impresoras.index") }}?' + filterType + '=' + filterValue;
-            } else {
-                window.location.href = '{{ route("administracion.distribucion_almacenamiento_impresoras.index") }}';
-            }
-        }
-
-        function toggleDistPrinterGroup(masterCb, printerId) {
-            const checkboxes = document.querySelectorAll('.dist-printer-group-item-' + printerId);
-            checkboxes.forEach(cb => {
-                cb.checked = masterCb.checked;
-            });
-            updateDistribucionSelection();
-        }
-
-        function updateDistribucionSelection() {
-            const ck = document.querySelectorAll('.record-checkbox:checked');
-            const count = ck.length;
-
-            const optExcel = document.getElementById('distOptExcelSelected');
-            const optPdf = document.getElementById('distOptPdfSelected');
-            if (optExcel) {
-                optExcel.disabled = count === 0;
-                optExcel.textContent = `📊 Excel - Solo seleccionados ${count > 0 ? `(${count})` : '(0)'}`;
-            }
-            if (optPdf) {
-                optPdf.disabled = count === 0;
-                optPdf.textContent = `📄 PDF - Solo seleccionados ${count > 0 ? `(${count})` : '(0)'}`;
-            }
-
-            const btnDeleteSelected = document.getElementById('btnDeleteSelectedDist');
-            const btnDeleteSelectedText = document.getElementById('btnDeleteSelectedDistText');
-            if (btnDeleteSelected) {
-                btnDeleteSelected.disabled = count === 0;
-                if (count === 0) {
-                    btnDeleteSelected.classList.add('opacity-50', 'cursor-not-allowed');
-                } else {
-                    btnDeleteSelected.classList.remove('opacity-50', 'cursor-not-allowed');
-                }
-            }
-            if (btnDeleteSelectedText) {
-                btnDeleteSelectedText.textContent = `Eliminar Seleccionados ${count > 0 ? `(${count})` : ''}`;
-            }
-        }
-
-        async function handleDistDeleteSelected() {
-            const selectedIds = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
-            if (selectedIds.length === 0) return;
-
-            const { value: password } = await Swal.fire({
-                title: '¿Estás seguro?',
-                text: `Se eliminarán ${selectedIds.length} distribución(es) seleccionadas. Ingresa tu contraseña para confirmar:`,
-                icon: 'warning',
-                input: 'password',
-                inputPlaceholder: 'Contraseña de confirmación',
-                inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
-                showCancelButton: true,
-                confirmButtonColor: '#F52727',
-                cancelButtonColor: '#2780F5',
-                confirmButtonText: 'Sí, eliminar seleccionados',
-                cancelButtonText: 'Cancelar',
-                preConfirm: (val) => {
-                    if (!val) {
-                        Swal.showValidationMessage('Debes ingresar tu contraseña');
-                        return false;
-                    }
-                    return val;
-                }
-            });
-
-            if (!password) return;
-
-            try {
-                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const res = await fetch('{{ route("administracion.distribucion_almacenamiento_impresoras.destroyMultiple") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': token || '',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({
-                        ids: selectedIds,
-                        password: password
-                    })
-                });
-
-                const json = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(json.message || 'Error al eliminar distribuciones seleccionadas');
-                }
-
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Eliminados',
-                    text: json.message || `Se eliminaron ${selectedIds.length} distribución(es) correctamente.`,
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                window.location.reload();
-            } catch (err) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: err.message || 'No se pudieron eliminar las distribuciones.'
-                });
-            }
-        }
-
-        async function handleDistDeleteAll() {
-            const { value: password } = await Swal.fire({
-                title: '¿Estás seguro?',
-                text: 'Se eliminarán TODAS las distribuciones de almacenamiento. Esta acción no se puede deshacer. Ingresa tu contraseña:',
-                icon: 'warning',
-                input: 'password',
-                inputPlaceholder: 'Contraseña de confirmación',
-                inputAttributes: { autocapitalize: 'off', autocorrect: 'off' },
-                showCancelButton: true,
-                confirmButtonColor: '#F52727',
-                cancelButtonColor: '#2780F5',
-                confirmButtonText: 'Sí, eliminar todo',
-                cancelButtonText: 'Cancelar',
-                preConfirm: (val) => {
-                    if (!val) {
-                        Swal.showValidationMessage('Debes ingresar tu contraseña');
-                        return false;
-                    }
-                    return val;
-                }
-            });
-
-            if (!password) return;
-
-            try {
-                const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-                const res = await fetch('{{ route("administracion.distribucion_almacenamiento_impresoras.destroyAll") }}', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': token || '',
-                        'X-Requested-With': 'XMLHttpRequest'
-                    },
-                    body: JSON.stringify({ password: password })
-                });
-
-                const json = await res.json().catch(() => ({}));
-                if (!res.ok) {
-                    throw new Error(json.message || 'Error al eliminar todas las distribuciones');
-                }
-
-                await Swal.fire({
-                    icon: 'success',
-                    title: 'Distribuciones Vaciadas',
-                    text: json.message || 'Se eliminaron todas las distribuciones correctamente.',
-                    timer: 2000,
-                    showConfirmButton: false
-                });
-                window.location.reload();
-            } catch (err) {
-                Swal.fire({
-                    icon: 'error',
-                    title: 'Error',
-                    text: err.message || 'No se pudieron eliminar todas las distribuciones.'
-                });
-            }
-        }
-
-        function handleDistExport(select) {
-            const val = select.value;
-            if (!val) return;
-            const [format, scope] = val.split(':');
-            const currentParams = new URLSearchParams(window.location.search);
-
-            if (scope === 'selected') {
-                const ck = Array.from(document.querySelectorAll('.record-checkbox:checked')).map(cb => cb.value);
-                if (ck.length === 0) {
-                    Swal.fire('Atención', 'No has seleccionado ningún registro para exportar.', 'info');
-                    select.value = '';
-                    return;
-                }
-                currentParams.set('selected_ids', ck.join(','));
-            } else {
-                currentParams.delete('selected_ids');
-            }
-
-            const baseUrl = format === 'excel'
-                ? '{{ route("administracion.distribucion_almacenamiento_impresoras.export.excel") }}'
-                : '{{ route("administracion.distribucion_almacenamiento_impresoras.export.pdf") }}';
-
-            window.location.href = baseUrl + (currentParams.toString() ? '?' + currentParams.toString() : '');
-            select.value = '';
-        }
-
-        function setDistDatePreset(preset) {
-            const desdeInput = document.getElementById('dist_fecha_desde');
-            const hastaInput = document.getElementById('dist_fecha_hasta');
-            const now = new Date();
-            const formatDate = (d) => {
-                const y = d.getFullYear();
-                const m = String(d.getMonth() + 1).padStart(2, '0');
-                const day = String(d.getDate()).padStart(2, '0');
-                return `${y}-${m}-${day}`;
-            };
-
-            if (preset === 'today') {
-                const todayStr = formatDate(now);
-                if (desdeInput) desdeInput.value = todayStr;
-                if (hastaInput) hastaInput.value = todayStr;
-            } else if (preset === 'week') {
-                const start = new Date(now);
-                start.setDate(now.getDate() - 7);
-                if (desdeInput) desdeInput.value = formatDate(start);
-                if (hastaInput) hastaInput.value = formatDate(now);
-            } else if (preset === 'month') {
-                const start = new Date(now.getFullYear(), now.getMonth(), 1);
-                if (desdeInput) desdeInput.value = formatDate(start);
-                if (hastaInput) hastaInput.value = formatDate(now);
-            } else if (preset === 'year') {
-                const start = new Date(now.getFullYear(), 0, 1);
-                if (desdeInput) desdeInput.value = formatDate(start);
-                if (hastaInput) hastaInput.value = formatDate(now);
-            }
-        }
-
-        function clearFilters() {
-            document.getElementById('filterType').value = '';
-            updateSecondFilter();
-            // Limpiar filtros aplicados y recargar la página sin parámetros
-            window.location.href = '{{ route("administracion.distribucion_almacenamiento_impresoras.index") }}';
-        }
-
-        function clearSpecificFilter(filterType) {
-            const url = new URL(window.location);
-            url.searchParams.delete(filterType);
-
-            // Si es un filtro de fecha, eliminar ambos parámetros de fecha
-            if (filterType === 'created_at' || filterType === 'fecha_desde') {
-                url.searchParams.delete('fecha_desde');
-                url.searchParams.delete('fecha_hasta');
-            }
-
-            window.location.href = url.toString();
-        }
-
-        function clearDateFilter() {
-            const url = new URL(window.location);
-            url.searchParams.delete('fecha_desde');
-            url.searchParams.delete('fecha_hasta');
-            window.location.href = url.toString();
-        }
-
-        // Cerrar dropdown al hacer clic fuera
-        document.addEventListener('click', (e) => {
-            const dropdown = document.getElementById('searchableFilterDropdown');
-            const button = document.getElementById('searchableFilterButton');
-            if (!dropdown.contains(e.target) && !button.contains(e.target)) {
-                closeSearchableDropdown();
-            }
-        });
-
-        // Inicializar filtros al cargar la página
-        document.addEventListener('DOMContentLoaded', () => {
-            initializeFilters();
-        });
-
-        function initializeFilters() {
-            const urlParams = new URLSearchParams(window.location.search);
-
-            // Determinar qué tipo de filtro está activo
-            let activeFilterType = '';
-            if (urlParams.has('gerencia')) activeFilterType = 'gerencia';
-            else if (urlParams.has('area')) activeFilterType = 'area';
-            else if (urlParams.has('cartucho')) activeFilterType = 'cartucho';
-            else if (urlParams.has('impresora')) activeFilterType = 'impresora';
-            else if (urlParams.has('colore')) activeFilterType = 'colore';
-            else if (urlParams.has('fabricante')) activeFilterType = 'fabricante';
-            else if (urlParams.has('fecha_desde') || urlParams.has('fecha_hasta')) activeFilterType = 'created_at';
-
-            if (activeFilterType) {
-                // Establecer el filtro principal
-                document.getElementById('filterType').value = activeFilterType;
-                updateSecondFilter();
-
-                // Establecer el valor del filtro secundario después de un breve delay
-                setTimeout(() => {
-                    setActiveFilterValue(activeFilterType, urlParams);
-                }, 100);
-            }
-        }
-
-        function setActiveFilterValue(filterType, urlParams) {
-            const filterValue = urlParams.get(filterType);
-
-            if (filterType === 'created_at') {
-                // Manejar filtros de fecha
-                const fechaDesde = urlParams.get('fecha_desde');
-                const fechaHasta = urlParams.get('fecha_hasta');
-                if (fechaDesde || fechaHasta) {
-                    const dateRangeText = fechaDesde && fechaHasta ?
-                        `${fechaDesde} - ${fechaHasta}` :
-                        fechaDesde ? `Desde: ${fechaDesde}` : `Hasta: ${fechaHasta}`;
-                    document.getElementById('dateRangePicker').value = dateRangeText;
-                    document.getElementById('fecha_desde').value = fechaDesde || '';
-                    document.getElementById('fecha_hasta').value = fechaHasta || '';
-                }
-
-            } else if (filterValue) {
-                // Manejar filtros de selección
-                const secondFilter = document.getElementById('secondFilter');
-                if (secondFilter && !secondFilter.disabled) {
-                    secondFilter.value = filterValue;
-                }
-            }
-        }
-    </script>
-
-    <script>
-        // Initialize date range picker for created_at (sin modificar)
-        $('#dateRangePicker').daterangepicker({
-            autoUpdateInput: false,
-            locale: {
-                cancelLabel: 'Limpiar',
-                applyLabel: 'Aplicar',
-                format: 'YYYY-MM-DD',
-                separator: ' - ',
-                fromLabel: 'Desde',
-                toLabel: 'Hasta',
-                customRangeLabel: 'Personalizado',
-                weekLabel: 'S',
-                daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-                monthNames: ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'],
-                firstDay: 1
-            },
-            ranges: {
-                'Hoy': [moment(), moment()],
-                'Ayer': [moment().subtract(1, 'days'), moment().subtract(1, 'days')],
-                'Últimos 7 días': [moment().subtract(6, 'days'), moment()],
-                'Últimos 30 días': [moment().subtract(29, 'days'), moment()],
-                'Últimos 3 meses': [moment().subtract(3, 'months').startOf('month'), moment()],
-                'Últimos 6 meses': [moment().subtract(6, 'months').startOf('month'), moment()],
-                'Este mes': [moment().startOf('month'), moment().endOf('month')],
-                'Mes anterior': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
-            }
-        });
-
-        $('#dateRangePicker').on('apply.daterangepicker', function(ev, picker) {
-            $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
-            $('#fecha_desde').val(picker.startDate.format('YYYY-MM-DD'));
-            $('#fecha_hasta').val(picker.endDate.format('YYYY-MM-DD'));
-            // Aplicar filtro de fecha redirigiendo con parámetros
-            const fechaDesde = picker.startDate.format('YYYY-MM-DD');
-            const fechaHasta = picker.endDate.format('YYYY-MM-DD');
-            window.location.href = '{{ route("administracion.distribucion_almacenamiento_impresoras.index") }}?fecha_desde=' + fechaDesde + '&fecha_hasta=' + fechaHasta;
-        });
-
-        $('#dateRangePicker').on('cancel.daterangepicker', function(ev, picker) {
-            $(this).val('');
-            $('#fecha_desde').val('');
-            $('#fecha_hasta').val('');
-            window.location.href = '{{ route("administracion.distribucion_almacenamiento_impresoras.index") }}';
-        });
-
-        // Set initial value if dates are present
-        var fechaDesde = $('#fecha_desde').val();
-        var fechaHasta = $('#fecha_hasta').val();
-        if (fechaDesde && fechaHasta) {
-            $('#dateRangePicker').val(fechaDesde + ' - ' + fechaHasta);
-        }
-    </script>
-
-
-
-
-    <script>
         async function confirmDelete(id) {
             const { value: password } = await Swal.fire({
                 title: '¿Estás seguro?',
@@ -1195,74 +607,96 @@
 
     <!-- Modal de Creación de Distribución -->
     <div
-        x-show="createModalOpen"
-        x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
+        id="modalCrearDistribucion"
+        class="fixed inset-0 z-[99999999] hidden items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
         style="display: none;"
-        @click.self="createModalOpen = false"
+        onclick="if(event.target === this) closeDistCreate()"
     >
         <div
-            class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto"
-            @click.stop
+            class="modal-content animate-modal-expand bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] overflow-y-auto"
+            onclick="event.stopPropagation()"
         >
-            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center text-lg shadow-sm">
-                        <span>📤</span>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-blue-700 to-blue-500">
-                            Nueva Distribución de Consumible
-                        </h3>
-                        <p class="text-xs text-slate-500">Asigna consumibles en almacén a una gerencia o área</p>
-                    </div>
+            <div
+                class="p-5 sm:p-6 text-white rounded-t-3xl flex items-center justify-between relative overflow-hidden"
+                style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
+            >
+                <div>
+                    <h3 class="text-lg sm:text-xl font-black tracking-tight">Nueva Distribución de Consumible</h3>
+                    <p class="text-xs text-blue-100 mt-0.5">Asigna consumibles en almacén a una gerencia y área</p>
                 </div>
                 <button
                     type="button"
-                    @click="createModalOpen = false"
-                    class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center text-sm transition-all cursor-pointer"
+                    onclick="closeDistCreate()"
+                    class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
+                    title="Cerrar modal"
                 >
                     ✕
                 </button>
             </div>
 
-            <form action="{{ route('administracion.distribucion_almacenamiento_impresoras.store') }}" method="POST" class="space-y-4">
+            <form action="{{ route('administracion.distribucion_almacenamiento_impresoras.store') }}" method="POST" class="p-5 sm:p-6 space-y-4">
                 @csrf
 
                 <div>
-                    <label class="block text-xs font-bold text-blue-900 mb-1">
-                        🖨️ Consumible / Impresora en Almacén <span class="text-red-500">*</span>
-                    </label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold text-blue-900">
+                            🖨️ Consumible en Almacén <span class="text-red-500">*</span>
+                        </label>
+                        <span id="create_dist_stock_badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden">
+                        </span>
+                    </div>
                     <select
                         name="almacenamiento_impresora_id"
-                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                        id="create_dist_almacen_id"
+                        onchange="onDistAlmacenChange(this.value, 'create_dist_')"
+                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                         required
                     >
                         <option value="">Seleccione Consumible Disponible</option>
                         @foreach ($almacenamientos as $almacen)
-                            <option value="{{ $almacen->id }}">
+                            <option value="{{ $almacen->id }}" data-disponibles="{{ $almacen->unidades_disponibles }}">
                                 {{ $almacen->impresoras?->impresora ?? 'Impresora' }} - {{ $almacen->cartuchos?->cartucho ?? 'Consumible' }} ({{ $almacen->colores?->colore ?? 'N/A' }}) — Disp: {{ $almacen->unidades_disponibles }}
                             </option>
                         @endforeach
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-blue-900 mb-1">
-                        🏢 Gerencia / Área Destino <span class="text-red-500">*</span>
-                    </label>
-                    <select
-                        name="gerencia_id"
-                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
-                        required
-                    >
-                        <option value="">Seleccione Gerencia</option>
-                        @foreach ($gerencias as $gerencia)
-                            <option value="{{ $gerencia->id }}">
-                                {{ $gerencia->gerencia }} ({{ $gerencia->area?->area ?? 'Sin Área' }})
-                            </option>
-                        @endforeach
-                    </select>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            📍 Área de Destino
+                        </label>
+                        <select
+                            id="create_dist_area_id"
+                            onchange="onDistAreaChange(this.value, 'create_dist_')"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
+                        >
+                            <option value="">Todas las áreas / Filtrar gerencias</option>
+                            @foreach ($areas->sortBy('area') as $area)
+                                <option value="{{ $area->id }}">{{ $area->area }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🏢 Gerencia Destino <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="gerencia_id"
+                            id="create_dist_gerencia_id"
+                            onchange="onDistGerenciaChange(this.value, 'create_dist_')"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
+                            required
+                        >
+                            <option value="">Seleccione Gerencia</option>
+                            @foreach ($gerencias->sortBy('gerencia') as $gerencia)
+                                <option value="{{ $gerencia->id }}" data-area="{{ $gerencia->area_id }}">
+                                    {{ $gerencia->gerencia }} ({{ $gerencia->area?->area ?? 'Sin Área' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
                 <div>
@@ -1272,6 +706,7 @@
                     <input
                         type="number"
                         name="unidades_asignadas"
+                        id="create_dist_unidades_asignadas"
                         min="1"
                         value="1"
                         class="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
@@ -1282,7 +717,7 @@
                 <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
                     <button
                         type="button"
-                        @click="createModalOpen = false"
+                        onclick="closeDistCreate()"
                         class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
                     >
                         Cancelar
@@ -1302,77 +737,97 @@
 
     <!-- Modal de Edición de Distribución -->
     <div
-        x-show="editModalOpen"
-        x-cloak
-        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
+        id="modalEditarDistribucion"
+        class="fixed inset-0 z-[99999999] hidden items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
         style="display: none;"
-        @click.self="editModalOpen = false"
+        onclick="if(event.target === this) closeDistEdit()"
     >
         <div
-            class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto"
-            @click.stop
+            class="modal-content animate-modal-expand bg-white rounded-3xl shadow-2xl border border-slate-200 w-full max-w-xl max-h-[92vh] overflow-y-auto"
+            onclick="event.stopPropagation()"
         >
-            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-lg shadow-sm">
-                        <span>✏️</span>
-                    </div>
-                    <div>
-                        <h3 class="text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-900 via-blue-700 to-blue-500">
-                            Editar Distribución de Consumible
-                        </h3>
-                        <p class="text-xs text-slate-500">Modifica los datos de la distribución seleccionada</p>
-                    </div>
+            <div
+                class="p-5 sm:p-6 text-white rounded-t-3xl flex items-center justify-between relative overflow-hidden"
+                style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
+            >
+                <div>
+                    <h3 class="text-lg sm:text-xl font-black tracking-tight">Editar Distribución de Consumible</h3>
+                    <p id="edit_dist_title_detail" class="text-xs text-blue-100 mt-0.5"></p>
                 </div>
                 <button
                     type="button"
-                    @click="editModalOpen = false"
-                    class="w-8 h-8 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 flex items-center justify-center text-sm transition-all cursor-pointer"
+                    onclick="closeDistEdit()"
+                    class="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 text-white font-bold grid place-items-center text-sm transition-all cursor-pointer"
+                    title="Cerrar modal"
                 >
                     ✕
                 </button>
             </div>
 
-            <form :action="'{{ url('administracion/distribucion_almacenamiento_impresoras') }}/' + editData.id" method="POST" class="space-y-4">
+            <form id="formEditarDistribucion" action="" method="POST" class="p-5 sm:p-6 space-y-4">
                 @csrf
                 @method('PUT')
 
                 <div>
-                    <label class="block text-xs font-bold text-blue-900 mb-1">
-                        🖨️ Consumible / Impresora en Almacén <span class="text-red-500">*</span>
-                    </label>
+                    <div class="flex items-center justify-between mb-1">
+                        <label class="block text-xs font-bold text-blue-900">
+                            🖨️ Consumible en Almacén <span class="text-red-500">*</span>
+                        </label>
+                        <span id="edit_dist_stock_badge" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 hidden">
+                        </span>
+                    </div>
                     <select
                         name="almacenamiento_impresora_id"
-                        x-model="editData.almacenamiento_impresora_id"
-                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
+                        id="edit_dist_almacen_id"
+                        onchange="onDistAlmacenChange(this.value, 'edit_dist_')"
+                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
                         required
                     >
                         <option value="">Seleccione Consumible Disponible</option>
                         @foreach ($almacenamientos as $almacen)
-                            <option value="{{ $almacen->id }}">
+                            <option value="{{ $almacen->id }}" data-disponibles="{{ $almacen->unidades_disponibles }}">
                                 {{ $almacen->impresoras?->impresora ?? 'Impresora' }} - {{ $almacen->cartuchos?->cartucho ?? 'Consumible' }} ({{ $almacen->colores?->colore ?? 'N/A' }}) — Disp: {{ $almacen->unidades_disponibles }}
                             </option>
                         @endforeach
                     </select>
                 </div>
 
-                <div>
-                    <label class="block text-xs font-bold text-blue-900 mb-1">
-                        🏢 Gerencia / Área Destino <span class="text-red-500">*</span>
-                    </label>
-                    <select
-                        name="gerencia_id"
-                        x-model="editData.gerencia_id"
-                        class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
-                        required
-                    >
-                        <option value="">Seleccione Gerencia</option>
-                        @foreach ($gerencias as $gerencia)
-                            <option value="{{ $gerencia->id }}">
-                                {{ $gerencia->gerencia }} ({{ $gerencia->area?->area ?? 'Sin Área' }})
-                            </option>
-                        @endforeach
-                    </select>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            📍 Área de Destino
+                        </label>
+                        <select
+                            id="edit_dist_area_id"
+                            onchange="onDistAreaChange(this.value, 'edit_dist_')"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
+                        >
+                            <option value="">Todas las áreas / Filtrar gerencias</option>
+                            @foreach ($areas->sortBy('area') as $area)
+                                <option value="{{ $area->id }}">{{ $area->area }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-blue-900 mb-1">
+                            🏢 Gerencia Destino <span class="text-red-500">*</span>
+                        </label>
+                        <select
+                            name="gerencia_id"
+                            id="edit_dist_gerencia_id"
+                            onchange="onDistGerenciaChange(this.value, 'edit_dist_')"
+                            class="w-full px-3.5 py-2.5 text-xs font-semibold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20 cursor-pointer"
+                            required
+                        >
+                            <option value="">Seleccione Gerencia</option>
+                            @foreach ($gerencias->sortBy('gerencia') as $gerencia)
+                                <option value="{{ $gerencia->id }}" data-area="{{ $gerencia->area_id }}">
+                                    {{ $gerencia->gerencia }} ({{ $gerencia->area?->area ?? 'Sin Área' }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
 
                 <div>
@@ -1382,8 +837,8 @@
                     <input
                         type="number"
                         name="unidades_asignadas"
+                        id="edit_dist_unidades_asignadas"
                         min="1"
-                        x-model="editData.unidades_asignadas"
                         class="w-full px-3.5 py-2.5 text-xs font-bold rounded-xl border bg-blue-100/70 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-600 transition-all border-white/20"
                         required
                     />
@@ -1392,10 +847,10 @@
                 <div class="flex items-center justify-end gap-2.5 pt-4 border-t border-slate-100">
                     <button
                         type="button"
-                        @click="editModalOpen = false"
+                        onclick="closeDistEdit()"
                         class="px-4 py-2.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer"
                     >
-                        Regresar
+                        Cancelar
                     </button>
                     <button
                         type="submit"
@@ -1403,13 +858,149 @@
                         style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);"
                     >
                         <span>💾</span>
-                        <span>Actualizar Distribución</span>
+                        <span>Guardar Cambios</span>
                     </button>
                 </div>
             </form>
         </div>
     </div>
-    </div>
 
+    <script>
+        window.distGerencias = @json($gerencias ?? []);
+        window.distItems = @json($distribuciones->keyBy('id'));
+        window.distAreas = @json($areas ?? []);
+        window.distAlmacenamientos = @json($almacenamientos ?? []);
+
+        function onDistAlmacenChange(almacenId, prefix) {
+            const item = (window.distAlmacenamientos || []).find(x => String(x.id) === String(almacenId));
+            const badge = document.getElementById(prefix + 'stock_badge');
+            const qtyInput = document.getElementById(prefix + 'unidades_asignadas');
+
+            if (item && badge) {
+                badge.textContent = 'Disp: ' + (item.unidades_disponibles ?? 0) + ' unds';
+                badge.classList.remove('hidden');
+                badge.className = 'text-[10px] font-bold px-2 py-0.5 rounded-full ' + (item.unidades_disponibles > 5 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
+                if (qtyInput && prefix === 'create_dist_') {
+                    qtyInput.max = item.unidades_disponibles;
+                }
+            } else if (badge) {
+                badge.classList.add('hidden');
+            }
+        }
+
+        function onDistAreaChange(areaId, prefix) {
+            const gerSelect = document.getElementById(prefix + 'gerencia_id');
+            if (!gerSelect) return;
+            const currentGerVal = gerSelect.value;
+            let currentStillVisible = false;
+
+            Array.from(gerSelect.options).forEach(opt => {
+                if (!opt.value) return;
+                const g = (window.distGerencias || []).find(x => String(x.id) === String(opt.value));
+                if (!areaId || (g && String(g.area_id) === String(areaId))) {
+                    opt.hidden = false;
+                    opt.disabled = false;
+                    if (opt.value === currentGerVal) currentStillVisible = true;
+                } else {
+                    opt.hidden = true;
+                    opt.disabled = true;
+                }
+            });
+
+            if (areaId && !currentStillVisible && gerSelect.value) {
+                gerSelect.value = '';
+            }
+        }
+
+        function onDistGerenciaChange(gerenciaId, prefix) {
+            const areaSelect = document.getElementById(prefix + 'area_id');
+            if (!areaSelect || !gerenciaId) return;
+            const g = (window.distGerencias || []).find(x => String(x.id) === String(gerenciaId));
+            if (g && g.area_id) {
+                areaSelect.value = g.area_id;
+            }
+        }
+
+        function openDistCreate() {
+            const m = document.getElementById('modalCrearDistribucion');
+            if (m) {
+                m.classList.remove('hidden');
+                m.classList.add('flex');
+                m.style.display = 'flex';
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeDistCreate() {
+            const m = document.getElementById('modalCrearDistribucion');
+            if (m) {
+                m.classList.remove('flex');
+                m.classList.add('hidden');
+                m.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        function openDistEdit(target) {
+            const m = document.getElementById('modalEditarDistribucion');
+            const item = typeof target === 'object' && target !== null ? target : (window.distItems ? window.distItems[target] : null);
+            if (!m || !item) return;
+
+            document.getElementById('formEditarDistribucion').action = '{{ url("administracion/distribucion_almacenamiento_impresoras") }}/' + item.id;
+            const detail = document.getElementById('edit_dist_title_detail');
+            if (detail) {
+                detail.textContent = 'Actualizando distribución #' + item.id;
+            }
+
+            const setVal = (id, val) => {
+                const el = document.getElementById(id);
+                if (el) el.value = val !== undefined && val !== null ? val : '';
+            };
+
+            setVal('edit_dist_almacen_id', item.almacenamiento_impresora_id);
+            setVal('edit_dist_gerencia_id', item.gerencia_id);
+            setVal('edit_dist_unidades_asignadas', item.unidades_asignadas);
+
+            // Relacionar gerencia con area
+            const g = (window.distGerencias || []).find(x => String(x.id) === String(item.gerencia_id));
+            if (g && g.area_id) {
+                setVal('edit_dist_area_id', g.area_id);
+            }
+
+            onDistAlmacenChange(item.almacenamiento_impresora_id, 'edit_dist_');
+
+            m.classList.remove('hidden');
+            m.classList.add('flex');
+            m.style.display = 'flex';
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeDistEdit() {
+            const m = document.getElementById('modalEditarDistribucion');
+            if (m) {
+                m.classList.remove('flex');
+                m.classList.add('hidden');
+                m.style.display = 'none';
+                document.body.style.overflow = '';
+            }
+        }
+
+        function toggleDistFilters() {
+            const drawer = document.getElementById('drawerDistFilters');
+            const arrow = document.getElementById('arrowDistFilters');
+            if (!drawer) return;
+
+            const isOpen = drawer.classList.contains('grid-rows-[1fr]');
+            if (isOpen) {
+                drawer.classList.remove('grid-rows-[1fr]', 'opacity-100', 'mt-3', 'visible');
+                drawer.classList.add('grid-rows-[0fr]', 'opacity-0', 'invisible', 'mt-0', 'pointer-events-none');
+                if (arrow) arrow.classList.remove('rotate-180');
+            } else {
+                drawer.classList.remove('grid-rows-[0fr]', 'opacity-0', 'invisible', 'mt-0', 'pointer-events-none');
+                drawer.classList.add('grid-rows-[1fr]', 'opacity-100', 'mt-3', 'visible');
+                if (arrow) arrow.classList.add('rotate-180');
+            }
+        }
+    </script>
 </x-app-layout>
 @endcan

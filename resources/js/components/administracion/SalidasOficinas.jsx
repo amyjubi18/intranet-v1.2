@@ -1308,7 +1308,7 @@ export default function SalidasOficinas() {
                                 </div>
 
                                 <div className="flex items-center justify-end gap-3 pt-2">
-                                    <button type="button" onClick={clearAllFilters} className="px-4 py-2 text-xs border border-blue-900 font-semibold text-slate-600 hover:text-slate-800 transition-colors cursor-pointer">
+                                    <button type="button" onClick={clearAllFilters} className="px-4 py-2 text-xs border border-gray-200 font-semibold text-slate-600 hover:text-slate-800 transition-colors cursor-pointer rounded-xl">
                                        🗑️ Limpiar Todo
                                     </button>
                                 </div>

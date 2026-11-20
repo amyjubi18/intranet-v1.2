@@ -27,27 +27,6 @@
     <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/daterangepicker@3.1.0/daterangepicker.min.js"></script>
 
-    <div x-data="{
-        openFilters: false,
-        createModalOpen: false,
-        editModalOpen: false,
-        editData: { id: null, fecha_ingreso: '', cartucho_id: '', colore_id: '', impresora_id: '', fabricante_id: '', proveedore_id: '', n_factura: '', unidades: 1 },
-        openEdit(item) {
-            this.editData = {
-                id: item.id,
-                fecha_ingreso: item.fecha_ingreso ? item.fecha_ingreso.split('T')[0] : '',
-                cartucho_id: item.cartucho_id || '',
-                colore_id: item.colore_id || '',
-                impresora_id: item.impresora_id || '',
-                fabricante_id: item.fabricante_id || '',
-                proveedore_id: item.proveedore_id || '',
-                n_factura: item.n_factura || '',
-                unidades: item.unidades || 1
-            };
-            this.editModalOpen = true;
-        }
-    }">
-
     <!-- Tarjetas superiores de estadísticas -->
     <div class="px-6 mb-8">
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-fadeIn">
@@ -175,7 +154,7 @@
                                 type="text"
                                 name="busqueda"
                                 value="{{ request('busqueda') }}"
-                                placeholder="🔍 Buscar por factura, consumible, impresora, tipo o proveedor (Enter)..."
+                                placeholder="Buscar por factura, consumible, impresora, tipo o proveedor (Enter)..."
                                 class="w-full bg-blue-50/50 border border-slate-200 rounded-xl pl-10 pr-4 py-2.5 text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-inner"
                             />
                             <span class="absolute left-3.5 top-3 text-slate-400 text-sm">🔍</span>
@@ -221,7 +200,7 @@
                         @endcan
 
                         @can('almacen_inv_create')
-                        <button type="button" @click="createModalOpen = true" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer shrink-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
+                        <button type="button" onclick="openAlmacenCreate()" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer shrink-0" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                             <span>➕</span>
                             <span>Nuevo</span>
                         </button>
@@ -234,7 +213,7 @@
                     <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                         <button
                             type="button"
-                            @click="openFilters = !openFilters"
+                            onclick="toggleAlmacenFilters()"
                             class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
                             style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);"
                         >
@@ -245,8 +224,8 @@
                                 </span>
                             @endif
                             <svg
+                                id="arrowAlmacenFilters"
                                 class="w-3.5 h-3.5 transition-transform duration-300 transform"
-                                :class="openFilters ? 'rotate-180' : 'rotate-0'"
                                 fill="none"
                                 stroke="currentColor"
                                 viewBox="0 0 24 24"
@@ -326,10 +305,10 @@
 
                 <!-- Acordeón Animado con CSS Grid auto-height -->
                 <div
-                    class="grid transition-all duration-500 ease-in-out"
-                    :class="openFilters ? 'grid-rows-[1fr] opacity-100 mt-3 visible' : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none'"
+                    id="drawerAlmacenFilters"
+                    class="grid transition-all duration-500 ease-in-out {{ $activeFiltersCount > 0 ? 'grid-rows-[1fr] opacity-100 mt-3 visible' : 'grid-rows-[0fr] opacity-0 invisible mt-0 pointer-events-none' }}"
                 >
-                    <div :class="openFilters ? 'overflow-visible' : 'overflow-hidden'" class="transition-all duration-300">
+                    <div class="overflow-visible transition-all duration-300">
                         <form method="GET" action="{{ route('administracion.almacenamiento_impresoras.index') }}">
                             @if(request('busqueda')) <input type="hidden" name="busqueda" value="{{ request('busqueda') }}"> @endif
                             <div class="p-5 bg-gradient-to-br from-blue-50/70 to-slate-50/90 rounded-2xl border border-blue-100 shadow-md relative z-40 overflow-visible space-y-4">
@@ -337,7 +316,7 @@
                                     <!-- Consumible -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🖨️ Consumible</label>
-                                        <select name="cartucho_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="cartucho_id" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todos los consumibles</option>
                                             @foreach($cartuchos as $cartucho)
                                                 <option value="{{ $cartucho->id }}" {{ request('cartucho_id') == $cartucho->id ? 'selected' : '' }}>
@@ -350,7 +329,7 @@
                                     <!-- Tipo de Consumible / Color -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🎨 Tipo de Consumible</label>
-                                        <select name="colore_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="colore_id" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todos los colores</option>
                                             @foreach($colores as $color)
                                                 <option value="{{ $color->id }}" {{ request('colore_id') == $color->id ? 'selected' : '' }}>
@@ -363,7 +342,7 @@
                                     <!-- Impresora -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🖨️ Impresora</label>
-                                        <select name="impresora_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="impresora_id" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todas las impresoras</option>
                                             @foreach($impresoras as $impresora)
                                                 <option value="{{ $impresora->id }}" {{ request('impresora_id') == $impresora->id ? 'selected' : '' }}>
@@ -376,7 +355,7 @@
                                     <!-- Tipo de Impresora (Fabricante) -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🏷️ Tipo de Impresora</label>
-                                        <select name="fabricante_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="fabricante_id" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todos los fabricantes</option>
                                             @foreach($fabricantes as $fab)
                                                 <option value="{{ $fab->id }}" {{ request('fabricante_id') == $fab->id ? 'selected' : '' }}>
@@ -389,7 +368,7 @@
                                     <!-- Proveedor -->
                                     <div>
                                         <label class="block text-xs font-semibold text-blue-900 mb-1.5">🏢 Proveedor</label>
-                                        <select name="proveedore_id" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none">
+                                        <select name="proveedore_id" onchange="this.form.submit()" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-800 focus:ring-2 focus:ring-blue-600 focus:outline-none cursor-pointer">
                                             <option value="">Todos los proveedores</option>
                                             @foreach($proveedores as $prov)
                                                 <option value="{{ $prov->id }}" {{ request('proveedore_id') == $prov->id ? 'selected' : '' }}>
@@ -527,7 +506,7 @@
                                     <p class="text-xs px-2 py-1 rounded-full {{ $colorClass }} inline-block">{{ $item->colores ? $item->colores->colore : 'N/A' }}</p>
                                 </div>
                                 <div>
-                                    
+
                                 </div>
                                 <div>
                                     <p class="text-xs text-blue-900 font-semibold mb-1">Tipo de Impresora</p>
@@ -575,17 +554,7 @@
                                     @can('almacen_inv_edit')
                                     <button
                                         type="button"
-                                        @click="openEdit({
-                                            id: {{ $item->id }},
-                                            fecha_ingreso: '{{ $item->fecha_ingreso ? \Carbon\Carbon::parse($item->fecha_ingreso)->format('Y-m-d') : '' }}',
-                                            cartucho_id: '{{ $item->cartucho_id }}',
-                                            colore_id: '{{ $item->colore_id }}',
-                                            impresora_id: '{{ $item->impresora_id }}',
-                                            fabricante_id: '{{ $item->fabricante_id }}',
-                                            proveedore_id: '{{ $item->proveedore_id }}',
-                                            n_factura: '{{ addslashes($item->n_factura ?? '') }}',
-                                            unidades: {{ $item->unidades ?? 1 }}
-                                        })"
+                                        onclick='openAlmacenEdit(@json($item))'
                                         class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer"
                                     >
                                         <span>✏️</span>
@@ -619,97 +588,6 @@
             </div>
         </div>
         @endif
-    </div>
-
-    <!-- Modal para agregar nuevo registro -->
-    <div id="addModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4 animate-modal-backdrop">
-        <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl animate-modal-expand">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-xl font-bold">Nuevo Registro de Almacenamiento</h2>
-                <button onclick="hideAddModal()" class="modal-close-btn" title="Cerrar modal">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"/>
-                        <line x1="6" y1="6" x2="18" y2="18"/>
-                    </svg>
-                </button>
-            </div>
-
-            <form id="addForm" action="{{ route('administracion.almacenamiento_impresoras.store') }}" method="POST" class="space-y-4">
-                @csrf
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Fecha de Factura</label>
-                        <input type="date" name="fecha_ingreso[]" required class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50" value="{{ date('Y-m-d') }}">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Cartucho</label>
-                        <select name="cartucho_id[]" required class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                            <option value="">Seleccionar cartucho</option>
-                            @foreach($cartuchos as $cartucho)
-                            <option value="{{ $cartucho->id }}">{{ $cartucho->cartucho }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Tipo de Consumible</label>
-                        <select name="colore_id[]" required class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                            <option value="">Seleccionar color</option>
-                            @foreach($colores as $color)
-                            <option value="{{ $color->id }}">{{ $color->colore }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Impresora</label>
-                        <select name="impresora_id[]" required class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                            <option value="">Seleccionar impresora</option>
-                            @foreach($impresoras as $impresora)
-                            <option value="{{ $impresora->id }}">{{ $impresora->impresora }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Tipo de Impresora</label>
-                        <select name="fabricante_id[]" required class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                            <option value="">Seleccionar fabricante</option>
-                            @foreach($fabricantes as $fabricante)
-                            <option value="{{ $fabricante->id }}">{{ $fabricante->fabricante }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Proveedor</label>
-                        <select name="proveedore_id[]" required class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                            <option value="">Seleccionar proveedor</option>
-                            @foreach($proveedores as $proveedor)
-                            <option value="{{ $proveedor->id }}">{{ $proveedor->proveedor }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Unidades</label>
-                        <input type="number" name="unidades[]" required min="1" class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium mb-2">Nº Factura</label>
-                        <input type="text" name="n_factura[]" required class="bg-white border border-white/20 backdrop-blur-md rounded-xl px-4 py-2 w-full focus:outline-none focus:ring-2 focus:ring-blue-500/50">
-                    </div>
-                </div>
-
-                <div class="flex gap-3 pt-4">
-                    <button type="button" onclick="hideAddModal()" class="flex-1 inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border border-white/20 bg-white hover:bg-white active:translate-y-0.5">Cancelar</button>
-                    <x-primary-button type="submit" class="flex-1">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="mr-1">
-                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-                            <polyline points="17,21 17,13 7,13 7,21"/>
-                            <polyline points="7,3 7,8 15,8"/>
-                        </svg>
-                        Guardar Registro
-                    </x-primary-button>
-                </div>
-            </form>
-        </div>
     </div>
 
     <script>
