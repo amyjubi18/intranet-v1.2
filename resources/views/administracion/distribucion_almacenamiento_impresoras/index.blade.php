@@ -29,7 +29,7 @@
 
     <!-- Tarjetas superiores de estadísticas -->
     <div class="px-6 mb-8">
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-6 animate-fadeIn">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 animate-fadeIn">
             <!-- Total Distribuciones -->
             <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6">
                 <div class="flex items-center justify-between mb-4">
@@ -120,9 +120,9 @@
         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
             <div class="flex flex-col gap-4">
                 <!-- Fila Superior: Buscador Rápido + Acciones (Exportar, Nuevo) -->
-                <div class="flex flex-wrap items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 sm:gap-4 pb-4 border-b border-gray-100">
                     <!-- Buscador general -->
-                    <form method="GET" action="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}" class="flex-1 min-w-[280px]">
+                    <form method="GET" action="{{ route('administracion.distribucion_almacenamiento_impresoras.index') }}" class="flex-1 min-w-[260px] max-w-2xl">
                         @if(request('gerencia')) <input type="hidden" name="gerencia" value="{{ request('gerencia') }}"> @endif
                         @if(request('area')) <input type="hidden" name="area" value="{{ request('area') }}"> @endif
                         @if(request('cartucho')) <input type="hidden" name="cartucho" value="{{ request('cartucho') }}"> @endif
@@ -145,7 +145,7 @@
                     </form>
 
                     <!-- Acciones -->
-                    <div class="flex flex-wrap items-center justify-end gap-3">
+                    <div class="flex flex-wrap items-center justify-start xl:justify-end gap-2.5 sm:gap-3 shrink-0">
                         <select id="exportSelectDist" onchange="handleDistExport(this)" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs">
                             <option value="">📤 Exportar</option>
                             <optgroup label="Exportar Todos">
@@ -193,11 +193,11 @@
 
                 <!-- Fila de Control: Botón Filtros Avanzados + Badges de Filtros Activos -->
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                         <button
                             type="button"
                             @click="openFilters = !openFilters"
-                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
                             style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);"
                         >
                             <span>⚡ Filtros Avanzados</span>

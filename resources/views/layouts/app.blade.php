@@ -549,15 +549,18 @@
         /* Toolbar principal: búsqueda + botones de acción */
         /* Forzar que la barra de herramientas haga wrap en resoluciones intermedias */
         .toolbar-row,
-        .bg-white .flex.flex-col.lg\:flex-row {
+        .bg-white .flex.flex-col.lg\:flex-row,
+        .bg-white .flex.flex-col.xl\:flex-row {
             flex-wrap: wrap !important;
         }
 
         /* Buscador: quitar max-width fijo para que sea fluido */
         .toolbar-row form,
-        .bg-white form.flex-1 {
+        .toolbar-row div.flex-1,
+        .bg-white form.flex-1,
+        .bg-white div.flex-1 {
             max-width: 100% !important;
-            min-width: 200px;
+            min-width: 220px;
         }
 
         /* Botones de acción: siempre hacer wrap */
@@ -630,32 +633,49 @@
             white-space: nowrap;
         }
 
-        /* Toolbar: en resoluciones intermedias, hacer que el buscador y acciones se apilen */
+        /* Buscador fluido tanto en Blade como en React */
+        .bg-white form.flex-1,
+        .bg-white div.flex-1,
+        [data-react-component] .flex-1 {
+            min-width: 240px;
+        }
+
+        /* Toolbar: en resoluciones intermedias, hacer que el buscador y acciones se adapten */
         @media (max-width: 1280px) {
             /* Las filas del toolbar deben fluir verticalmente si no caben */
-            .bg-white .flex.flex-col.lg\:flex-row {
+            .bg-white .flex.flex-col.lg\:flex-row,
+            .bg-white .flex.flex-col.xl\:flex-row {
                 flex-direction: column !important;
                 align-items: stretch !important;
             }
 
             /* Buscador toma todo el ancho */
             .bg-white form.flex-1.max-w-xl,
-            form.flex-1.max-w-xl {
+            .bg-white form.flex-1.max-w-2xl,
+            .bg-white div.flex-1.max-w-xl,
+            .bg-white div.flex-1.max-w-2xl,
+            form.flex-1.max-w-xl,
+            form.flex-1.max-w-2xl {
                 max-width: 100% !important;
                 width: 100% !important;
             }
 
             /* Acciones van debajo y se extienden */
-            .bg-white .flex.flex-wrap.items-center.justify-end.gap-3 {
+            .bg-white .flex.flex-wrap.items-center.justify-end.gap-3,
+            .bg-white .flex.flex-wrap.items-center.justify-end {
                 width: 100%;
                 justify-content: flex-start !important;
             }
         }
 
-        /* En pantallas muy grandes (1920+), mantener todo en línea */
+        /* En pantallas grandes (1281px-1920px+), mantener buscador fluido y amplio */
         @media (min-width: 1281px) {
             .bg-white form.flex-1.max-w-xl,
-            form.flex-1.max-w-xl {
+            .bg-white form.flex-1.max-w-2xl,
+            .bg-white div.flex-1.max-w-xl,
+            .bg-white div.flex-1.max-w-2xl,
+            form.flex-1.max-w-xl,
+            form.flex-1.max-w-2xl {
                 max-width: none !important;
                 flex: 1 1 0% !important;
             }
@@ -743,6 +763,17 @@
         @media (max-width: 768px) {
             [data-react-component] .grid.grid-cols-2 {
                 grid-template-columns: 1fr !important;
+            }
+        }
+
+        /* React: Selects y filtros en móviles y pantallas pequeñas */
+        @media (max-width: 640px) {
+            [data-react-component] .w-60,
+            [data-react-component] .w-64,
+            [data-react-component] .w-72,
+            [data-react-component] .w-56,
+            [data-react-component] .w-52 {
+                width: 100% !important;
             }
         }
 

@@ -627,11 +627,13 @@ export default function DocumentosManagement() {
                             <button
                                 type="button"
                                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className={`px-4 py-2 text-sm text-white rounded-xl transition-all shadow-xs ${
-                                    showAdvancedFilters ? 'bg-blue-800 ring-2 ring-blue-500/50' : 'bg-blue-900 hover:bg-blue-800'
-                                }`}
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
                             >
-                                Filtros Avanzados
+                                <span>⚡ Filtros Avanzados</span>
                             </button>
 
                             {/* Filtro principal - Tipo de campo */}
@@ -734,7 +736,11 @@ export default function DocumentosManagement() {
                                         setFechaHasta('');
                                         setShowAdvancedFilters(false);
                                     }}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
                                 >
                                     🗑️ Limpiar
                                 </button>
@@ -776,10 +782,14 @@ export default function DocumentosManagement() {
                                 <button
                                     type="button"
                                     onClick={handleOpenCreateModal}
-                                    className="btn inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-md"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                    }}
                                 >
                                     <span>➕</span>
-                                    Nuevo
+                                    <span>Nuevo</span>
                                 </button>
                             )}
                         </div>

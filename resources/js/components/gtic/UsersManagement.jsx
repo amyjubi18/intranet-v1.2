@@ -264,7 +264,7 @@ export default function UsersManagement() {
 
         try {
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            
+
             // Construir FormData para soporte de foto de perfil
             const bodyData = new FormData();
             bodyData.append('name', formData.name);
@@ -332,7 +332,7 @@ export default function UsersManagement() {
 
         try {
             const token = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-            
+
             // Si hay foto usamos POST con _method=PUT para soporte multipart de Laravel
             const bodyData = new FormData();
             bodyData.append('_method', 'PUT');
@@ -467,7 +467,11 @@ export default function UsersManagement() {
                             <button
                                 type="button"
                                 onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold rounded-xl bg-blue-900 text-white hover:bg-blue-800 transition-all shadow-sm active:translate-y-0.5"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
                             >
                                 <span>🔍</span>
                                 <span>Filtros</span>
@@ -578,7 +582,11 @@ export default function UsersManagement() {
                                 <button
                                     type="button"
                                     onClick={openCreateModal}
-                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-white bg-blue-900 hover:bg-blue-800 transition-all shadow-sm active:translate-y-0.5"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                style={{
+                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                }}
                                 >
                                     <span>➕</span>
                                     <span>Añadir</span>

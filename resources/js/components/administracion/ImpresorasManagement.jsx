@@ -355,13 +355,16 @@ export default function ImpresorasManagement() {
         }
     };
 
+    const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+
     const clearFilters = () => {
         setSearch('');
         setImpresoraFilter('');
         setGerenciaFilter('');
     };
 
-    const hasActiveFilters = Boolean(search || impresoraFilter || gerenciaFilter);
+    const activeFiltersCount = (impresoraFilter ? 1 : 0) + (gerenciaFilter ? 1 : 0);
+    const hasActiveFilters = Boolean(search || activeFiltersCount > 0);
 
     // Filtrar lista de gerencias en el modal
     const filteredGerenciasModal = useMemo(() => {
@@ -379,90 +382,153 @@ export default function ImpresorasManagement() {
             {/* Filtros y controles */}
             <div className="sticky top-0 z-30 px-6 mb-6">
                 <div className="p-6 bg-white border border-white/20 backdrop-blur-md rounded-2xl shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-4">
-                        <div className="flex flex-wrap items-center gap-4 flex-1">
+                    <div className="flex flex-col gap-4">
+                        {/* Fila Superior: Buscador + Botón Crear */}
+                        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 sm:gap-4 pb-4 border-b border-gray-100">
                             {/* Buscador de texto libre */}
-                            <div className="relative w-60">
+                            <div className="relative flex-1 min-w-[260px] max-w-2xl">
+                                <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                    🔍
+                                </span>
                                 <input
                                     type="text"
                                     value={search}
                                     onChange={(e) => setSearch(e.target.value)}
-                                    placeholder="Buscar impresora..."
-                                    className="w-full px-4 py-2.5 text-xs font-semibold bg-blue-100/70 border border-white/20 rounded-xl text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                                    placeholder="Buscar por impresora, modelo, código..."
+                                    className="w-full pl-10 pr-10 py-2.5 bg-blue-100/70 border border-transparent rounded-xl text-sm font-medium text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-xs"
                                 />
                                 {search && (
                                     <button
                                         type="button"
                                         onClick={() => setSearch('')}
                                         className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 font-bold text-xs"
+                                        title="Limpiar búsqueda"
                                     >
                                         ✕
                                     </button>
                                 )}
                             </div>
 
-                            {/* Select Filtrable: Impresora */}
-                            <div className="w-64">
-                                <SearchableSelect
-                                    options={impresoraOptions}
-                                    value={impresoraFilter}
-                                    onChange={setImpresoraFilter}
-                                    placeholder="Todas las impresoras"
-                                    allLabel="Todas las impresoras"
-                                    icon="🖨️"
-                                />
-                            </div>
-
-                            {/* Select Filtrable: Gerencia */}
-                            <div className="w-64">
-                                <SearchableSelect
-                                    options={gerenciaOptions}
-                                    value={gerenciaFilter}
-                                    onChange={setGerenciaFilter}
-                                    placeholder="Todas las gerencias"
-                                    allLabel="Todas las gerencias"
-                                    icon="🏢"
-                                />
-                            </div>
-
-                            {hasActiveFilters && (
+                            {/* Botón Crear */}
+                            {permissions.can_create && (
                                 <button
                                     type="button"
-                                    onClick={clearFilters}
-                                    className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-xs shadow-xs cursor-pointer"
+                                    onClick={handleOpenCreate}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer shrink-0"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                    }}
                                 >
-                                    🗑️ Limpiar
+                                    <span>➕</span>
+                                    <span>Registrar Impresora</span>
                                 </button>
                             )}
+                        </div>
 
-                            {/* Selector de ordenamiento */}
-                            <div className="flex items-center gap-1 ml-auto">
-                                <span className="text-xs text-gray-500 font-medium">Ordenar:</span>
+                        {/* Fila de Control: Botón Filtros Avanzados + Limpiar + Ordenar */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                                 <button
                                     type="button"
-                                    onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
-                                    className="px-2.5 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold transition-all cursor-pointer"
-                                    title="Alternar orden A-Z / Z-A"
+                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                    }}
                                 >
-                                    {sortDirection === 'asc' ? 'A ➜ Z' : 'Z ➜ A'}
+                                    <span>⚡ Filtros Avanzados</span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                                            {activeFiltersCount}
+                                        </span>
+                                    )}
+                                    <svg
+                                        className={`w-3.5 h-3.5 transition-transform duration-300 transform ${showAdvancedFilters ? 'rotate-180' : 'rotate-0'}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                    </svg>
                                 </button>
+
+                                {activeFiltersCount > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={clearFilters}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                                    >
+                                        <span>✕</span>
+                                        <span>Limpiar Filtros ({activeFiltersCount})</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Ordenar */}
+                            <div className="flex items-center gap-3 ml-auto flex-wrap">
+                                <div className="flex items-center gap-1.5">
+                                    <span className="text-xs text-gray-500 font-medium">Ordenar:</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => setSortDirection(prev => prev === 'asc' ? 'desc' : 'asc')}
+                                        className="px-2.5 py-1.5 text-xs bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-bold transition-all cursor-pointer"
+                                        title="Alternar orden A-Z / Z-A"
+                                    >
+                                        {sortDirection === 'asc' ? 'A ➜ Z' : 'Z ➜ A'}
+                                    </button>
+                                </div>
                             </div>
                         </div>
 
-                        {/* Botón Crear */}
-                        {permissions.can_create && (
-                            <button
-                                type="button"
-                                onClick={handleOpenCreate}
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                                }}
-                            >
-                                <span>➕</span>
-                                Registrar Impresora
-                            </button>
+                        {/* Badges de filtros activos */}
+                        {activeFiltersCount > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 text-xs pt-1">
+                                {impresoraFilter && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Impresora: {impresoraOptions.find(o => String(o.id) === String(impresoraFilter))?.label || impresoraFilter}</span>
+                                        <button type="button" onClick={() => setImpresoraFilter('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {gerenciaFilter && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Gerencia: {gerenciaOptions.find(o => String(o.id) === String(gerenciaFilter))?.label || gerenciaFilter}</span>
+                                        <button type="button" onClick={() => setGerenciaFilter('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Cajón de Filtros Avanzados en Grid Responsivo */}
+                        {showAdvancedFilters && (
+                            <div className="pt-3 border-t border-gray-100 animate-fadeIn">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    {/* Select Filtrable: Impresora */}
+                                    <div className="w-full">
+                                        <SearchableSelect
+                                            options={impresoraOptions}
+                                            value={impresoraFilter}
+                                            onChange={setImpresoraFilter}
+                                            placeholder="Todas las impresoras"
+                                            allLabel="Todas las impresoras"
+                                            icon="🖨️"
+                                        />
+                                    </div>
+
+                                    {/* Select Filtrable: Gerencia */}
+                                    <div className="w-full">
+                                        <SearchableSelect
+                                            options={gerenciaOptions}
+                                            value={gerenciaFilter}
+                                            onChange={setGerenciaFilter}
+                                            placeholder="Todas las gerencias"
+                                            allLabel="Todas las gerencias"
+                                            icon="🏢"
+                                        />
+                                    </div>
+                                </div>
+                            </div>
                         )}
                     </div>
                 </div>

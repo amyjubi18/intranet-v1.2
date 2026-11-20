@@ -76,9 +76,9 @@
         <div class="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
             <div class="flex flex-col gap-4">
                 <!-- Fila Superior: Buscador Rápido + Acciones (Exportar, Nuevo) -->
-                <div class="flex flex-wrap items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                <div class="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 sm:gap-4 pb-4 border-b border-gray-100">
                     <!-- Buscador general -->
-                    <form method="GET" action="{{ route('administracion.salida_impresora.index') }}" class="flex-1 min-w-[280px]">
+                    <form method="GET" action="{{ route('administracion.salida_impresora.index') }}" class="flex-1 min-w-[260px] max-w-2xl">
                         @if(request('cartucho_id')) <input type="hidden" name="cartucho_id" value="{{ request('cartucho_id') }}"> @endif
                         @if(request('colore_id')) <input type="hidden" name="colore_id" value="{{ request('colore_id') }}"> @endif
                         @if(request('impresora_id')) <input type="hidden" name="impresora_id" value="{{ request('impresora_id') }}"> @endif
@@ -103,7 +103,7 @@
                     </form>
 
                     <!-- Acciones -->
-                    <div class="flex flex-wrap items-center justify-end gap-3">
+                    <div class="flex flex-wrap items-center justify-start xl:justify-end gap-2.5 sm:gap-3 shrink-0">
                         <select id="exportSelectSalidaImp" onchange="handleSalidaImpExport(this)" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all text-black border-none bg-blue-100 hover:bg-blue-200 active:translate-y-0.5 text-sm cursor-pointer shadow-xs">
                             <option value="">📤 Exportar</option>
                             <optgroup label="Exportar Todos">
@@ -117,7 +117,7 @@
                         </select>
 
                         @can('salidaimpre_create')
-                        <a href="{{ route('administracion.salida_impresora.create') }}" class="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs">
+                        <a href="{{ route('administracion.salida_impresora.create') }}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer" style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);">
                             <span>➕</span>
                             <span>Nuevo Registro</span>
                         </a>
@@ -127,11 +127,12 @@
 
                 <!-- Fila de Control: Botón Filtros Avanzados + Badges de Filtros Activos -->
                 <div class="flex flex-wrap items-center justify-between gap-3">
-                    <div class="flex items-center gap-3">
+                    <div class="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                         <button
                             type="button"
                             @click="openFilters = !openFilters"
-                            class="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-all duration-300 cursor-pointer"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                            style="background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%); box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);"
                         >
                             <span>⚡ Filtros Avanzados</span>
                             @if($activeFiltersCount > 0)

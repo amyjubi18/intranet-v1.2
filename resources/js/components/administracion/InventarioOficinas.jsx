@@ -962,9 +962,9 @@ export default function InventarioOficinas() {
                 <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm relative z-30 overflow-visible">
                     <div className="flex flex-col gap-4">
                         {/* Fila superior: Buscador a la izquierda + Exportar y Acciones a la derecha */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 sm:gap-4 pb-4 border-b border-gray-100">
                             {/* Buscador en tiempo real de los registros existentes */}
-                            <div className="relative flex-1 min-w-[260px]">
+                            <div className="relative flex-1 min-w-[260px] max-w-2xl">
                                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                     🔍
                                 </span>
@@ -988,7 +988,7 @@ export default function InventarioOficinas() {
                             </div>
 
                             {/* Exportar (Todos o Seleccionados), Eliminar Seleccionados, Eliminar Todo y Nuevo Registro */}
-                            <div className="flex flex-wrap items-center gap-3">
+                            <div className="flex flex-wrap items-center justify-start xl:justify-end gap-2.5 sm:gap-3 shrink-0">
                                 <select
                                     value=""
                                     onChange={(e) => {
@@ -1021,13 +1021,11 @@ export default function InventarioOficinas() {
                                             type="button"
                                             onClick={handleDeleteSelected}
                                             disabled={selectedIds.length === 0}
-                                            /* className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-600 text-white hover:bg-red-700 active:translate-y-0.5 text-sm disabled:opacity-50 disabled:cursor-not-allowed shadow-xs" */
-                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
-                                    boxShadow: '0 4px 12px rgba(246, 59, 59, 0.377)',
-
-                                }}
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
+                                                boxShadow: '0 4px 12px rgba(246, 59, 59, 0.377)',
+                                            }}
                                         >
                                             <span>🗑️</span>
                                             <span>Eliminar Seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
@@ -1036,13 +1034,11 @@ export default function InventarioOficinas() {
                                         <button
                                             type="button"
                                             onClick={handleDeleteAll}
-                                            /* className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-red-800 text-white hover:bg-red-900 active:translate-y-0.5 text-sm shadow-xs" */
-                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
-                                    boxShadow: '0 4px 12px rgba(246, 59, 59, 0.3)',
-
-                                }}
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
+                                                boxShadow: '0 4px 12px rgba(246, 59, 59, 0.3)',
+                                            }}
                                         >
                                             <span>⚠️</span>
                                             <span>Eliminar Todo</span>
@@ -1054,11 +1050,11 @@ export default function InventarioOficinas() {
                                     <button
                                         type="button"
                                         onClick={handleOpenCreate}
-                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                                }}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                        }}
                                     >
                                         <span>➕</span>
                                         <span>Nuevo Registro</span>
@@ -1069,16 +1065,15 @@ export default function InventarioOficinas() {
 
                         {/* Fila de control: Botón Filtros Avanzados con badge + Botón Limpiar si hay activos */}
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                                 <button
                                     type="button"
                                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
-
-                                }}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)',
+                                    }}
                                 >
                                     <span>⚡ Filtros Avanzados</span>
                                     {activeFiltersCount > 0 && (

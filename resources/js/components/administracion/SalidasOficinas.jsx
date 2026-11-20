@@ -1043,9 +1043,9 @@ export default function SalidasOficinas() {
                 <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 shadow-sm overflow-visible">
                     <div className="flex flex-col gap-4">
                         {/* Fila Superior: Buscador Rápido + Acciones (Exportar, Eliminar, Nuevo) */}
-                        <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4 pb-4 border-b border-gray-100">
+                        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 sm:gap-4 pb-4 border-b border-gray-100">
                             {/* Buscador general (Un solo icono limpio) */}
-                            <div className="flex-1 max-w-xl">
+                            <div className="flex-1 min-w-[260px] max-w-2xl">
                                 <div className="relative">
                                     <input
                                         type="text"
@@ -1069,7 +1069,7 @@ export default function SalidasOficinas() {
                             </div>
 
                             {/* Acciones */}
-                            <div className="flex flex-wrap items-center justify-end gap-3">
+                            <div className="flex flex-wrap items-center justify-start xl:justify-end gap-2.5 sm:gap-3 shrink-0">
                                 {/* Exportar select */}
                                 <select
                                     onChange={(e) => {
@@ -1102,15 +1102,14 @@ export default function SalidasOficinas() {
                                         type="button"
                                         disabled={selectedIds.length === 0}
                                         onClick={handleDeleteMultiple}
-                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
-                                    boxShadow: '0 4px 12px rgba(246, 59, 59, 0.377)',
-
-                                }}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
+                                            boxShadow: '0 4px 12px rgba(246, 59, 59, 0.377)',
+                                        }}
                                     >
                                         <span>🗑️</span>
-                                        <span>Eliminar Seleccionados</span>
+                                        <span>Eliminar Seleccionados {selectedIds.length > 0 ? `(${selectedIds.length})` : ''}</span>
                                     </button>
                                 )}
 
@@ -1119,47 +1118,106 @@ export default function SalidasOficinas() {
                                     <button
                                         type="button"
                                         onClick={handleDeleteAll}
-                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
-                                    boxShadow: '0 4px 12px rgba(246, 59, 59, 0.3)',
-
-                                }}
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
+                                            boxShadow: '0 4px 12px rgba(246, 59, 59, 0.3)',
+                                        }}
                                     >
                                         <span>⚠️</span>
                                         <span>Eliminar Todo</span>
                                     </button>
                                 )}
 
-                                {/* Filtros Avanzados */}
-                                <button
-                                    type="button"
-                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
-                                style={{
-                                    background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
-                                    boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
-                                }}
-                                >
-                                    <span>⚡</span>
-                                    <span>Filtros Avanzados</span>
-                                    {activeFiltersCount > 0 && (
-                                        <span className="w-5 h-5 rounded-full bg-amber-400 text-blue-950 text-xs font-black grid place-items-center">
-                                            {activeFiltersCount}
-                                        </span>
-                                    )}
-                                </button>
-
                                 {/* Nueva Salida */}
                                 {permissions.can_create && (
                                     <button
                                         type="button"
                                         onClick={openCreateModal}
-                                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl font-semibold transition-all bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm shadow-xs cursor-pointer"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                        }}
                                     >
                                         <span>➕</span>
                                         <span>Nueva Salida</span>
                                     </button>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Fila de Control: Botón Filtros Avanzados + Badges de Filtros Activos */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                    }}
+                                >
+                                    <span>⚡ Filtros Avanzados</span>
+                                    {activeFiltersCount > 0 && (
+                                        <span className="w-5 h-5 rounded-full bg-blue-500 text-white text-xs font-bold flex items-center justify-center shadow-xs">
+                                            {activeFiltersCount}
+                                        </span>
+                                    )}
+                                    <svg
+                                        className={`w-3.5 h-3.5 transition-transform duration-300 transform ${showAdvancedFilters ? 'rotate-180' : 'rotate-0'}`}
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </button>
+
+                                {activeFiltersCount > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={clearAllFilters}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-red-50 text-red-700 hover:bg-red-100 border border-red-200 transition-colors cursor-pointer"
+                                    >
+                                        <span>✕</span>
+                                        <span>Limpiar Filtros ({activeFiltersCount})</span>
+                                    </button>
+                                )}
+                            </div>
+
+                            {/* Badges de filtros activos en horizontal */}
+                            <div className="flex flex-wrap items-center gap-2 text-xs">
+                                {filterGerencia && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Gerencia: {gerenciasOptions.find(g => String(g.id) === String(filterGerencia))?.label || filterGerencia}</span>
+                                        <button type="button" onClick={() => setFilterGerencia('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterArea && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Área: {areasOptions.find(a => String(a.id) === String(filterArea))?.label || filterArea}</span>
+                                        <button type="button" onClick={() => setFilterArea('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {filterArticulo && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Artículo: {articulosOptions.find(a => String(a.id) === String(filterArticulo))?.label || filterArticulo}</span>
+                                        <button type="button" onClick={() => setFilterArticulo('')} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {(fechaDesde || fechaHasta) && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Salida: {fechaDesde || '...'} a {fechaHasta || '...'}</span>
+                                        <button type="button" onClick={() => { setFechaDesde(''); setFechaHasta(''); }} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
+                                )}
+                                {(fechaIngresoDesde || fechaIngresoHasta) && (
+                                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-blue-100 text-blue-900 font-semibold border border-blue-200">
+                                        <span>Factura: {fechaIngresoDesde || '...'} a {fechaIngresoHasta || '...'}</span>
+                                        <button type="button" onClick={() => { setFechaIngresoDesde(''); setFechaIngresoHasta(''); }} className="hover:text-red-600 font-bold ml-1">✕</button>
+                                    </span>
                                 )}
                             </div>
                         </div>

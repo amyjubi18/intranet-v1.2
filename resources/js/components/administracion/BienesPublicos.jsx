@@ -1437,9 +1437,9 @@ export default function BienesPublicos() {
                 <div className="bg-white border border-white/20 backdrop-blur-md rounded-2xl p-6 relative z-30 overflow-visible">
                     <div className="flex flex-col gap-4">
                         {/* Fila superior: Buscar, Exportar, Nuevo */}
-                        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-gray-100">
+                        <div className="flex flex-col xl:flex-row items-stretch xl:items-center justify-between gap-3.5 sm:gap-4 pb-4 border-b border-gray-100">
                             {/* Campo Buscar */}
-                            <div className="relative flex-1 min-w-[240px]">
+                            <div className="relative flex-1 min-w-[260px] max-w-2xl">
                                 <span className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                                     🔍
                                 </span>
@@ -1465,7 +1465,7 @@ export default function BienesPublicos() {
                             </div>
 
                             {/* Exportar y Nuevo */}
-                            <div className="flex items-center gap-3">
+                            <div className="flex flex-wrap items-center justify-start xl:justify-end gap-2.5 sm:gap-3 shrink-0">
                                 <select
                                     value=""
                                     onChange={(e) => {
@@ -1498,7 +1498,7 @@ export default function BienesPublicos() {
                                             type="button"
                                             onClick={handleDeleteSelected}
                                             disabled={selectedIds.length === 0}
-                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ml-auto"
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                             style={{
                                                 background: 'linear-gradient(135deg, #8a1e1e 0%, #f63b3b 100%)',
                                                 boxShadow: '0 4px 12px rgba(246, 59, 59, 0.377)',
@@ -1511,7 +1511,7 @@ export default function BienesPublicos() {
                                         <button
                                             type="button"
                                             onClick={handleDeleteAll}
-                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer ml-auto"
+                                            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
                                             style={{
                                                 background: 'linear-gradient(135deg, #5e0e0e 0%, #b41818 100%)',
                                                 boxShadow: '0 4px 12px rgba(246, 59, 59, 0.3)',
@@ -1527,10 +1527,14 @@ export default function BienesPublicos() {
                                     <button
                                         type="button"
                                         onClick={handleOpenCreate}
-                                        className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl font-semibold transition-all border-none bg-blue-900 text-white hover:bg-blue-800 active:translate-y-0.5 text-sm cursor-pointer shadow-sm"
+                                        className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                        style={{
+                                            background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                            boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                        }}
                                     >
                                         <span>➕</span>
-                                        Nuevo
+                                        <span>Nuevo</span>
                                     </button>
                                 )}
                             </div>
@@ -1538,11 +1542,11 @@ export default function BienesPublicos() {
 
                         {/* Fila de controles de filtros */}
                         <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 flex-wrap">
+                            <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
                                 <button
                                     type="button"
                                     onClick={() => openCameraScanner('search', 'Escanear QR o Código de Barras')}
-                                    className="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-500/50 shadow-xs cursor-pointer inline-flex items-center gap-1.5 transition-all hover:scale-[1.02]"
+                                    className="bg-blue-900 hover:bg-blue-800 text-white border border-green-600 backdrop-blur-md rounded-xl px-4 py-2.5 text-xs font-bold uppercase tracking-wider focus:outline-none focus:ring-2 focus:ring-green-500/50 shadow-xs cursor-pointer inline-flex items-center gap-1.5 transition-all hover:scale-[1.02]"
                                     title="Abrir la cámara para escanear y buscar un bien"
                                 >
                                     <span>📷</span>
@@ -1552,7 +1556,11 @@ export default function BienesPublicos() {
                                 <button
                                     type="button"
                                     onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-                                    className="inline-flex items-center gap-2 bg-blue-900 hover:bg-blue-800 text-white border border-blue-600 backdrop-blur-md rounded-xl px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/50 shadow-xs transition-all duration-300"
+                                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold transition-all text-xs uppercase tracking-wider text-white shadow-md active:translate-y-0.5 cursor-pointer"
+                                    style={{
+                                        background: 'linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%)',
+                                        boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)'
+                                    }}
                                 >
                                     <span>⚡ Filtros Avanzados</span>
                                     {activeFiltersCount > 0 && (
