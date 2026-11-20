@@ -5,6 +5,10 @@
 @tailwind components;
 @tailwind utilities;
 
+[x-cloak] {
+  display: none !important;
+}
+
 /* @import "flatpickr/dist/flatpickr.min.css"; */
 
 /* Estilos para la página de login */

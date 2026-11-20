@@ -553,7 +553,16 @@
                         <!-- Acciones -->
                         <div class="flex flex-wrap justify-center md:justify-end gap-2">
                             @can('dist_almac_edit')
-                            <button type="button" @click="openEdit({{ json_encode($distribucion) }})" class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer">
+                            <button
+                                type="button"
+                                @click="openEdit({
+                                    id: {{ $distribucion->id }},
+                                    almacenamiento_impresora_id: '{{ $distribucion->almacenamiento_impresora_id }}',
+                                    gerencia_id: '{{ $distribucion->gerencia_id }}',
+                                    unidades_asignadas: {{ $distribucion->unidades_asignadas ?? 1 }}
+                                })"
+                                class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer"
+                            >
                                 <span>✏️</span>
                                 Editar
                             </button>
@@ -1190,10 +1199,11 @@
         x-cloak
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
         style="display: none;"
+        @click.self="createModalOpen = false"
     >
         <div
-            @click.away="createModalOpen = false"
             class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto"
+            @click.stop
         >
             <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
                 <div class="flex items-center gap-3">
@@ -1296,10 +1306,11 @@
         x-cloak
         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-fadeIn"
         style="display: none;"
+        @click.self="editModalOpen = false"
     >
         <div
-            @click.away="editModalOpen = false"
             class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto"
+            @click.stop
         >
             <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
                 <div class="flex items-center gap-3">

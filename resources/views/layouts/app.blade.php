@@ -79,6 +79,10 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.2.1/flowbite.min.js"></script>
 
     <style>
+        [x-cloak] {
+            display: none !important;
+        }
+
         body {
             box-sizing: border-box;
         }

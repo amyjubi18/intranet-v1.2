@@ -573,7 +573,21 @@
                                 <!-- Acciones -->
                                 <div class="flex flex-wrap justify-center md:justify-end gap-2">
                                     @can('almacen_inv_edit')
-                                    <button type="button" @click="openEdit({{ json_encode($item) }})" class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer">
+                                    <button
+                                        type="button"
+                                        @click="openEdit({
+                                            id: {{ $item->id }},
+                                            fecha_ingreso: '{{ $item->fecha_ingreso ? \Carbon\Carbon::parse($item->fecha_ingreso)->format('Y-m-d') : '' }}',
+                                            cartucho_id: '{{ $item->cartucho_id }}',
+                                            colore_id: '{{ $item->colore_id }}',
+                                            impresora_id: '{{ $item->impresora_id }}',
+                                            fabricante_id: '{{ $item->fabricante_id }}',
+                                            proveedore_id: '{{ $item->proveedore_id }}',
+                                            n_factura: '{{ addslashes($item->n_factura ?? '') }}',
+                                            unidades: {{ $item->unidades ?? 1 }}
+                                        })"
+                                        class="inline-flex h-fit items-center gap-2 px-3 py-2 rounded-xl font-semibold transition-all bg-green-600 border text-white border-white/20 hover:bg-green-700 active:translate-y-0.5 text-xs cursor-pointer"
+                                    >
                                         <span>✏️</span>
                                         Editar
                                     </button>
@@ -1234,7 +1248,7 @@
         x-show="createModalOpen"
         x-cloak
         class="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
-        style="position: fixed; inset: 0; z-index: 99999999; background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+        style="display: none;"
         @click.self="createModalOpen = false"
     >
         <div
@@ -1414,7 +1428,7 @@
         x-show="editModalOpen"
         x-cloak
         class="fixed inset-0 z-[99999999] flex items-center justify-center p-4 bg-slate-900/65 backdrop-blur-md animate-modal-backdrop"
-        style="position: fixed; inset: 0; z-index: 99999999; background-color: rgba(15, 23, 42, 0.65); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);"
+        style="display: none;"
         @click.self="editModalOpen = false"
     >
         <div
